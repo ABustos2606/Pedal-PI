@@ -2,11 +2,11 @@
 
 **Project:** Pedal PI  
 **Prepared:** 13 October 2026 (America/Buenos_Aires)  
-**Status:** proposed implementation plan; application implementation has not started.  
+**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
-This plan turns the [requirements](01-requirements.md), [architecture](02-architecture.md), [interaction design](03-interface-and-controls.md), and [validation rules](06-validation.md) into executable phases. It preserves the new LVGL interface, Poly Ingen audio engine, Mutable Instruments-derived modules, companion JSON, and initial audio-only routing. Casette is an unchanged technical reference. Preparing this plan does not install software, change the Pi, or begin implementing the application.
+This plan turns the [requirements](01-requirements.md), [architecture](02-architecture.md), [interaction design](03-interface-and-controls.md), and [validation rules](06-validation.md) into executable phases. It preserves the new LVGL interface, Poly Ingen audio engine, Mutable Instruments-derived modules, companion JSON, and initial audio-only routing. Casette is an unchanged technical reference. Independent Windows UI implementation was authorized on 13 October 2026; see [its development record](11-windows-ui-foundation.md). The Pi installation has not been changed.
 
 Every phase has numbered tasks, a deliverable, and an exit check. A phase is complete only when its evidence exists; a desktop prototype does not establish Pi audio performance or finger usability. Technical choices marked proposed are defaults to evaluate, not new agreed product requirements.
 
@@ -74,14 +74,27 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** make everyday UI work possible on the PC without the Pi.
 
+**Execution record — 13 October 2026:** P1.2 and P1.4–P1.8 are complete. The Windows Debug build and all three CTest checks passed. Domain and engine contracts, missing-module scenarios, and build/run/debug instructions are documented. VS Code launch/task configuration is prepared; its C/C++ debugger extension is not installed on this PC, so an actual breakpoint session remains part of P1.1. Linux UI platform work remains P1.3. See [UI development](11-windows-ui-foundation.md) and [domain/engine contracts](13-domain-and-engine-contracts.md).
+
+**P1.4 correction:** a user-reported blank native window exposed a startup refresh race missed by the original launch-only check. The initial redraw now waits for the Windows buffer, and the native test verifies rendered pixels and a completed flush without requiring a click. See the [startup fix and regression evidence](11-windows-ui-foundation.md#verification).
+
+| Task | Implemented | Remaining before completion |
+| --- | --- | --- |
+| P1.1 | Windows MSVC/CMake/SDK inventory, selected build preset and prepared VS Code launch/task configuration | C/C++ debugger extension and actual breakpoint validation; Linux build route |
+| P1.3 | C++20/CMake core, engine, shared LVGL views and Windows platform; source/license notices | Linux UI build target and platform setup |
+| P1.5 | Complete: stable identity/display-name separation, explicit port types/channel symbols, tagged numeric values, validated ranges/graphs and retained missing-module metadata | Real plugin discovery/adaptation belongs to Phases 3–4 |
+| P1.6 | Complete: abstract Engine, connection lifecycle, correlated results/snapshots, create/rename/load/session-save and capability failures | Actual protocol and persistent plugin state belong to Phases 4–5 |
+| P1.7 | Complete: deterministic catalogue, delayed/rejected edits/save, missing-module graph fixture and disconnect/reconnect | No audio processing is claimed |
+| P1.8 | Complete: build/run/test/debug instructions, VS Code configurations, pinned dependency and reviewed captures | Debugger installation/runtime validation remains P1.1 |
+
 - [ ] **P1.1 — Toolchain inventory:** identify available Windows C++ compiler, CMake, debugger and dependency tooling. Select a supported combination and document setup; choose a Linux build route for later Pi deployment separately.
-- [ ] **P1.2 — Pin graphics dependencies:** select a stable LVGL revision and compatible Windows display/input backend. Prefer the official Win32 simulator when it fits the available compiler; SDL is a documented alternative. Record revisions, licenses and required fonts/assets; preserve supplied notices.
+- [x] **P1.2 — Pin graphics dependencies:** select a stable LVGL revision and compatible Windows display/input backend. Prefer the official Win32 simulator when it fits the available compiler; SDL is a documented alternative. Record revisions, licenses and required fonts/assets; preserve supplied notices.
 - [ ] **P1.3 — Application skeleton:** create the proposed shared/platform separation and build targets for a Windows simulator and later Linux UI. Keep simulator drivers out of the shared application logic. Add GPL-3.0-or-later SPDX and accurate copyright notices to original project source files; keep adapted upstream files under their applicable terms.
-- [ ] **P1.4 — Display baseline:** run a real LVGL application with an 800 × 480 logical drawing area, mouse pointer input and keyboard input. Account for Windows DPI scaling; optional zoom changes presentation, not logical coordinates.
-- [ ] **P1.5 — Domain contracts:** define stable instance IDs, plugin URIs, port symbols/types/directions, parameter value types/ranges/units, connection records, canvas positions and assignment records. Separate engine identity from user display names.
-- [ ] **P1.6 — Engine contract:** define connect/disconnect, snapshot, add/remove module, connect/disconnect ports, set parameter, load/save and state/error events. Define pending/success/failure semantics and unsupported-capability reporting before coding protocol details.
-- [ ] **P1.7 — Simulated engine:** provide a small deterministic catalogue, graph state, delayed responses, rejected commands, missing modules and disconnect/reconnect scenarios. Simulated graphs do not process audio, and simulated resource values are labelled as such.
-- [ ] **P1.8 — Developer loop:** document reproducible build/run/debug steps and capture the initial screenshot. Pin dependencies so an ordinary rebuild does not silently upgrade LVGL.
+- [x] **P1.4 — Display baseline:** run a real LVGL application with an 800 × 480 logical drawing area, mouse pointer input and keyboard input. Account for Windows DPI scaling; optional zoom changes presentation, not logical coordinates.
+- [x] **P1.5 — Domain contracts:** define stable instance IDs, plugin URIs, port symbols/types/directions, parameter value types/ranges/units, connection records, canvas positions and assignment records. Separate engine identity from user display names.
+- [x] **P1.6 — Engine contract:** define connect/disconnect, snapshot, add/remove module, connect/disconnect ports, set parameter, load/save and state/error events. Define pending/success/failure semantics and unsupported-capability reporting before coding protocol details.
+- [x] **P1.7 — Simulated engine:** provide a small deterministic catalogue, graph state, delayed responses, rejected commands, missing modules and disconnect/reconnect scenarios. Simulated graphs do not process audio, and simulated resource values are labelled as such.
+- [x] **P1.8 — Developer loop:** document reproducible build/run/debug steps and capture the initial screenshot. Pin dependencies so an ordinary rebuild does not silently upgrade LVGL.
 
 **Deliverable:** runnable Windows LVGL simulator, shared domain model, engine interface, simulated backend and setup instructions.
 
@@ -93,14 +106,28 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** validate the core interaction before audio integration expands its scope.
 
-- [ ] **P2.1 — Canvas and header:** fixed IN/OUT modules, patch name, dirty marker, readiness state, add-module, patches and settings navigation. Begin with the sizing targets in the interaction document and use a shared theme.
-- [ ] **P2.2 — Module interaction:** named square modules, grid snapping, tap-to-open parameters, movement threshold, drag positioning, empty-space panning and context actions. Keep port hit areas large enough for the intended screen.
-- [ ] **P2.3 — Cable interaction:** output-to-input drag preview, valid-target indication, cable selection/removal, series split/merge display and clear rejected-connection messages. Represent each logical cable's eventual physical engine connections.
-- [ ] **P2.4 — Graph validation:** enforce port direction/type compatibility, fixed endpoint rules and rejection of feedback cycles. Implement mono/stereo expansion as explicit rules; leave merge compensation provisional until Phase 3 measurements.
-- [ ] **P2.5 — Module browser:** categories, names and availability status from the simulated catalogue. Keep unavailable or untested modules distinguishable from supported modules.
-- [ ] **P2.6 — Generic parameters:** continuous/logarithmic values, integers, toggles, enumerations and units; paginate crowded pages. Prevent out-of-range values and distinguish plugin bypass from a hardware bypass claim.
-- [ ] **P2.7 — Simulated workflows:** create a patch, edit it, duplicate/delete a module, remove related cables, and exercise pending/rejected operations. Include graph changes arriving from the backend rather than only from local gestures.
-- [ ] **P2.8 — Desktop review:** inspect sparse and dense patches, long names, edge gestures, keyboard overlays and error messages at 800 × 480. Exercise meaningful domain tests for graph validation, channel expansion and range conversion.
+**Execution record — 13 October 2026:** P2.1–P2.8 and the desktop exit check are complete. Actual LVGL pointer/keypad checks cover creation/naming/rename, cancellation and unsaved-replacement guards, pagination, catalogue availability, missing-module repair, all core editor workflows and rejected/pending operations. Sparse, panned, dense, long-name, keyboard and error views are reviewed at 800 × 480; domain tests cover all mono/stereo expansion rules. Logical cables retain physical routing plans using demo or supplied channel symbols; actual Ingen ports and merge levels remain unverified. See the [desktop review checklist](12-desktop-editor-review.md). Physical switch assignment remains Phase 7; Pi touch acceptance remains Phase 4.
+
+| Task | Implemented | Remaining before completion |
+| --- | --- | --- |
+| P2.2 | Complete: named squares, movement threshold, snapping, 44-pixel jack hit areas, empty-space panning and long-press actions (parameters, software bypass, duplicate, delete) | Physical control assignment is tracked in Phase 7 |
+| P2.3 | Complete: preview, valid targets, selection/delete, split/merge drawing, errors and physical connection plans | Verify actual Ingen port identities in Phases 3–4 |
+| P2.4 | Complete: direction/type/channel, fixed endpoint, duplicate and cycle validation; four mono/stereo rules | Actual merge levels/compensation remain Phase 3 measurements |
+| P2.5 | Complete: paginated categorized catalogue with available/untested/unavailable status and reasons | Actual installed/tested plugins remain later integration |
+| P2.6 | Complete: tagged controls, logarithmic/integer ranges, units, software bypass and parameter pagination | Physical touch review remains Phase 4 |
+| P2.7 | Complete: new/rename/edit/duplicate/delete, cleanup, pending/rejected commands, session save/restore and backend updates | Disk/plugin-state persistence remains Phase 5 |
+| P2.8 | Complete: recorded sparse/dense/long-name/edge/keyboard/error review and meaningful channel/range checks | Pi usability and audio acceptance remain unverified |
+
+- [x] **P2.1 — Canvas and header:** fixed IN/OUT modules, patch name, dirty marker, readiness state, add-module, patches and settings navigation. Begin with the sizing targets in the interaction document and use a shared theme.
+- [x] **P2.2 — Module interaction:** named square modules, grid snapping, tap-to-open parameters, movement threshold, drag positioning, empty-space panning and context actions. Keep port hit areas large enough for the intended screen.
+- [x] **P2.3 — Cable interaction:** output-to-input drag preview, valid-target indication, cable selection/removal, series split/merge display and clear rejected-connection messages. Represent each logical cable's eventual physical engine connections.
+- [x] **P2.4 — Graph validation:** enforce port direction/type compatibility, fixed endpoint rules and rejection of feedback cycles. Implement mono/stereo expansion as explicit rules; leave merge compensation provisional until Phase 3 measurements.
+- [x] **P2.5 — Module browser:** categories, names and availability status from the simulated catalogue. Keep unavailable or untested modules distinguishable from supported modules.
+- [x] **P2.6 — Generic parameters:** continuous/logarithmic values, integers, toggles, enumerations and units; paginate crowded pages. Prevent out-of-range values and distinguish plugin bypass from a hardware bypass claim.
+- [x] **P2.7 — Simulated workflows:** create a patch, edit it, duplicate/delete a module, remove related cables, and exercise pending/rejected operations. Include graph changes arriving from the backend rather than only from local gestures.
+- [x] **P2.8 — Desktop review:** inspect sparse and dense patches, long names, edge gestures, keyboard overlays and error messages at 800 × 480. Exercise meaningful domain tests for graph validation, channel expansion and range conversion.
+- [x] **P2.9 — Module-specific UI and parallel starter (user-requested extension, 13 October 2026):** Clouds Texture / Mix-hold pages and Delay Character controls, shared generic fallback for changed metadata, and an editable parallel demo with guarded replacement. Pointer checks cover custom edits, mode rejection, fallback value continuity, branch delete/reconnect, and cancelled/rejected demo loading; all three desktop tests pass. Review captures are recorded in the [desktop checklist](12-desktop-editor-review.md). Real audio summing remains Phase 3.
+- [x] **P2.10 — Global tempo and CPU readouts (user-requested extension, 13 October 2026):** bottom-right footer on every page, with space retained for cable actions. Shared engine telemetry provides optional BPM and CPU percent; the simulator supplies explicit display fixtures (120 BPM / 12% CPU SIM) and clears CPU when disconnected/connecting/in error. Unknown or invalid readings show `--`. Desktop rendering and existing interaction checks pass; real tempo synchronization and CPU measurement remain engine/Pi integration work.
 
 **Deliverable:** interactive desktop editor using actual shared LVGL code and a recorded review checklist.
 

@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Pedal PI: configure",
+      "type": "process",
+      "command": "cmake",
+      "args": ["--preset", "windows"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Pedal PI: build",
+      "type": "process",
+      "command": "cmake",
+      "args": ["--build", "--preset", "windows", "--parallel", "6"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Pedal PI: configure",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "Pedal PI: test",
+      "type": "process",
+      "command": "ctest",
+      "args": ["--preset", "windows", "--output-on-failure"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Pedal PI: build",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    }
+  ]
+}

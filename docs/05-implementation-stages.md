@@ -1,7 +1,7 @@
 # Implementation roadmap
 
 **Updated:** 13 October 2026.  
-**Current state:** documentation and unchanged reference sources; application implementation has not started.
+**Current state:** Windows LVGL desktop editor accepted with a simulated engine; Phase 2 is complete on the PC. Phase 1 retains Linux platform and debugger setup work. Phase 0 hardware work is deferred while the Pi is packed.
 
 The detailed task list, component boundaries, dependencies, deliverables and exit checks are in the [technical implementation plan](10-technical-implementation-plan.md). That plan is the authoritative phase sequence and supersedes this document's earlier Stage 0–9 outline.
 
@@ -41,4 +41,4 @@ Ingen can serialize an audio graph as a `.ingen` directory bundle with Turtle an
 
 Each phase leaves a reviewable artifact and measured or inspected evidence. Hardware acceptance occurs on the actual Pi, display, audio interface and controllers. A failed host assumption blocks the dependent task, not independent simulator work. Changes in source versions, hardware or platform require repeating affected checks, not automatically restarting the entire project.
 
-All phases are planned. The current request creates this plan; it does not run the implementation tasks.
+Implementation started on the independent Windows UI work on 13 October 2026. See [the UI development record](11-windows-ui-foundation.md), [desktop review checklist](12-desktop-editor-review.md) and [domain/engine contracts](13-domain-and-engine-contracts.md) for evidence and current limits; hardware-dependent phases remain planned.

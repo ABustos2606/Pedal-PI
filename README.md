@@ -2,7 +2,7 @@
 
 Modular effects instrument for Raspberry Pi 5, with a new touchscreen interface inspired by Poly Effects' Beebo.
 
-**Status:** documentation and upstream reference sources; implementation has not started.  
+**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine; audio and Pi integration remain unimplemented.
 **Date:** 12 October 2026 — revised 13 October 2026 (LVGL direction, Casette reference, and NAM evaluation)  
 **Project folder:** `C:\Pedal PI`
 
@@ -22,6 +22,27 @@ Original Pedal PI code and documentation are licensed under **GNU GPL version 3 
 
 Upstream reference sources and third-party assets retain their own licenses and copyright notices. In particular, Poly's Ingen engine is **AGPL-3.0-or-later**, and other Poly repositories include GPL, LGPL and permissive components. See [third-party notices](THIRD_PARTY_NOTICES.md) for the inspected evidence and implementation/release requirements.
 
+## Run the Windows UI
+
+The simulator uses actual LVGL at 800 × 480 and a simulated engine. It needs no Raspberry Pi, audio interface, or reference submodule initialization. Install Visual Studio C++ Build Tools and CMake; the supplied preset selects Visual Studio 2026 x64 (use `-G "Visual Studio 17 2022" -A x64` in a separate build directory for VS 2022).
+
+```powershell
+cmake --preset windows
+cmake --build --preset windows --parallel 6
+ctest --preset windows
+& '.\build\Debug\pedal_pi.exe'
+```
+
+The first configure fetches LVGL at a pinned commit. After that the cached build and application work offline. See [Windows UI development](docs/11-windows-ui-foundation.md) for interactions, architecture, checks and current limits.
+
+Drag empty space to pan; **Home** restores the original view. Hold a module for parameters, software bypass, duplication or deletion. Tap a cable to select it, then use **Delete cable** in the footer. These editor features work entirely with the simulated engine.
+
+Clouds and Delay have their own parameter layouts; **All** opens the generic editor. **Patches → Parallel demo** loads an editable split/merge example: Drive feeds Clouds and Delay, then both connect to OUT. Loading it guards unsaved edits. This demonstrates routing and UI behavior; audio summing still requires Pi verification.
+
+Global BPM and CPU readouts stay in the bottom-right footer on every page. The simulator displays 120 BPM / 12% CPU SIM as fixed display fixtures; real tempo synchronization and processor measurements await engine integration. CPU is shown as `--` when the simulator is unavailable.
+
+**Patches** now provides **New patch**, **Rename**, and engine-acknowledged session save/load. Names can be entered with the on-screen keyboard; replacing unsaved edits has a cancel option. Clouds' demo controls span two parameter pages. The catalogue distinguishes available, untested and unavailable demo entries; **Settings → Missing module** exercises placeholder recovery.
+
 ## Documentation
 
 | File | Contents |
@@ -36,6 +57,9 @@ Upstream reference sources and third-party assets retain their own licenses and 
 | [Reference source collection](docs/08-reference-sources.md) | Download scope, repository versions, declared submodules, and Windows storage details |
 | [Casette and NAM evaluation](docs/09-casette-and-nam.md) | Pinned Casette findings, lessons for this instrument, NAM feasibility, and proposed benchmark plan |
 | [Detailed technical implementation plan](docs/10-technical-implementation-plan.md) | Phases 0–11 with numbered tasks, PC/Pi work split, deliverables, exit checks, and requirements coverage |
+| [Windows UI development](docs/11-windows-ui-foundation.md) | Build/run instructions, shared UI and simulated engine, verification and remaining Phase 1–2 work |
+| [Desktop editor review](docs/12-desktop-editor-review.md) | Recorded Phase 2 desktop acceptance, screenshots and interaction/domain checks |
+| [Domain and engine contracts](docs/13-domain-and-engine-contracts.md) | Identity, typed metadata, missing modules, mono/stereo routing, lifecycle, save and capability semantics |
 
 ## Retrieve the project and reference sources
 
@@ -75,11 +99,11 @@ Initialize the top-level references first, then the three repositories with decl
 - NAM is a candidate for evaluation on the Pi 5, 2 GB. An optimized runtime is promising, but CPU headroom, memory use, simultaneous model count, and operation alongside Clouds remain unverified. The older downloaded Poly NAM fork and current NeuralAudio-based LV2 implementations need comparison.
 - Beebo's interface repository (`digit_ui`) is **reference material only**. No code, QML, icons, fonts, or other assets from it will be copied into the new interface.
 
-These documents and reference sources are the project baseline, not a working instrument or an installation package. No project-specific application code, build scripts, installers, wiring changes, or system services have been created. Upstream repositories may contain their own build and installation files; they have not been executed. Implementation requires a separate explicit instruction.
+Original application code and CMake build files now exist under `src/` and `config/`. The simulator is a UI development foundation; it does not process audio. The Pi is packed following the user's move, so Phase 0 inspection and all hardware validation are deferred. Upstream reference repositories remain unchanged.
 
 ## Next step after documentation review
 
-1. Start the shared LVGL application and 800 × 480 simulator on the Windows PC with a simulated engine; the Pi is not needed for initial UI development.
+1. Try the accepted Windows LVGL desktop editor; prepare/verify the debugger and decide the Linux platform build route once the Pi OS is identified.
 2. Identify the Pi OS, audio interface and touch controller, preserve the existing installation, and establish a minimal JACK/Ingen audio path early.
 3. Integrate the real engine and native touch interface, then implement coherent patch/state persistence and the Clouds milestone with physical controls.
-4. Evaluate NAM and expand the tested catalogue before dedicated startup and complete validation. Follow the [detailed phase plan](docs/10-technical-implementation-plan.md); no implementation phase has been executed.
+4. Evaluate NAM and expand the tested catalogue before dedicated startup and complete validation. Follow the [detailed phase plan](docs/10-technical-implementation-plan.md); a UI foundation does not complete the hardware-dependent phases.

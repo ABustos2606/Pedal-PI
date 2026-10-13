@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "C:/Pedal PI/reference/upstream/neural-amp-modeler-lv2"
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.useCMakePresets": "always"
 }

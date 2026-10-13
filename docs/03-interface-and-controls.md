@@ -17,9 +17,11 @@ Beebo's interface (1280 × 720, with many fixed coordinates) shows that a modula
 
 Screens, layouts, styling, icons, and code are our own. The new interface is deliberately simpler than Beebo's.
 
+The user's five reference photos also illustrate why parameter pages need not all have the same layout: the tuner emphasizes a note and cents, the oscillator emphasizes model selection, and the granular page groups continuous controls. Keep a consistent navigation frame while adapting the content to the task. The photos' branching graphs reinforce visible split/merge routing; their cables alone do not establish engine summing behavior.
+
 ## Casette as an additional reference
 
-Casette's published source uses LVGL framebuffer output, evdev touch, tabs, level meters, a tuner, and a CPU/temperature display for an advertised 800 × 480 screen. These are useful implementation observations, not proof of usability on our 5-inch HDMI display. Retain our square-module canvas and generic parameter pages rather than adopting its fixed tabbed chain. See [the source audit](09-casette-and-nam.md).
+Casette's published source uses LVGL framebuffer output, evdev touch, tabs, level meters, a tuner, and a CPU/temperature display for an advertised 800 × 480 screen. These are useful implementation observations, not proof of usability on our 5-inch HDMI display. Retain our square-module canvas and module pages with a generic fallback. See [the source audit](09-casette-and-nam.md).
 
 ## Visual identity — open
 
@@ -81,6 +83,8 @@ The interface shows **one logical cable** per connection and maps it to the plug
 
 **Unverified:** that Poly's Ingen mixes multiple connections into one input, and at what level. Merging parallel branches may need level compensation or an explicit mixer module to avoid clipping; decide after testing.
 
+The desktop simulator's **Patches → Parallel demo** starts with IN → Drive, splits into Clouds and Delay, and reconnects both branches at OUT. Branches use ordinary editable cables; loading the demo uses the unsaved-replacement guard. This demonstrates graph editing and channel expansion, with no audio processing.
+
 Feedback loops (a cable that leads back to an earlier module) are refused in the first version.
 
 The first version routes **audio only**. Modulation, CV, and MIDI connections between modules are deferred (decision D16). A visual cable must always correspond to a valid engine connection; a refused connection shows a short reason.
@@ -88,6 +92,10 @@ The first version routes **audio only**. Modulation, CV, and MIDI connections be
 ## Module page
 
 Opened by tapping a square. It fills the screen with the module's parameters and a **back** button to the patch view.
+
+Module-specific pages are supported in the shared LVGL application. Clouds opens **Texture** (position, size, density, pitch) and **Mix / hold** (mix, freeze); Delay opens **Character** mode buttons with timing, feedback and mix controls. Both retain software bypass and Actions, and **All** opens the generic parameter editor. All layouts use the same parameter symbols, range conversion and engine acknowledgment path.
+
+Select a specialized layout by stable module URI and compatible parameter schema. Renaming a module must not change its layout. Unrecognized or changed schemas use the generic editor so parameters remain accessible. The initial custom layouts target simulator fixtures; real LV2 modules require verified metadata before a specialized view is registered. Tuner, oscillator and other dedicated layouts can be added when their module contracts exist.
 
 - Large, labelled controls with current value and unit, about 4–6 per page; more parameters continue on further pages.
 - Control type follows the LV2 parameter type: slider or arc for continuous values (drive, gain, volume, time), switch for on/off values (freeze, bypass), and a selector for lists of modes.

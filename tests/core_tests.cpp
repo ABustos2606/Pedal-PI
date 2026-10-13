@@ -1,0 +1,144 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Pedal PI contributors
+#include "engine/simulated_engine.hpp"
+#include <cmath>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+
+using namespace pedal;
+void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
+int main() {
+    try {
+        auto g = demo_graph();
+        check(!validate_connection(g, {5, 3}).empty(), "feedback cycle accepted");
+        check(!validate_connection(g, {3, 4}).empty(), "duplicate cable accepted");
+        check(!validate_connection(g, {2, 3}).empty(), "wrong port direction accepted");
+        check(validate_connection(g, {3, 5}).empty(), "valid fan-out rejected");
+        check(!validate_connection(g, {99, 3}).empty(), "missing module accepted");
+        const auto& p = g.modules[3].parameters[1];
+        check(std::abs(value_from_normalized(p, normalized_value(p)) - p.value) < 0.0001, "logarithmic round trip");
+        check(value_from_normalized(p, -1) == p.minimum && value_from_normalized(p, 2) == p.maximum, "range clamp");
+        SimulatedEngine engine;
+        const auto req = engine.submit(SetParameter{3, "drive", 70});
+        check(engine.snapshot().modules[2].parameters[0].value == 32, "edit applied before ack");
+        check(engine.advance(99).empty(), "delay ignored");
+        auto events = engine.advance(1);
+        check(events.size() == 1 && events[0].request == req && events[0].accepted, "request correlation");
+        check(engine.snapshot().modules[2].parameters[0].value == 70, "accepted value missing");
+        engine.reject_next(); engine.submit(SetParameter{3, "drive", 80});
+        check(!engine.advance(100)[0].accepted, "rejection missing");
+        check(engine.snapshot().modules[2].parameters[0].value == 70, "rejected edit changed state");
+        engine.submit(SetParameter{3, "drive", std::numeric_limits<double>::quiet_NaN()});
+        check(!engine.advance(100)[0].accepted, "NaN accepted");
+        engine.submit(SetParameter{4, "freeze", 0.4});
+        check(!engine.advance(100)[0].accepted, "fractional toggle accepted");
+        engine.submit(RemoveModule{1}); check(!engine.advance(100)[0].accepted, "endpoint deleted");
+        engine.submit(AddModule{"urn:missing", 24, 24}); check(!engine.advance(100)[0].accepted, "missing plugin accepted");
+        engine.submit(SetParameter{3, "drive", 80}); engine.set_state(EngineState::Disconnected);
+        events = engine.advance(100); check(events.size() == 2 && !events[0].accepted, "disconnect did not cancel pending");
+        engine.set_state(EngineState::Ready); engine.advance(100);
+        check(engine.snapshot().modules[2].parameters[0].value == 70, "stale edit survived reconnect");
+        engine.submit(RemoveModule{4}); check(engine.advance(100)[0].accepted, "remove failed");
+        check(engine.snapshot().connections.size() == 2, "dangling cables remain");
+        auto invalid = demo_graph(); invalid.connections.push_back({5, 3});
+        engine.submit(LoadGraph{invalid}); check(!engine.advance(100)[0].accepted, "invalid loaded graph accepted");
+        engine.submit(LoadGraph{demo_graph()}); check(engine.advance(100)[0].accepted, "valid restore rejected");
+        auto assigned = engine.snapshot(); assigned.assignments.push_back({"knob-1", 3, "drive", 0, 100});
+        engine.submit(LoadGraph{assigned}); engine.advance(100);
+        engine.submit(SetParameter{3, "drive", 81}); engine.advance(100);
+        engine.submit(SetBypass{3, true}); engine.advance(100);
+        const auto original = *find_module(engine.snapshot(), 3);
+        const auto cables = engine.snapshot().connections;
+        engine.reject_next(); engine.submit(DuplicateModule{3, 1008, 504});
+        check(!engine.advance(100)[0].accepted && engine.snapshot().modules.size() == 5, "rejected duplicate changed graph");
+        engine.submit(DuplicateModule{1, 1008, 504});
+        check(!engine.advance(100)[0].accepted, "endpoint duplicated");
+        engine.submit(DuplicateModule{3, 1008, 504});
+        check(engine.snapshot().modules.size() == 5, "duplicate appeared before acknowledgment");
+        check(engine.advance(100)[0].accepted, "duplicate rejected");
+        const auto& copy = engine.snapshot().modules.back();
+        check(copy.id != original.id && copy.uri == original.uri && copy.bypassed && copy.parameters[0].value == 81,
+            "duplicate lost identity, parameter or bypass state");
+        check(copy.x == 1008 && copy.y == 504 && engine.snapshot().connections == cables, "duplicate copied cables or lost world position");
+        check(engine.snapshot().assignments.size() == 1 && engine.snapshot().assignments[0].module == 3, "duplicate copied control assignments");
+        engine.submit(MoveModule{copy.id, 2016, 1008}); engine.advance(100);
+        check(engine.snapshot().modules.back().x == 2016 && engine.snapshot().modules.back().y == 1008, "larger canvas movement was clamped to viewport");
+        engine.submit(SetParameter{copy.id, "drive", 22}); engine.advance(100);
+        check(find_module(engine.snapshot(), 3)->parameters[0].value == 81, "copy edits changed original");
+        engine.submit(MoveModule{copy.id, -96, 5000}); engine.advance(100);
+        check(engine.snapshot().modules.back().x == module_min_x && engine.snapshot().modules.back().y == module_max_y,
+            "canvas boundary constraints failed");
+        const auto caps = engine.capabilities();
+        check(caps.simulation && caps.session_save && !caps.persistent_save && !caps.plugin_state && !caps.audio_processing,
+            "simulator advertised unsupported capability");
+        const auto prior_name = engine.snapshot().name;
+        engine.submit(NewPatch{"  "}); check(!engine.advance(100)[0].accepted && engine.snapshot().name == prior_name, "blank patch replaced graph");
+        engine.submit(NewPatch{"Practice"}); check(engine.advance(100)[0].accepted, "new patch rejected");
+        check(engine.snapshot().modules.size() == 2 && engine.snapshot().connections.size() == 1 && engine.snapshot().dirty, "new patch endpoints or dirty marker incorrect");
+        engine.submit(RenamePatch{"Evening practice"}); engine.advance(100);
+        engine.submit(SaveGraph{}); events = engine.advance(100);
+        check(events[0].accepted && events[0].saved_session && !engine.snapshot().dirty && events[0].saved_session->name == "Evening practice", "engine session save failed");
+        engine.submit(RenamePatch{"Changed"}); engine.advance(100);
+        engine.reject_next(); engine.submit(SaveGraph{}); check(!engine.advance(100)[0].accepted && engine.snapshot().dirty, "rejected save cleared dirty state");
+        engine.submit(LoadSession{}); engine.advance(100);
+        check(engine.snapshot().name == "Evening practice" && !engine.snapshot().dirty, "rejected save overwrote session snapshot");
+        engine.submit(SaveGraph{SaveScope::Persistent}); events = engine.advance(100);
+        check(!events[0].accepted && events[0].message.find("Unsupported capability") != std::string::npos, "persistent save was not explicitly rejected");
+        engine.submit(SaveGraph{SaveScope::Session, true}); check(!engine.advance(100)[0].accepted, "plugin state save pretended to succeed");
+        engine.disconnect(); engine.advance(0); engine.connect();
+        check(engine.state() == EngineState::Connecting, "connect skipped lifecycle");
+        engine.advance(99); check(engine.state() == EngineState::Connecting, "connect delay ignored");
+        engine.advance(1); check(engine.state() == EngineState::Ready, "connect did not become ready");
+        engine.connect(); engine.disconnect(); engine.advance(100);
+        check(engine.state() == EngineState::Disconnected, "cancelled connection became ready");
+        engine.connect(); engine.submit(RenamePatch{"Too early"}); events = engine.advance(100);
+        check(!events[1].accepted && engine.snapshot().name == "Evening practice", "edit submitted while connecting was applied later");
+        engine.set_state(EngineState::Ready); engine.advance(0);
+        check(engine.simulate_missing_module(), "missing-module fixture failed");
+        engine.advance(0);
+        check(engine.snapshot().connections.size() == 4 && find_module(engine.snapshot(), 4)->parameters.size() == 6, "missing module lost cables or saved values");
+        check(validate_graph(engine.snapshot()).empty() && !expand_connection(engine.snapshot(), {3, 4}).error.empty(), "missing cable was routed or graph lost recoverability");
+        engine.submit(SetParameter{4, "mix", 80}); check(!engine.advance(100)[0].accepted, "missing-module parameter accepted");
+        engine.submit(DuplicateModule{4, 24, 24}); check(!engine.advance(100)[0].accepted, "missing module duplicated");
+        engine.submit(AddModule{"urn:pedalpi:demo:nam", 24, 24}); check(!engine.advance(100)[0].accepted, "untested module added");
+        engine.submit(RemoveModule{4}); engine.advance(100); check(engine.snapshot().connections.size() == 2, "missing-module deletion left dangling cables");
+
+        // All four channel-count combinations, using actual per-channel symbols.
+        for (unsigned source_channels : {1U, 2U}) for (unsigned target_channels : {1U, 2U}) {
+            auto routing_graph = empty_graph("Routing"); routing_graph.connections.clear();
+            auto& out = routing_graph.modules[0].ports[0]; auto& in = routing_graph.modules[1].ports[0];
+            out.channels = source_channels; out.channel_symbols = source_channels == 1 ? std::vector<std::string>{"source"} : std::vector<std::string>{"source_left", "source_right"};
+            in.channels = target_channels; in.channel_symbols = target_channels == 1 ? std::vector<std::string>{"sink"} : std::vector<std::string>{"sink_left", "sink_right"};
+            const auto plan = expand_connection(routing_graph, {1, 2});
+            check(plan.error.empty() && plan.connections.size() == std::max(source_channels, target_channels), "channel expansion count incorrect");
+            check(plan.connections[0].output == out.channel_symbols[0] && plan.connections[0].input == in.channel_symbols[0], "left/mono channel mapping incorrect");
+            if (plan.connections.size() == 2) check(plan.connections[1].output == out.channel_symbols[source_channels - 1] && plan.connections[1].input == in.channel_symbols[target_channels - 1], "right channel mapping incorrect");
+            out.type = PortType::Midi; check(!expand_connection(routing_graph, {1, 2}).error.empty(), "non-audio cable accepted");
+            out.type = PortType::Audio; out.channels = 3; check(!validate_graph(routing_graph).empty(), "unsupported channel count accepted");
+        }
+        auto bad = demo_graph(); bad.modules[0].fixed = false;
+        check(!validate_graph(bad).empty(), "movable endpoint accepted");
+        bad = demo_graph(); bad.modules[2].parameters[0].value = std::numeric_limits<double>::infinity();
+        check(!validate_graph(bad).empty(), "invalid snapshot parameter accepted");
+        bad = demo_graph(); bad.modules[2].id = 1;
+        check(!validate_graph(bad).empty(), "duplicate instance identity accepted");
+        bad = demo_graph(); bad.modules[0].ports[0].channel_symbols = {"only_left"};
+        check(!expand_connection(bad, {1, 3}).error.empty(), "incomplete channel symbols were expanded");
+        auto parallel = parallel_demo_graph();
+        check(validate_graph(parallel).empty() && parallel.connections.size() == 5, "parallel fixture invalid");
+        std::size_t physical_count = 0;
+        for (const auto& edge : parallel.connections) {
+            const auto plan = expand_connection(parallel, edge);
+            check(plan.error.empty(), "parallel branch expansion rejected");
+            physical_count += plan.connections.size();
+        }
+        check(physical_count == 10, "parallel stereo fixture lost physical routes");
+        check(!validate_connection(parallel, {4, 3}).empty(), "parallel feedback cycle accepted");
+        engine.submit(LoadGraph{parallel}); check(engine.advance(100)[0].accepted, "engine refused parallel fixture");
+        engine.submit(Disconnect{{3, 4}}); check(engine.advance(100)[0].accepted, "parallel branch deletion failed");
+        check(engine.snapshot().connections.size() == 4, "branch deletion changed multiple edges");
+        engine.submit(Connect{{3, 4}}); check(engine.advance(100)[0].accepted, "parallel branch reconnect failed");
+        std::cout << "Domain validation, typed ranges, delayed acknowledgment, rejection, reconnect and restore passed.\n";
+    } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
+}

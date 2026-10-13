@@ -22,7 +22,11 @@ The project license does not replace the licenses of repositories, nested depend
 | Poly Serd | [COPYING](reference/upstream/serd/COPYING) contains David Robillard's ISC-style permission and disclaimer | Include this notice with copied or packaged Serd code. |
 | Casette | No root `LICENSE`, `LICENCE` or `COPYING` file, or license notice in the README and C++ files inspected at the pinned revision | Technical reference only. Establish permission before copying implementation or distributing its bundled models/IRs; the Pedal PI license does not grant rights to these files. |
 
-LVGL is the proposed UI dependency and uses MIT licensing. Pin the actual dependency in Phase 1 and retain its supplied copyright/license notice. Apply the same process to display drivers, build dependencies and each selected LV2 plugin. Fonts, images, presets, NAM models and cabinet impulse responses need their own provenance and applicable terms.
+The Windows UI uses LVGL v9.5.0 at commit `85aa60d18b3d5e5588d7b247abf90198f07c8a63`, fetched from its official repository. Its Win32 display/input driver is part of the same source revision. [cmake/lvgl_windows_fix.cmake](cmake/lvgl_windows_fix.cmake) builds a corrected copy of `src/osal/lv_windows.c`, changing two cleanup calls to dereference the Windows thread handle pointer. The pinned checkout is unchanged and the generated copy remains MIT licensed. The supplied notice is preserved in [licenses/LVGL-MIT.txt](licenses/LVGL-MIT.txt) and copied beside the executable.
+
+Built-in Montserrat font tables at sizes 14, 18, 20, 24 and 28 are supplied by this LVGL revision; their generated headers also identify Font Awesome 5 glyphs. The upstream [Montserrat OFL notice](licenses/Montserrat-OFL.txt) and [Font Awesome Free notice](licenses/Font-Awesome-Free.txt) are retained. Their notice sources are [Montserrat](https://github.com/JulietaUla/Montserrat/blob/master/OFL.txt) and [Font Awesome 5.15.4](https://github.com/FortAwesome/Font-Awesome/blob/5.15.4/LICENSE.txt); LVGL does not record the precise original font revision in those generated table headers. No original Beebo assets are used.
+
+Apply the same provenance/notice process to each selected LV2 plugin. Images, presets, NAM models and cabinet impulse responses need their own provenance and applicable terms.
 
 ## Implementation and release requirements
 
@@ -30,6 +34,6 @@ LVGL is the proposed UI dependency and uses MIT licensing. Pin the actual depend
 - Maintain a component inventory with source URL, revision, license/version grant, modifications and required notices for the actual build. A license text alone does not establish whether an upstream grant is version-only or permits later versions.
 - Package the required license/notices and the corresponding source and build/install material required by each distributed component's terms. Record how recipients obtain that source for the exact shipped version.
 - Preserve Ingen's AGPL terms. If GPLv3 and AGPLv3 code are combined into one work, section 13 addresses that combination and its network-interaction requirements; selecting GPL for our files does not remove the AGPL requirements.
-- Review the actual dependencies and assets selected for a release during Phase 11. The current repository contains documentation and unchanged references, not an implemented or validated instrument.
+- Review the actual dependencies and assets selected for a release during Phase 11. The current repository contains a Windows UI simulator and unchanged references; the complete instrument has not been implemented or validated.
 
 Authoritative texts: [GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.html), [GNU AGPLv3](https://www.gnu.org/licenses/agpl-3.0.html), and [GNU guidance on applying licenses](https://www.gnu.org/licenses/gpl-howto.html).
