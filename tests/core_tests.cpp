@@ -40,7 +40,7 @@ int main() {
         engine.set_state(EngineState::Ready); engine.advance(100);
         check(engine.snapshot().modules[2].parameters[0].value == 70, "stale edit survived reconnect");
         engine.submit(RemoveModule{4}); check(engine.advance(100)[0].accepted, "remove failed");
-        check(engine.snapshot().connections.size() == 2, "dangling cables remain");
+        check(engine.snapshot().connections.size() == 4, "dangling cables remain");
         auto invalid = demo_graph(); invalid.connections.push_back({5, 3});
         engine.submit(LoadGraph{invalid}); check(!engine.advance(100)[0].accepted, "invalid loaded graph accepted");
         engine.submit(LoadGraph{demo_graph()}); check(engine.advance(100)[0].accepted, "valid restore rejected");
@@ -75,7 +75,7 @@ int main() {
         const auto prior_name = engine.snapshot().name;
         engine.submit(NewPatch{"  "}); check(!engine.advance(100)[0].accepted && engine.snapshot().name == prior_name, "blank patch replaced graph");
         engine.submit(NewPatch{"Practice"}); check(engine.advance(100)[0].accepted, "new patch rejected");
-        check(engine.snapshot().modules.size() == 2 && engine.snapshot().connections.size() == 1 && engine.snapshot().dirty, "new patch endpoints or dirty marker incorrect");
+        check(engine.snapshot().modules.size() == 2 && engine.snapshot().connections.size() == 2 && engine.snapshot().dirty, "new patch endpoints or dirty marker incorrect");
         engine.submit(RenamePatch{"Evening practice"}); engine.advance(100);
         engine.submit(SaveGraph{}); events = engine.advance(100);
         check(events[0].accepted && events[0].saved_session && !engine.snapshot().dirty && events[0].saved_session->name == "Evening practice", "engine session save failed");
@@ -97,12 +97,12 @@ int main() {
         engine.set_state(EngineState::Ready); engine.advance(0);
         check(engine.simulate_missing_module(), "missing-module fixture failed");
         engine.advance(0);
-        check(engine.snapshot().connections.size() == 4 && find_module(engine.snapshot(), 4)->parameters.size() == 6, "missing module lost cables or saved values");
+        check(engine.snapshot().connections.size() == 8 && find_module(engine.snapshot(), 4)->parameters.size() == 6, "missing module lost cables or saved values");
         check(validate_graph(engine.snapshot()).empty() && !expand_connection(engine.snapshot(), {3, 4}).error.empty(), "missing cable was routed or graph lost recoverability");
         engine.submit(SetParameter{4, "mix", 80}); check(!engine.advance(100)[0].accepted, "missing-module parameter accepted");
         engine.submit(DuplicateModule{4, 24, 24}); check(!engine.advance(100)[0].accepted, "missing module duplicated");
         engine.submit(AddModule{"urn:pedalpi:demo:nam", 24, 24}); check(!engine.advance(100)[0].accepted, "untested module added");
-        engine.submit(RemoveModule{4}); engine.advance(100); check(engine.snapshot().connections.size() == 2, "missing-module deletion left dangling cables");
+        engine.submit(RemoveModule{4}); engine.advance(100); check(engine.snapshot().connections.size() == 4, "missing-module deletion left dangling cables");
 
         // All four channel-count combinations, using actual per-channel symbols.
         for (unsigned source_channels : {1U, 2U}) for (unsigned target_channels : {1U, 2U}) {
@@ -123,10 +123,10 @@ int main() {
         check(!validate_graph(bad).empty(), "invalid snapshot parameter accepted");
         bad = demo_graph(); bad.modules[2].id = 1;
         check(!validate_graph(bad).empty(), "duplicate instance identity accepted");
-        bad = demo_graph(); bad.modules[0].ports[0].channel_symbols = {"only_left"};
+        bad = demo_graph(); bad.modules[0].ports[0].channel_symbols = {"one", "too_many"};
         check(!expand_connection(bad, {1, 3}).error.empty(), "incomplete channel symbols were expanded");
         auto parallel = parallel_demo_graph();
-        check(validate_graph(parallel).empty() && parallel.connections.size() == 5, "parallel fixture invalid");
+        check(validate_graph(parallel).empty() && parallel.connections.size() == 10, "parallel fixture invalid");
         std::size_t physical_count = 0;
         for (const auto& edge : parallel.connections) {
             const auto plan = expand_connection(parallel, edge);
@@ -137,8 +137,31 @@ int main() {
         check(!validate_connection(parallel, {4, 3}).empty(), "parallel feedback cycle accepted");
         engine.submit(LoadGraph{parallel}); check(engine.advance(100)[0].accepted, "engine refused parallel fixture");
         engine.submit(Disconnect{{3, 4}}); check(engine.advance(100)[0].accepted, "parallel branch deletion failed");
-        check(engine.snapshot().connections.size() == 4, "branch deletion changed multiple edges");
+        check(engine.snapshot().connections.size() == 9, "branch deletion changed multiple edges");
         engine.submit(Connect{{3, 4}}); check(engine.advance(100)[0].accepted, "parallel branch reconnect failed");
+        // Reference entries carry upstream LV2 metadata, rather than invented fixtures.
+        const auto* mist = definition("http://polyeffects.com/lv2/polyclouds#granular");
+        const auto* fold = definition("http://polyeffects.com/lv2/polywarps#fold");
+        const auto* grids = definition("http://polyeffects.com/lv2/polygrids");
+        check(mist && fold && grids, "reference catalogue entries missing");
+        check(mist->reference && mist->availability == Availability::Available && mist->parameters.size() == 12, "reference Clouds metadata incomplete");
+        check(grids->availability == Availability::Unavailable && !grids->availability_reason.empty(), "CV-only module offered for audio patching");
+        check(format_value(mist->parameters[0]) == "0.24", "narrow-range value lost its decimals");
+        auto real = demo_graph(); real.connections.clear();
+        real.modules.push_back({6, mist->uri, mist->name, 24, 264, false, false, mist->parameters, mist->ports});
+        real.modules.push_back({7, fold->uri, fold->name, 168, 264, false, false, fold->parameters, fold->ports});
+        check(validate_graph(real).empty(), "reference modules rejected by graph validation");
+        // Every connector is patched on its own: left to one effect, right to another.
+        check(validate_connection(real, {3, 6, "out", "l_in"}).empty() && validate_connection(real, {3, 7, "out_r", "carrier"}).empty(),
+            "left and right outputs could not go to different modules");
+        check(validate_connection(real, {6, 7, "r_out", "modulator"}).empty(), "one channel of a stereo module could not feed a mono input");
+        const auto route = expand_connection(real, {3, 6, "out_r", "l_in"});
+        check(route.connections.size() == 1 && route.connections[0].output == "out_r" && route.connections[0].input == "l_in", "a cable is not exactly one engine connection");
+        check(!validate_connection(real, {6, 7}).empty(), "cable matched a port the module does not have");
+        check(!validate_connection(real, {7, 6, "out", "position"}).empty(), "CV input accepted an audio cable");
+        check(!validate_connection(real, {3, 6, "out", "in"}).empty(), "cable matched a merged stereo port that should no longer exist");
+        engine.submit(AddModule{grids->uri, 24, 24}); check(!engine.advance(100)[0].accepted, "CV-only module added to an audio patch");
+        engine.submit(AddModule{fold->uri, 24, 24}); check(engine.advance(100)[0].accepted, "reference module could not be added");
         std::cout << "Domain validation, typed ranges, delayed acknowledgment, rejection, reconnect and restore passed.\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

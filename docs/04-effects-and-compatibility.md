@@ -22,6 +22,8 @@ Poly's `lenticular_lv2` Makefile defines these processing libraries:
 
 These are existing source/build targets and module definitions, **not verified Pi binaries**. Availability of every firmware mode and equivalence to original hardware require individual checks. Clouds is a granular processor; this collection also contains oscillators, resonators, modulation sources, and rhythm generators, rather than only filters.
 
+**Observed in the published `.ttl` metadata (13 October 2026):** the Clouds-derived plugins have stereo audio in/out as four mono ports plus 12 CV inputs; Warps-derived plugins have two mono audio inputs and two outputs; Rings has one input and two outputs; Plaits has two audio outputs and no audio input. Grids, Marbles and Tides have **no audio ports at all**. With audio-only cables (D16) those three families cannot be patched, and Plaits can only drone at its knob settings. The simulator catalogue is generated from this metadata; see [UI development](11-windows-ui-foundation.md).
+
 The source references Eurorack and Parasites dependencies, including Git submodules. Required submodule revisions must be captured in the eventual build manifest. Embedded AVR/STM bootloader sources are not automatically needed for Linux DSP builds; determine dependencies from the selected targets.
 
 ## Other Beebo sources

@@ -100,31 +100,36 @@ Control events should be queued and applied through the application's own event 
 
 Keep the distinction between a knob assigned directly to a parameter and a stomp switch routed through a modular control block.
 
-### Persistent state — agreed design (D13)
+### Persistent state — agreed design (D13, revised 13 October 2026)
 
-Persistent patches use a **companion file design**:
-1. **Audio DSP graph/bundle (`<patch_name>.ingen`):** Standard Ingen RDF/Turtle graph containing plugin URIs, ports, and audio patch connections managed directly by Ingen. The inspected serializer supports directory bundles with `main.ttl`, `manifest.ttl` and associated state; `.ingen` is not assumed to mean a single flat file. Preserve all required plugin state/assets and verify the chosen save/load route.
-2. **UI & control metadata (`<patch_name>.json`):** A project-owned JSON file stored alongside the graph/bundle. It stores:
-   - Square module layout: grid coordinates `(x, y)` on the canvas.
-   - User-assigned display names and colours.
-   - Physical control assignments: knob/switch ID mapped to target plugin instance and parameter symbol, with pickup/mode settings.
-   - Patch-level UI view settings.
+A patch is **one Ingen bundle directory** (`<patch_name>.ingen/` with `main.ttl`, `manifest.ttl`, `plugins.ttl` and any plugin state). There is no companion JSON file; that earlier design was dropped by the user on 13 October 2026 after the [engine evidence](14-ingen-engine-evidence.md).
 
-**Rationale:**
-- Decouples interface metadata from Ingen's RDF parser.
-- Enables simple, robust, fast parsing in C/C++ within the LVGL process (e.g., using `cJSON`).
-- Keeps the audio graph fully standard and readable by Ingen without custom schema extensions that could break on engine updates.
-- If a companion JSON file is missing or corrupted, Ingen can still load the audio graph, and the interface can regenerate default square positions on a grid.
+Interface and control data are stored **in the engine, as properties** on the thing they describe:
+
+- Canvas position: `ingen:canvasX` / `ingen:canvasY` on each block.
+- User display name and colour: project properties on the block.
+- Physical control assignments: project properties on the target port (control identity, range, pickup/mode, inversion). Assignments to actions that are not a port, such as patch change or tap tempo, go on the graph itself.
+- Patch-level view settings: project properties on the graph.
+
+Project properties use the `urn:pedalpi:ns#` namespace.
+
+**Rationale (measured, not assumed):**
+- The engine accepts these properties, returns them to a newly connected client before any save, writes them into the bundle and restores them on load.
+- Layout and assignments therefore survive an interface crash or restart, which a file owned by the interface could not offer (R13).
+- One directory is one patch: there is no pair of files to keep coherent.
+- The bundle stays readable by a stock Ingen, which ignores properties it does not know.
+
+If the project properties are missing or unreadable, the audio graph still loads and the interface places squares on a default grid. Anything that turns out not to fit a property on a block, port or graph needs a new decision; none is known.
 
 Use documented application directories for presets, user audio assets, assignments, and settings. Patch saving should avoid partially written state and distinguish the startup patch from unsaved edits. Stored plugin references should use stable LV2 URIs and port symbols.
 
-Publish complete saved revisions containing both the host graph/state bundle and companion JSON, with a recoverable selection of the last complete revision. Atomic replacement of each file separately does not make the pair coherent. Define staging, host-save completion, revision selection and recovery in Phase 5 of the implementation plan.
+Save into a staging directory, wait for the engine's reply, then publish the complete bundle by renaming it, keeping the previous complete revision until the new one is in place. Define staging, revision selection and recovery in Phase 5 of the implementation plan.
 
 ### NAM and resource handling — proposed
 
 Evaluate NAM as an LV2 module hosted by Ingen. The downloaded Poly fork uses an older NAM Core integration; current upstream `neural-amp-modeler-lv2` uses NeuralAudio. Compare compatible, pinned builds without replacing Ingen or importing Casette's fixed chain. Verify the selected plugin's required features, file-path messages, worker support, and state restoration.
 
-Prefer mono amp processing for a mono guitar input and introduce stereo at effects that need it. Models and IRs are external audio assets; their references and plugin state belong to the saved audio graph, while canvas positions and control assignments remain in companion JSON. Provide calibrated input/output controls and quality selection only where supported.
+Prefer mono amp processing for a mono guitar input and introduce stereo at effects that need it. Models and IRs are external audio assets; their references and plugin state belong to the saved audio graph, alongside canvas positions and control assignments stored as engine properties. Provide calibrated input/output controls and quality selection only where supported.
 
 Load, initialize, and release models outside the real-time callback. Transfer ownership through the host/plugin's supported mechanism, handle failures, and avoid retaining unused models indefinitely. NeuralAudio composite-model initialization can trade memory for readiness to change quality; a first switch to an uninitialized submodel must not run on the audio thread. This needs verification in the selected LV2 implementation, not only its library API.
 

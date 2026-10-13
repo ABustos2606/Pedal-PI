@@ -73,7 +73,7 @@ This is a source-level dependency observation. Package availability and build co
 
 ## Decisions
 
-The [technical implementation plan](10-technical-implementation-plan.md), prepared 13 October 2026, provides the authoritative proposed phase/task sequence. Its Windows simulator workflow uses shared UI code and a simulated engine, with early Pi audio validation. Source inspection of Ingen's `src/Serialiser.cpp` confirms bundle serialization using `main.ttl` and `manifest.ttl`; runtime state/save behaviour still needs testing. The companion JSON design is retained alongside the graph/bundle.
+The [technical implementation plan](10-technical-implementation-plan.md), prepared 13 October 2026, provides the authoritative proposed phase/task sequence. Its Windows simulator workflow uses shared UI code and a simulated engine, with early Pi audio validation. Source inspection of Ingen's `src/Serialiser.cpp` confirms bundle serialization using `main.ttl` and `manifest.ttl`; bundle save and reload were then verified at runtime ([evidence](14-ingen-engine-evidence.md)); plugin state inside bundles still needs testing. The companion JSON design was dropped on 13 October 2026 (D13).
 
 | ID | Topic | State |
 | --- | --- | --- |
@@ -89,7 +89,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D10 | Storage layout, recovery, and shutdown design | Open |
 | D11 | Four encoders and three stomp switches | Proposed only |
 | D12 | UI toolkit and programming language | Agreed: LVGL (C/C++ on Linux DRM/KMS or framebuffer with evdev touch) |
-| D13 | Storage of UI data (positions, assignments) | Agreed: Companion JSON file (`<patch_name>.json`) saved alongside each patch |
+| D13 | Storage of UI data (positions, assignments) | Agreed, revised 13 October 2026: stored as properties on blocks, ports and the graph inside the engine and its saved bundle. The earlier companion JSON file is dropped |
 | D14 | Visual interaction and identity | Agreed interaction: drag-and-drop square modules, tap to enter parameter page, series/parallel audio routing; visual styling and name open |
 | D15 | Keep Poly's Ingen fork as the engine | Current direction; the engine client layer keeps substitution possible |
 | D16 | Routing cable types in initial version | Agreed: Audio-only cables (series and parallel); modulation/CV cables deferred |
@@ -98,6 +98,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D19 | Automatic NAM quality reduction under load | Open; no automatic reduction policy agreed |
 | D20 | Shared Windows 800 × 480 LVGL simulator and Pi UI development workflow | Proposed implementation route documented in Phases 1–4; exact LVGL revision, driver and compiler remain to be selected |
 | D21 | Detailed phase/task implementation plan | Created at the user's request on 13 October 2026; no implementation phase has been executed |
+| D23 | Engine build and protocol | Evidence 13 October 2026: upstream Ingen `13a045d0` + Poly MIDI-learn fix + two project patches, Turtle protocol, verified under WSL2 ([record](14-ingen-engine-evidence.md)). Led to the D13 revision. Pi verification pending |
 | D22 | Project license | Agreed 13 October 2026: GPL-3.0-or-later for original Pedal PI files; preserve upstream licenses, including Ingen's AGPL-3.0-or-later |
 
 ## Information needed before implementation

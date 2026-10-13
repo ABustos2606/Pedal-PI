@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 include(CTest)
 
-add_library(pedal_core src/core/model.cpp src/engine/simulated_engine.cpp)
+add_library(pedal_core src/core/model.cpp src/core/reference_catalogue.cpp src/engine/simulated_engine.cpp)
 target_include_directories(pedal_core PUBLIC src)
 if(MSVC)
   target_compile_options(pedal_core PRIVATE /W4 /permissive- /utf-8)

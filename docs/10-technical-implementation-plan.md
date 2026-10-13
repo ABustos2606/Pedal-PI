@@ -6,7 +6,7 @@
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
-This plan turns the [requirements](01-requirements.md), [architecture](02-architecture.md), [interaction design](03-interface-and-controls.md), and [validation rules](06-validation.md) into executable phases. It preserves the new LVGL interface, Poly Ingen audio engine, Mutable Instruments-derived modules, companion JSON, and initial audio-only routing. Casette is an unchanged technical reference. Independent Windows UI implementation was authorized on 13 October 2026; see [its development record](11-windows-ui-foundation.md). The Pi installation has not been changed.
+This plan turns the [requirements](01-requirements.md), [architecture](02-architecture.md), [interaction design](03-interface-and-controls.md), and [validation rules](06-validation.md) into executable phases. It preserves the new LVGL interface, Poly Ingen audio engine, Mutable Instruments-derived modules, and initial audio-only routing. Layout and control assignments are stored as engine properties inside the patch bundle; the earlier companion JSON was dropped on 13 October 2026 (D13). Casette is an unchanged technical reference. Independent Windows UI implementation was authorized on 13 October 2026; see [its development record](11-windows-ui-foundation.md). The Pi installation has not been changed.
 
 Every phase has numbered tasks, a deliverable, and an exit check. A phase is complete only when its evidence exists; a desktop prototype does not establish Pi audio performance or finger usability. Technical choices marked proposed are defaults to evaluate, not new agreed product requirements.
 
@@ -46,7 +46,7 @@ Proposed language/build baseline: C++20 and CMake, subject to compatibility chec
 | LVGL views | Canvas, parameters, browser, patches, assignments and settings | Consumes application state; LVGL operations stay on the UI thread |
 | Platform layer | Display, input, clock, paths and process integration | Windows simulator versus Linux DRM/framebuffer and touch |
 | Catalogue | Versioned LV2 metadata export plus project-owned presentation overlay | Linux discovery is independent of the Windows simulator |
-| Persistence | Ingen graph/state bundle, companion JSON, asset references and committed revisions | Uses verified host serialization; never reconstructs plugin state from sliders alone |
+| Persistence | Ingen graph/state bundle carrying layout and assignments as properties, asset references and committed revisions | Uses verified host serialization; never reconstructs plugin state from sliders alone |
 | Controls | Device events, debounce, mapping, ranges and action dispatch | No blocking reads or persistence on an audio callback |
 | Diagnostics | Engine readiness, DSP/xruns, memory and thermal observations | Labels real measurements separately from simulated values |
 
@@ -129,6 +129,8 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 - [x] **P2.9 — Module-specific UI and parallel starter (user-requested extension, 13 October 2026):** Clouds Texture / Mix-hold pages and Delay Character controls, shared generic fallback for changed metadata, and an editable parallel demo with guarded replacement. Pointer checks cover custom edits, mode rejection, fallback value continuity, branch delete/reconnect, and cancelled/rejected demo loading; all three desktop tests pass. Review captures are recorded in the [desktop checklist](12-desktop-editor-review.md). Real audio summing remains Phase 3.
 - [x] **P2.10 — Global tempo and CPU readouts (user-requested extension, 13 October 2026):** bottom-right footer on every page, with space retained for cable actions. Shared engine telemetry provides optional BPM and CPU percent; the simulator supplies explicit display fixtures (120 BPM / 12% CPU SIM) and clears CPU when disconnected/connecting/in error. Unknown or invalid readings show `--`. Desktop rendering and existing interaction checks pass; real tempo synchronization and CPU measurement remain engine/Pi integration work.
 
+- [x] **P2.11 - Reference metadata, multi-port jacks and live controls (13 October 2026):** catalogue fixture generated from the unchanged Mutable-derived `.ttl` files (the Windows part of P4.4), several audio jacks per side with port-aware cables, and continuous parameters streamed during the gesture with newest-value coalescing (the UI half of P4.2). Domain and pointer checks cover real stereo symbols, a two-input module, CV-only refusal and mid-gesture engine updates. Host behaviour is still unverified.
+
 **Deliverable:** interactive desktop editor using actual shared LVGL code and a recorded review checklist.
 
 **Exit check:** complete add → drag → connect → edit → disconnect → delete without invalid graph state or clipped essential controls. Backend rejection must revert/resolve pending UI state. Finger usability remains unverified until Phase 4.
@@ -136,6 +138,8 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 ## Phase 3 — prove JACK, Ingen and the protocol on the Pi
 
 **Purpose:** verify the engine assumptions while the desktop editor is still small.
+
+**Execution record - 13 October 2026 (PC only):** the hardware-independent parts of P3.1 and P3.5-P3.8, and the bundle format of P5.2, were verified on x86-64 Debian under WSL2 with JACK's dummy backend; see [Ingen engine evidence](14-ingen-engine-evidence.md). Poly's published `main` does not compile (it needs an unpublished serd), so the engine is upstream Ingen plus Poly's MIDI-learn fix and two project patches. The tasks below stay open until repeated on the Pi with the real interface and plugins.
 
 - [ ] **P3.1 — Build baseline:** select Poly Ingen and dependency revisions compatible with the Phase 0 OS. Check the inspected Serd/Sord/Sratom/Suil/LV2/Lilv/Raul requirements; choose build dependencies or an alternative supported development image from evidence.
 - [ ] **P3.2 — Linux builds:** establish a native Pi or reproducible Linux cross-build route with correct architecture and sysroot. Do not transplant Casette's Windows paths, Cortex-A72 target or unpinned dependency folder.
@@ -172,18 +176,18 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** preserve the entire musical patch, not merely its screen positions and numeric values.
 
-- [ ] **P5.1 — Storage contract:** assign stable patch identities, schema versions and display names. Use an Ingen graph/state bundle plus sibling companion JSON for positions, view state and control assignments.
+- [ ] **P5.1 — Storage contract:** assign stable patch identities, schema versions and display names. Use one Ingen graph/state bundle per patch, with positions, view state and control assignments stored as `urn:pedalpi:ns#` properties on blocks, ports and the graph.
 - [ ] **P5.2 — Confirm bundle format:** verify actual host output and load behaviour. The inspected Ingen serializer supports `.ingen` directory bundles containing `main.ttl`, `manifest.ttl` and related state; do not assume the `.ingen` path always names one flat file.
-- [ ] **P5.3 — Companion schema:** define stable instance/port references, positions, colours/names, assignments and view settings with version validation. Missing/corrupt companion JSON should permit usable audio graph loading and default layout recovery.
+- [ ] **P5.3 — Property schema:** define the project properties for positions, colours/names, assignments and view settings, with a schema version on the graph. Missing or unreadable properties should permit usable audio graph loading and default layout recovery.
 - [ ] **P5.4 — Asset policy:** define model/IR/sample locations, referenced versus imported assets, portable state/path mapping and missing-file detection. Store plugin assets/state through host-supported mechanisms and verify relocation rather than rewriting paths blindly.
-- [ ] **P5.5 — Coherent saves:** write a complete revision into staging, verify host save completion and companion data, then publish the revision with an atomic selection update where the platform supports it. Preserve the previous complete revision; do not present two separately renamed files as an atomic pair.
+- [ ] **P5.5 — Complete saves:** save the bundle into staging, wait for the engine's reply, then publish it with an atomic rename where the platform supports it. Preserve the previous complete revision until the new one is in place.
 - [ ] **P5.6 — Patch manager:** load, save, save as, rename, delete and select startup patch, with touch keyboard and explicit handling of unsaved changes. Renaming a display label must not invalidate instance/control identities.
 - [ ] **P5.7 — Restore/error handling:** recover routing, values, plugin state/assets and UI metadata; report absent plugins, wrong versions and invalid mappings without silent substitution. Distinguish the selected startup patch from the currently edited patch.
-- [ ] **P5.8 — Persistence evidence:** test stateful/file-based plugins, save/reload, truncated companion JSON, missing assets and interrupted staging. Validate schema migration and revision selection with meaningful tests; defer abrupt power-loss tests until recovery storage is ready.
+- [ ] **P5.8 — Persistence evidence:** test stateful/file-based plugins, save/reload, a bundle with its project properties removed, missing assets and interrupted staging. Validate schema migration and revision selection with meaningful tests; defer abrupt power-loss tests until recovery storage is ready.
 
 **Deliverable:** patch manager, documented/versioned storage format, saved examples and recovery results.
 
-**Exit check:** reload reproduces the intended graph, sound, metadata and asset references; an incomplete save does not overwrite the last complete revision. The UI can rebuild a layout when companion metadata is missing.
+**Exit check:** reload reproduces the intended graph, sound, metadata and asset references; an incomplete save does not overwrite the last complete revision. The UI can rebuild a layout when the layout properties are missing.
 
 **Source evidence:** [Ingen serializer at inspected revision](https://github.com/polyeffects/ingen/blob/8dae740425f0f1468198e0cdf1e1c61b3fc6ec5e/src/Serialiser.cpp).
 
@@ -210,7 +214,7 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 - [ ] **P7.2 — Simulated controls:** map desktop keys/wheel or explicit simulator controls to the same normalized events as the hardware adapter. Use this to develop assignment workflows without the Pi.
 - [ ] **P7.3 — Hardware events:** implement nonblocking reads, reconnect detection, debounce, press/release/hold and encoder direction/detent handling. Queue events independently of drawing work.
 - [ ] **P7.4 — Mapping rules:** support relative encoder increments, bounded acceleration/fine adjustment, potentiometer pickup where applicable, inversion, numeric/logarithmic ranges and discrete values. Avoid jumps when changing patches.
-- [ ] **P7.5 — Assignment UI:** select a control and target parameter/action, preview its effect, pin assignments and persist them in companion JSON. Show and disable orphaned mappings rather than targeting a different module accidentally.
+- [ ] **P7.5 — Assignment UI:** select a control and target parameter/action, preview its effect, pin assignments and persist them as properties on the target port or graph. Show and disable orphaned mappings rather than targeting a different module accidentally.
 - [ ] **P7.6 — Musical actions:** validate one knob parameter and one stomp action first; include freeze/toggle, then tap tempo and patch changes where supported. Preserve urgent discrete actions when coalescing continuous controls.
 - [ ] **P7.7 — Resilience:** verify controller unplug/reconnect, UI restart, patch reload, bounce, rapid gestures and removal of an assigned module. Record any control interruption during UI failure; uninterrupted physical control during UI downtime is a separate architecture decision if required.
 

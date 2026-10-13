@@ -33,7 +33,9 @@ private:
     };
     static void event(lv_event_t*);
     void handle(Binding&, lv_event_t*);
-    void submit(Command);
+    RequestId submit(Command);
+    void stream_parameter(InstanceId, const std::string& symbol, double value);
+    void send_stream();
     void navigate(Page);
     void rebuild();
     void patch_view(lv_obj_t*);
@@ -80,14 +82,19 @@ private:
     lv_indev_t* keypad_input_ = nullptr;
     std::deque<Binding> bindings_;
     std::map<InstanceId, lv_obj_t*> module_widgets_;
-    std::map<InstanceId, lv_obj_t*> input_jacks_;
+    std::multimap<std::pair<InstanceId, std::string>, lv_obj_t*> input_jacks_;
     std::vector<lv_obj_t*> dots_;
     std::optional<Connection> selected_cable_;
-    struct Cable { lv_obj_t* line; Connection connection; lv_point_precise_t points[4]; RoutingPlan routing; };
+    // One drawn line per channel of a logical cable.
+    struct Cable { lv_obj_t* line; Connection connection; lv_point_precise_t points[4]; RoutingPlan routing; unsigned out_channel = 0, in_channel = 0; };
     std::deque<Cable> cables_;
     lv_obj_t* preview_ = nullptr;
     lv_point_precise_t preview_points_[2]{};
     InstanceId cable_source_ = 0;
+    std::string cable_port_;
+    // A continuous gesture in progress: one request in flight, newest value wins.
+    struct Stream { InstanceId id; std::string symbol; double latest = 0; std::optional<double> sent; RequestId in_flight = 0; };
+    std::optional<Stream> stream_;
     lv_point_t press_{};
     int start_x_ = 0, start_y_ = 0;
     int pan_x_ = 0, pan_y_ = 0;

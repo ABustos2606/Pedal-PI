@@ -10,7 +10,7 @@
 
 Casette connects several of our intended technologies in a published guitar processor: C++, LVGL framebuffer graphics, evdev touch, JACK, NeuralAudio amp processing, cabinet convolution, effects, and presets. Its README reports Pi 4 operation with an 800 × 480 DSI display. This is relevant prior work, but neither the claimed operation nor its demo establishes our hardware's latency, memory use, or available processing capacity.
 
-Beebo remains the modular-workflow reference. Casette supplies implementation lessons for a compact native instrument. Our new square-module canvas, Poly Ingen engine, companion JSON storage, and interface-independent audio remain the current direction.
+Beebo remains the modular-workflow reference. Casette supplies implementation lessons for a compact native instrument. Our new square-module canvas, Ingen engine, patch data stored in the engine's bundle, and interface-independent audio remain the current direction.
 
 ## Download coverage
 

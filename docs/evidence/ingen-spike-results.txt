@@ -1,0 +1,60 @@
+lv2 1.18.10
+jack 1.9.22
+PASS  create graph audio input -- status 0
+PASS  create graph audio output -- status 0
+PASS  graph ports appear as JACK ports -- ingen:control, ingen:notify, ingen:in, ingen:out
+PASS  unconnected graph is silent -- measured 0.0000..0.0000, expected 0.0000
+PASS  connect input straight to output -- status 0
+PASS  pass-through level -- measured 0.2500..0.2500, expected 0.2500
+PASS  disconnect -- status 0
+PASS  silence after disconnect -- measured 0.0000..0.0000, expected 0.0000
+PASS  add plugin block -- status 0
+PASS  unknown plugin is refused with an error status
+PASS  cable into plugin -- status 0
+PASS  cable out of plugin -- status 0
+PASS  series chain at 0 dB -- measured 0.2500..0.2500, expected 0.2500
+PASS  set control value -- status 0
+PASS  control change is audible (+6.02 dB doubles the level) -- measured 0.5000..0.5000, expected 0.5000
+PASS  restore control value -- status 0
+PASS  add second block -- status 0
+PASS  fan-out: same source to a second block -- status 0
+PASS  fan-out does not change the first branch -- measured 0.2500..0.2500, expected 0.2500
+PASS  fan-in: second cable into the same input -- status 0
+PASS  fan-in sums at unity, with no compensation -- two 0.25 branches measured 0.5000
+INFO  merge policy -- two equal branches are +6 dB; the UI needs a mixer/attenuation rule
+PASS  attenuate before feedback test -- status 0
+INFO  feedback cable -- engine returned status 0 (0 means it accepts cycles; the UI refuses them itself)
+INFO  string sent as a float control value -- status 0 (0 = accepted: the engine does not type-check values)
+INFO  control value far outside the plugin range -- status 0, output now inf (the engine does not clamp; the client must)
+PASS  store canvas position on a block -- status 0
+PASS  store canvas position (y) -- status 0
+PASS  store a project-owned property on a block -- status 0
+PASS  store a project-owned property on a port -- status 0
+PASS  level unchanged by metadata edits -- measured 0.5000..0.5000, expected 0.5000
+INFO  control round trip over the socket -- median 5.38 ms, p95 5.63 ms, max 6.95 ms (200 requests, 128-frame dummy period = 2.67 ms)
+PASS  a second client is told about another client's change -- 1 message(s)
+PASS  engine survives client disconnects, a half-sent message and a killed client
+PASS  a new client reads back the whole live graph, including unsaved metadata -- blocks, ports, arcs, positions and custom properties present
+PASS  audio level never moves across client restarts -- 568 blocks, level 0.5000..0.5000, 0 xruns in this phase (0 earlier, during graph edits)
+INFO  xruns -- 0 in total; WSL has no real-time scheduling and the dummy backend also xruns when idle, so this number means nothing until it is measured on the Pi
+PASS  save the graph to a bundle -- status 0
+PASS  the save is a directory bundle -- main.ttl, manifest.ttl, plugins.ttl
+PASS  positions, project properties and cables are inside the saved bundle -- {'canvasX': True, 'Clean boost': True, 'knob-1': True, 'ingen:tail': True, 'eg-amp': True}
+SUMMARY 34 passed, 0 failed, 6 informational
+xruns idle, 3 s                                      0
+control change audible after  median 5.6 ms, max 7.7 ms
+its reply arrives after       median 7.0 ms, max 9.0 ms
+xruns 200 control changes, one live client           0
+xruns 40 control changes after 10 clients left       0
+engine 'write error' lines for those 40 changes: 0  (dead clients are dropped)
+save reply status: 0 after 0.0 s; bundle files: ['main.ttl', 'manifest.ttl', 'plugins.ttl']
+engine still answers after save: 0
+==== reload the saved bundle in a brand new engine
+restored ingen:/main/amp>   True
+restored eg-amp             True
+restored ingen:tail         True
+restored canvasX            True
+restored Clean boost        True
+restored knob-1             True
+jack ports: ['ingen:control', 'ingen:notify', 'ingen:in', 'ingen:out']
+audio through restored graph: 0.2500 (expected 0.2500)

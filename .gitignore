@@ -9,3 +9,4 @@
 
 # Incomplete downloads are local scratch files
 /reference/archives/*.part
+__pycache__/

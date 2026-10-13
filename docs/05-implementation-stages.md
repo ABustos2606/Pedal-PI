@@ -16,7 +16,7 @@ Start the shared LVGL application and 800 × 480 simulator on the Windows PC. Pr
 | 2 | Desktop patch editor | Add/move/connect/edit/remove workflows, valid graph rules and visible pending/error states |
 | 3 | JACK/Ingen audio foundation on the Pi | Working simple effect, verified protocol/host/routing semantics and client reconnection |
 | 4 | Real engine and native Pi interface | Touch editing matches actual engine state; UI-only restart preserves audio |
-| 5 | Patch, plugin-state and asset persistence | Coherent saved graph/state bundle plus companion JSON; restore and incomplete-save recovery |
+| 5 | Patch, plugin-state and asset persistence | Saved graph/state bundle carrying layout and assignments as properties; restore and incomplete-save recovery |
 | 6 | Clouds and representative patch | Tested granular controls and saved Clouds-plus-conventional-effect patch with resource evidence |
 | 7 | Physical controls | One knob and one stomp assignment validated and restored; first complete musical milestone |
 | 8 | NAM/cabinet evaluation | Pinned runtime comparison, file/state/calibration support and measured tested patch budgets |
@@ -37,7 +37,7 @@ Start the shared LVGL application and 800 × 480 simulator on the Windows PC. Pr
 
 The new interface, build/configuration work and dependency records belong outside unchanged upstream snapshots. Casette's downloaded reference does not complete a build or select our operating system, devices, GPIO assignments or model runtime.
 
-Ingen can serialize an audio graph as a `.ingen` directory bundle with Turtle and plugin state. The agreed companion JSON remains alongside the graph/bundle. Do not assume a flat graph file alone captures every plugin asset or that independent saves of two files are a coherent patch transaction.
+Ingen can serialize an audio graph as a `.ingen` directory bundle with Turtle and plugin state. Layout and control assignments are stored as properties inside that bundle (D13, revised); there is no companion JSON. Do not assume a flat graph file alone captures every plugin asset.
 
 Each phase leaves a reviewable artifact and measured or inspected evidence. Hardware acceptance occurs on the actual Pi, display, audio interface and controllers. A failed host assumption blocks the dependent task, not independent simulator work. Changes in source versions, hardware or platform require repeating affected checks, not automatically restarting the entire project.
 

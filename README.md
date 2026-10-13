@@ -59,6 +59,7 @@ Global BPM and CPU readouts stay in the bottom-right footer on every page. The s
 | [Detailed technical implementation plan](docs/10-technical-implementation-plan.md) | Phases 0–11 with numbered tasks, PC/Pi work split, deliverables, exit checks, and requirements coverage |
 | [Windows UI development](docs/11-windows-ui-foundation.md) | Build/run instructions, shared UI and simulated engine, verification and remaining Phase 1–2 work |
 | [Desktop editor review](docs/12-desktop-editor-review.md) | Recorded Phase 2 desktop acceptance, screenshots and interaction/domain checks |
+| [Ingen engine evidence](docs/14-ingen-engine-evidence.md) | Engine built and measured on the PC under WSL2: protocol, routing, summing, reconnect, save/load, three defects and two patches |
 | [Domain and engine contracts](docs/13-domain-and-engine-contracts.md) | Identity, typed metadata, missing modules, mono/stereo routing, lifecycle, save and capability semantics |
 
 ## Retrieve the project and reference sources

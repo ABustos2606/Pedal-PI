@@ -1,2 +1,4 @@
 * text=auto
 reference/archives/*.tar.gz filter=lfs diff=lfs merge=lfs -text
+*.sh text eol=lf
+*.patch text eol=lf

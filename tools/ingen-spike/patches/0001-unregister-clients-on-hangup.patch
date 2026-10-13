@@ -1,0 +1,104 @@
+diff --git a/src/SocketReader.cpp b/src/SocketReader.cpp
+index 5499fb66..37d1e920 100644
+--- a/src/SocketReader.cpp
++++ b/src/SocketReader.cpp
+@@ -200,6 +200,10 @@ SocketReader::run()
+ 		_msg_node = nullptr;
+ 	}
+ 
++	// A reset connection ends the loop through _socket_error without ever
++	// reaching the poll() hangup branch; report that departure too.
++	on_hangup();
++
+ 	// Lock RDF world
+ 	const std::lock_guard<std::mutex> lock{_world.rdf_mutex()};
+ 
+diff --git a/src/server/SocketServer.hpp b/src/server/SocketServer.hpp
+index 608d180d..e55c1a12 100644
+--- a/src/server/SocketServer.hpp
++++ b/src/server/SocketServer.hpp
+@@ -35,10 +35,37 @@
+ 
+ #include <cstdint>
+ #include <cstdio>
++#include <functional>
+ #include <memory>
++#include <mutex>
++#include <utility>
+ 
+ namespace ingen::server {
+ 
++/** A socket reader that reports hangup to its owner.
++
++    SocketReader::on_hangup() is virtual, but SocketServer only owned a plain
++    SocketReader, so its own on_hangup() was never called and a client that
++    went away stayed registered (and written to) forever.
++*/
++class HangupReader : public SocketReader
++{
++public:
++	HangupReader(World&                               world,
++	             Interface&                           iface,
++	             const std::shared_ptr<raul::Socket>& sock,
++	             std::function<void()>                hangup)
++		: SocketReader(world, iface, sock)
++		, _hangup(std::move(hangup))
++	{}
++
++protected:
++	void on_hangup() override { _hangup(); }
++
++private:
++	std::function<void()> _hangup;
++};
++
+ /** The server side of an Ingen socket connection. */
+ class SocketServer
+ {
+@@ -56,7 +83,7 @@ public:
+ 					                                          stderr,
+ 					                                          ColorContext::Color::CYAN))}))
+ 		        : std::shared_ptr<Interface>(new EventWriter(engine)))
+-		, _reader(new SocketReader(world, *_sink, sock))
++		, _reader(new HangupReader(world, *_sink, sock, [this] { on_hangup(); }))
+ 		, _writer(new SocketWriter(world.uri_map(),
+ 		                           world.uris(),
+ 		                           URI(sock->uri()),
+@@ -64,6 +91,13 @@ public:
+ 	{
+ 		_sink->set_respondee(_writer);
+ 		engine.register_client(_writer);
++
++		const std::lock_guard<std::mutex> lock{_mutex};
++		_ready = true;
++		if (_hung_up) {
++			_engine.unregister_client(_writer);
++			_writer.reset();
++		}
+ 	}
+ 
+ 	~SocketServer() {
+@@ -74,12 +108,21 @@ public:
+ 
+ protected:
+ 	void on_hangup() {
+-		_engine.unregister_client(_writer);
+-		_writer.reset();
++		// The reader thread starts inside the SocketReader constructor, so a
++		// client that leaves at once can get here before _writer exists.
++		const std::lock_guard<std::mutex> lock{_mutex};
++		_hung_up = true;
++		if (_ready && _writer) {
++			_engine.unregister_client(_writer);
++			_writer.reset();
++		}
+ 	}
+ 
+ private:
+ 	server::Engine&               _engine;
++	std::mutex                    _mutex;
++	bool                          _ready{false};
++	bool                          _hung_up{false};
+ 	std::shared_ptr<Interface>    _sink;
+ 	std::shared_ptr<SocketReader> _reader;
+ 	std::shared_ptr<SocketWriter> _writer;

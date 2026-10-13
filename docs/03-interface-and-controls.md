@@ -72,18 +72,19 @@ A drag starts only after a small movement threshold, so a tap is never mistaken 
 - **Parallel (split):** one output may connect to several inputs.
 - **Parallel (merge):** several outputs may connect to one input; the engine mixes them.
 
-The interface shows **one logical cable** per connection and maps it to the plugins' actual ports:
+Every audio port has its own connector, and **every cable is one channel from one connector to one connector** (agreed 13 October 2026, replacing the earlier single logical stereo cable). A stereo module shows two connectors on each side, left above right; they are patched separately. Any output may go to any input:
 
-| From → to | Engine connections |
+| Wanted | How it is patched |
 | --- | --- |
-| Mono → mono | Output to input |
-| Mono → stereo | Output to both left and right inputs |
-| Stereo → stereo | Left to left, right to right |
-| Stereo → mono | Left and right both to the input (mixed) |
+| Stereo chain | Two cables: left to left, right to right |
+| Left and right through different effects | One cable from each output to a different module |
+| Mono source into a stereo effect | One cable to one input, or two cables from the same output to both |
+| Stereo into a mono effect | One cable from the side wanted, or both into the one input (the engine sums them) |
+| Swap left and right | Cross the two cables |
 
-**Unverified:** that Poly's Ingen mixes multiple connections into one input, and at what level. Merging parallel branches may need level compensation or an explicit mixer module to avoid clipping; decide after testing.
+**Measured:** Ingen sums several cables into one input at unity, with no compensation ([evidence](14-ingen-engine-evidence.md)); two equal signals are +6 dB. Whether to attenuate automatically or offer a mixer module is still to be decided.
 
-The desktop simulator's **Patches → Parallel demo** starts with IN → Drive, splits into Clouds and Delay, and reconnects both branches at OUT. Branches use ordinary editable cables; loading the demo uses the unsaved-replacement guard. This demonstrates graph editing and channel expansion, with no audio processing.
+The desktop simulator's **Patches → Parallel demo** starts with IN → Drive, splits into Clouds and Delay, and reconnects both branches at OUT. Branches use ordinary editable cables, one per channel; loading the demo uses the unsaved-replacement guard. This demonstrates graph editing, with no audio processing.
 
 Feedback loops (a cable that leads back to an earlier module) are refused in the first version.
 

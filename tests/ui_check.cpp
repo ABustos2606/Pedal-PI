@@ -103,19 +103,19 @@ int main(int argc, char** argv) {
             drag(app, 150, 218, 325, 218);
             check(pedal::find_module(app.graph(), 3)->parameters[0].value > 70, "slider did not update authoritative value");
             click(app, 68, 36); check(app.page() == pedal::Page::Patch, "back failed");
-            click(app, 155, 252);
-            check(app.graph().connections.size() == 4 && !app.pending(), "cable selection changed graph");
+            click(app, 155, 228);
+            check(app.graph().connections.size() == 8 && !app.pending(), "cable selection changed graph");
             capture(app, output / "10-selected-cable.bmp");
             click(app, 344, 456);
-            check(app.graph().connections.size() == 4, "deselect deleted cable");
-            click(app, 155, 252); click(app, 500, 456);
-            check(app.graph().connections.size() == 3, "explicit cable delete failed");
+            check(app.graph().connections.size() == 8, "deselect deleted cable");
+            click(app, 155, 228); click(app, 500, 456);
+            check(app.graph().connections.size() == 7, "explicit cable delete failed");
             check(app.graph().connections.front().from == 3, "cable hit test removed the wrong cable");
-            pointer = {128, 252}; pressed = true; step(app, 64);
+            pointer = {128, 228}; pressed = true; step(app, 64);
             capture(app, output / "14-cable-targets.bmp");
             pressed = false; step(app);
-            drag(app, 128, 252, 184, 252);
-            check(app.graph().connections.size() == 4, "reconnect cable failed");
+            drag(app, 128, 228, 184, 228);
+            check(app.graph().connections.size() == 8, "reconnect cable failed");
             click(app, 398, 244);
             click(app, 588, 108); // All: retain coverage of the generic parameter editor.
             click(app, 468, 359);
@@ -148,8 +148,8 @@ int main(int argc, char** argv) {
             check(app.page() == pedal::Page::Patch, "add did not return to patch");
             // Drop a cable from IN onto the added Reverb's input hit area.
             const auto* reverb = pedal::find_module(app.graph(), 6); check(reverb != nullptr, "new instance missing");
-            drag(app, 128, 252, reverb->x, reverb->y + 120);
-            check(app.graph().connections.size() == 5, "output to input drag failed");
+            drag(app, 128, 228, reverb->x, reverb->y + 96);
+            check(app.graph().connections.size() == 9, "output to input drag failed");
             click(app, 707, 36); check(app.page() == pedal::Page::Settings, "settings navigation failed");
             capture(app, output / "04-settings.bmp");
             click(app, 273, 238); check(engine.state() == pedal::EngineState::Disconnected, "disconnect control failed");
@@ -182,9 +182,9 @@ int main(int argc, char** argv) {
             check(app.graph().dirty == before_pan.dirty && !app.pending(), "panning submitted an engine edit");
             capture(app, output / "11-panned-canvas.bmp");
             // Cable hit testing and module gestures use the same viewport transform.
-            click(app, 484, 252); check(app.graph().connections.size() == 5, "panned cable tap deleted cable");
-            click(app, 500, 456); check(app.graph().connections.size() == 4, "panned cable delete missed target");
-            drag(app, 456, 252, 504, 252); check(app.graph().connections.size() == 5, "panned cable reconnection failed");
+            click(app, 484, 228); check(app.graph().connections.size() == 9, "panned cable tap deleted cable");
+            click(app, 500, 456); check(app.graph().connections.size() == 8, "panned cable delete missed target");
+            drag(app, 456, 228, 504, 228); check(app.graph().connections.size() == 9, "panned cable reconnection failed");
             drag(app, 408, 244, 456, 244);
             check(pedal::find_module(app.graph(), 5)->x == 576, "panned module movement lost world coordinates");
             hold(app, 236, 244); check(app.page() == pedal::Page::ModuleActions, "long press did not open actions");
@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
             const auto copy = app.graph().modules.back();
             check(copy.id != source.id && copy.uri == source.uri && copy.bypassed == source.bypassed &&
                 copy.parameters[3].value == source.parameters[3].value, "UI duplicate did not preserve state");
-            check(app.graph().connections.size() == 5, "UI duplicate copied cables");
+            check(app.graph().connections.size() == 9, "UI duplicate copied cables");
             click(app, 276, 36); // Home resets the viewport, not the graph.
             click(app, source.x + 48, source.y + 120);
             check(app.page() == pedal::Page::Parameters, "Home did not restore original module location");
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
             click(app, 600, 180);
             check(pedal::find_module(app.graph(), copy.id)->bypassed != copy.bypassed, "context software bypass failed");
             click(app, 600, 252);
-            check(!pedal::find_module(app.graph(), copy.id) && app.graph().connections.size() == 5, "context delete changed unrelated cables");
+            check(!pedal::find_module(app.graph(), copy.id) && app.graph().connections.size() == 9, "context delete changed unrelated cables");
             // Run enough redraw cycles to expose stale bindings and queued callbacks.
             for (int i = 0; i < 10; ++i) { click(app, 490, 36); click(app, 70, 36); }
             check(!app.pending(), "pending requests never resolved");
@@ -236,7 +236,7 @@ int main(int argc, char** argv) {
             click(app, 68, 36); click(app, 276, 36);
             engine.submit(pedal::LoadGraph{pedal::demo_graph()}); step(app, 256);
             click(app, 707, 36); click(app, 374, 312);
-            check(app.page() == pedal::Page::Patch && app.graph().connections.size() == 4 &&
+            check(app.page() == pedal::Page::Patch && app.graph().connections.size() == 8 &&
                 !pedal::module_available(*pedal::find_module(app.graph(), 4)), "missing module fixture lost graph");
             capture(app, output / "16-missing-module.bmp");
             click(app, 396, 244); check(app.page() == pedal::Page::Parameters, "missing placeholder could not be inspected");
@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
             check(widget(app.screen(), &lv_slider_class) == nullptr, "missing module exposed editable sliders");
             click(app, 68, 36); hold(app, 396, 244); click(app, 170, 252);
             check(app.graph().modules.size() == 5 && !app.pending(), "disabled missing-module duplication submitted an edit");
-            click(app, 600, 252); check(app.graph().modules.size() == 4 && app.graph().connections.size() == 2, "missing placeholder deletion failed");
+            click(app, 600, 252); check(app.graph().modules.size() == 4 && app.graph().connections.size() == 4, "missing placeholder deletion failed");
             click(app, 490, 36); click(app, 656, 96);
             capture(app, output / "18-catalogue-status.bmp");
             click(app, 100, 220); check(app.message().find("compatibility") != std::string::npos, "untested entry reason missing");
@@ -372,14 +372,58 @@ int main(int argc, char** argv) {
             click(app, 690, 364); engine.reject_next(); click(app, 650, 364);
             check(app.graph().modules[3].parameters.size() == 7 && !app.pending(), "rejected demo replaced current graph");
             click(app, 650, 364);
-            check(app.page() == pedal::Page::Patch && app.graph().name == "Parallel texture" && app.graph().connections.size() == 5, "parallel starter did not load");
+            check(app.page() == pedal::Page::Patch && app.graph().name == "Parallel texture" && app.graph().connections.size() == 10, "parallel starter did not load");
             capture(app, output / "27-parallel-patch.bmp");
             // Delete one side of the split; the other side and both merge cables survive.
-            click(app, 348, 198); click(app, 500, 456);
-            check(app.graph().connections.size() == 4, "parallel branch cable could not be removed");
+            click(app, 338, 198); click(app, 500, 456);
+            check(app.graph().connections.size() == 9, "parallel branch cable could not be removed");
             check(std::find(app.graph().connections.begin(), app.graph().connections.end(), pedal::Connection{3, 5}) != app.graph().connections.end(), "removing one branch removed the other");
-            drag(app, 288, 252, 408, 144);
-            check(app.graph().connections.size() == 5 && pedal::validate_graph(app.graph()).empty(), "parallel branch could not be reconnected");
+            drag(app, 288, 228, 408, 120);
+            check(app.graph().connections.size() == 10 && pedal::validate_graph(app.graph()).empty(), "parallel branch could not be reconnected");
+
+            // Reference metadata: a square with two input jacks and two output jacks.
+            const auto* fold = pedal::definition("http://polyeffects.com/lv2/polywarps#fold");
+            check(fold != nullptr, "reference Warps entry missing");
+            auto multi = pedal::demo_graph(); multi.name = "Multi-port";
+            multi.modules.push_back({6, fold->uri, fold->name, 352, 264, false, false, fold->parameters, fold->ports});
+            engine.submit(pedal::LoadGraph{multi}); step(app, 256);
+            const auto has = [&](const pedal::Connection& c) {
+                return std::find(app.graph().connections.begin(), app.graph().connections.end(), c) != app.graph().connections.end();
+            };
+            drag(app, 280, 228, 352, 408);
+            check(has({3, 6, "out", "modulator"}), "cable dropped on the second input jack reached another port");
+            drag(app, 448, 408, 664, 228);
+            check(has({6, 2, "aux", "in"}), "cable dragged from the second output jack left another port");
+            drag(app, 280, 228, 352, 360);
+            check(has({3, 6, "out", "carrier"}) && app.graph().connections.size() == 11, "first input jack could not be patched separately");
+            // Left output through one effect, right output through another.
+            click(app, 294, 276); click(app, 500, 456);
+            check(!has({3, 4, "out_r", "in_r"}), "right-lane cable could not be removed on its own");
+            drag(app, 280, 276, 352, 408);
+            check(has({3, 4}) && has({3, 6, "out_r", "modulator"}), "left and right outputs could not feed different effects");
+            capture(app, output / "28-multi-port.bmp");
+
+            // Continuous controls reach the engine while the finger is still down.
+            click(app, 232, 252); check(app.page() == pedal::Page::Parameters, "Drive parameters did not open");
+            pointer = {150, 218}; pressed = true; step(app, 64);
+            pointer = {325, 218}; step(app, 320);
+            check(pedal::find_module(engine.snapshot(), 3)->parameters[0].value > 70, "slider waited for release before reaching the engine");
+            pointer = {200, 218}; step(app, 320);
+            check(pedal::find_module(engine.snapshot(), 3)->parameters[0].value < 50, "newest gesture value did not replace the older one");
+            pressed = false; step(app);
+            check(!app.pending() && pedal::find_module(app.graph(), 3)->parameters[0].value < 50, "released slider left pending or stale state");
+            click(app, 68, 36);
+
+            // Add the real granular module from the browser and open its generic pages.
+            click(app, 490, 36); click(app, 656, 96); // The browser was left on its second page above.
+            capture(app, output / "29-reference-catalogue.bmp");
+            click(app, 705, 141);
+            const auto mist = app.graph().modules.back();
+            check(mist.uri == "http://polyeffects.com/lv2/polyclouds#granular" && app.page() == pedal::Page::Patch, "reference module could not be added from the browser");
+            click(app, mist.x + 48, mist.y + 120);
+            check(app.page() == pedal::Page::Parameters && widget(app.screen(), &lv_slider_class) != nullptr, "reference module has no usable generic editor");
+            capture(app, output / "30-reference-parameters.bmp");
+            click(app, 68, 36);
         }
         // Release the headless devices before the global runtime.
         lv_indev_delete(indev);

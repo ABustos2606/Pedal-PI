@@ -1,0 +1,15 @@
+diff --git a/src/ingen/ingen.cpp b/src/ingen/ingen.cpp
+index 7f1a587e..30a98ce4 100644
+--- a/src/ingen/ingen.cpp
++++ b/src/ingen/ingen.cpp
+@@ -252,7 +252,9 @@ run(int argc, char** argv)
+ 	} else if (world->engine()) {
+ 		// Run engine main loop until interrupt
+ 		while (world->engine()->main_iteration()) {
+-			std::this_thread::sleep_for(std::chrono::milliseconds(125));
++			// Replies and notifications leave from this loop; 125 ms made every
++			// acknowledgment that late.
++			std::this_thread::sleep_for(std::chrono::milliseconds(5));
+ 		}
+ 	}
+ 

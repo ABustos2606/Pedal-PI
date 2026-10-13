@@ -12,16 +12,16 @@ namespace pedal {
 const std::vector<ModuleDefinition>& demo_catalogue() {
     static const std::vector<ModuleDefinition> catalogue = {
         {"urn:pedalpi:demo:input", "IN", "Endpoint", "Audio input", 0x93a4b5,
-         {{"out", Direction::Output, 2}}, {}},
+         {{"out", Direction::Output}, {"out_r", Direction::Output}}, {}},
         {"urn:pedalpi:demo:output", "OUT", "Endpoint", "Audio output", 0x93a4b5,
-         {{"in", Direction::Input, 2}}, {}},
+         {{"in", Direction::Input}, {"in_r", Direction::Input}}, {}},
         {"urn:pedalpi:demo:drive", "Drive", "Drive", "Warm saturation and tone", 0xf0aa72,
-         {{"in", Direction::Input, 2}, {"out", Direction::Output, 2}},
+         {{"in", Direction::Input}, {"in_r", Direction::Input}, {"out", Direction::Output}, {"out_r", Direction::Output}},
          {{"drive", "Drive", "%", ParameterKind::Continuous, 0, 100, 32},
           {"tone", "Tone", "Hz", ParameterKind::Continuous, 200, 8000, 2400, true},
           {"level", "Level", "dB", ParameterKind::Continuous, -24, 12, -3}}},
         {"urn:pedalpi:demo:clouds", "Clouds", "Texture", "Granular texture playground", 0xbfa1ed,
-         {{"in", Direction::Input, 2}, {"out", Direction::Output, 2}},
+         {{"in", Direction::Input}, {"in_r", Direction::Input}, {"out", Direction::Output}, {"out_r", Direction::Output}},
          {{"position", "Position", "%", ParameterKind::Continuous, 0, 100, 45},
           {"size", "Size", "ms", ParameterKind::Continuous, 10, 1000, 180, true},
           {"mix", "Mix", "%", ParameterKind::Continuous, 0, 100, 40},
@@ -29,13 +29,13 @@ const std::vector<ModuleDefinition>& demo_catalogue() {
           {"density", "Density", "%", ParameterKind::Continuous, 0, 100, 50},
           {"pitch", "Pitch", "st", ParameterKind::Integer, -24, 24, 0}}},
         {"urn:pedalpi:demo:delay", "Delay", "Delay", "Echoes with space to breathe", 0x7bbaed,
-         {{"in", Direction::Input, 2}, {"out", Direction::Output, 2}},
+         {{"in", Direction::Input}, {"in_r", Direction::Input}, {"out", Direction::Output}, {"out_r", Direction::Output}},
          {{"time", "Time", "ms", ParameterKind::Continuous, 20, 2000, 380, true},
           {"feedback", "Feedback", "%", ParameterKind::Continuous, 0, 95, 35},
           {"mix", "Mix", "%", ParameterKind::Continuous, 0, 100, 28},
           {"mode", "Mode", "", ParameterKind::Enumeration, 0, 2, 0, false, {"Clean", "Tape", "Ping pong"}}}},
         {"urn:pedalpi:demo:reverb", "Reverb", "Reverb", "Room, hall and a little shimmer", 0x81c9b8,
-         {{"in", Direction::Input, 2}, {"out", Direction::Output, 2}},
+         {{"in", Direction::Input}, {"in_r", Direction::Input}, {"out", Direction::Output}, {"out_r", Direction::Output}},
          {{"decay", "Decay", "s", ParameterKind::Continuous, 0.1, 15, 3.2, true},
           {"mix", "Mix", "%", ParameterKind::Continuous, 0, 100, 25},
           {"predelay", "Pre-delay", "ms", ParameterKind::Integer, 0, 200, 20}}},
@@ -51,8 +51,17 @@ const std::vector<ModuleDefinition>& demo_catalogue() {
     };
     return catalogue;
 }
+const std::vector<ModuleDefinition>& catalogue() {
+    static const std::vector<ModuleDefinition> merged = [] {
+        auto all = demo_catalogue();
+        const auto& reference = reference_catalogue();
+        all.insert(all.end(), reference.begin(), reference.end());
+        return all;
+    }();
+    return merged;
+}
 const ModuleDefinition* definition(const std::string& uri) {
-    for (const auto& d : demo_catalogue()) if (d.uri == uri) return &d;
+    for (const auto& d : catalogue()) if (d.uri == uri) return &d;
     return nullptr;
 }
 const Module* find_module(const Graph& g, InstanceId id) {
@@ -71,11 +80,13 @@ Graph demo_graph() {
         const auto& d = demo_catalogue()[i];
         g.modules.push_back({i + 1, d.uri, d.name, xs[i], ys[i], i < 2, false, d.parameters, d.ports});
     }
+    // Left lane first, then the right lane: every cable is one channel.
     g.connections = {{1, 3}, {3, 4}, {4, 5}, {5, 2}};
+    for (std::size_t i = 0; i < 4; ++i) g.connections.push_back({g.connections[i].from, g.connections[i].to, "out_r", "in_r"});
     return g;
 }
 Graph empty_graph(std::string name) {
-    auto g = demo_graph(); g.name = std::move(name); g.modules.resize(2); g.connections = {{1, 2}}; g.dirty = true;
+    auto g = demo_graph(); g.name = std::move(name); g.modules.resize(2); g.connections = {{1, 2}, {1, 2, "out_r", "in_r"}}; g.dirty = true;
     return g;
 }
 Graph parallel_demo_graph() {
@@ -87,6 +98,7 @@ Graph parallel_demo_graph() {
         g.modules[i].x = xs[i]; g.modules[i].y = ys[i];
     }
     g.connections = {{1, 3}, {3, 4}, {3, 5}, {4, 2}, {5, 2}};
+    for (std::size_t i = 0; i < 5; ++i) g.connections.push_back({g.connections[i].from, g.connections[i].to, "out_r", "in_r"});
     return g;
 }
 Graph missing_module_graph() {
@@ -231,7 +243,9 @@ std::string format_value(const Parameter& p) {
     if (p.kind == ParameterKind::Enumeration && p.value >= 0 && p.value < p.choices.size())
         return p.choices[static_cast<std::size_t>(p.value)];
     std::ostringstream out;
-    out << std::fixed << std::setprecision(p.unit == "s" ? 1 : 0) << p.value;
+    // Narrow ranges, such as 0-1 plugin controls, need decimals to show movement.
+    const int digits = p.unit == "s" ? 1 : p.kind == ParameterKind::Continuous && p.maximum - p.minimum <= 10 ? 2 : 0;
+    out << std::fixed << std::setprecision(digits) << p.value;
     if (!p.unit.empty()) out << " " << p.unit;
     return out.str();
 }

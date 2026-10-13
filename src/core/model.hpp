@@ -21,7 +21,7 @@ struct Parameter {
     std::vector<std::string> choices;
 };
 enum class Direction { Input, Output };
-enum class PortType { Audio, Control, Midi };
+enum class PortType { Audio, Control, Midi, Cv };
 struct Port {
     std::string symbol;
     Direction direction;
@@ -37,6 +37,8 @@ struct ModuleDefinition {
     std::vector<Parameter> parameters;
     Availability availability = Availability::Available;
     std::string availability_reason;
+    // Generated from upstream LV2 metadata, rather than an invented demo fixture.
+    bool reference = false;
 };
 struct Module {
     InstanceId id;
@@ -72,6 +74,9 @@ struct PhysicalConnection {
 };
 struct RoutingPlan { std::vector<PhysicalConnection> connections; std::string error; };
 const std::vector<ModuleDefinition>& demo_catalogue();
+const std::vector<ModuleDefinition>& reference_catalogue();
+// Demo fixtures followed by the generated reference entries.
+const std::vector<ModuleDefinition>& catalogue();
 const ModuleDefinition* definition(const std::string& uri);
 const Module* find_module(const Graph&, InstanceId);
 Module* find_module(Graph&, InstanceId);
