@@ -16,6 +16,12 @@ The audio side reuses Poly's published engine (its Ingen fork) and LV2 modules, 
 
 The existing MODEP interface is unsuitable for the user's 800 × 480 display. Opening MODEP automatically or hiding its desktop does not meet the interface requirement.
 
+## Licensing
+
+Original Pedal PI code and documentation are licensed under **GNU GPL version 3 or later** (`GPL-3.0-or-later`); see [LICENSE](LICENSE). Pedal PI is free software: you may redistribute and modify these files under those terms. It is provided without warranty, including any implied warranty of merchantability or fitness for a particular purpose.
+
+Upstream reference sources and third-party assets retain their own licenses and copyright notices. In particular, Poly's Ingen engine is **AGPL-3.0-or-later**, and other Poly repositories include GPL, LGPL and permissive components. See [third-party notices](THIRD_PARTY_NOTICES.md) for the inspected evidence and implementation/release requirements.
+
 ## Documentation
 
 | File | Contents |

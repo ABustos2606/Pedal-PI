@@ -10,6 +10,8 @@ It also contains **one Casette repository**, for **21 repositories total**. Case
 
 These are unchanged source snapshots at recorded commits. The downloads are shallow: the selected default-branch revision is present, while complete historical branches, tags, and releases are not included. This is not a complete firmware image or a validated compatible build set.
 
+Every upstream snapshot, dependency and archive retains its original copyright and licensing terms. The root Pedal PI GPL-3.0-or-later license covers original project files, not these third-party sources or their assets. See [third-party notices](../THIRD_PARTY_NOTICES.md) for inspected license evidence; keep each upstream license and file notice when adapting or packaging a component.
+
 ## Layout
 
 - `upstream/`: 20 ordinary Git checkouts (19 Poly and Casette) and the kernel's `linux.git` reference repository.

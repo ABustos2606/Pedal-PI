@@ -47,9 +47,13 @@ The local Poly NAM fork is an older NAM Core integration. Current upstream plugi
 
 - `digit_ui` has no licence file at the inspected revision; its README states that code without a notice is GPL. The new interface does not copy its code or assets.
 - `ingen.py` in `digit_ui` carries David Robillard's ISC-style permission notice.
-- Poly's Ingen fork is AGPL-3.0. The new interface communicates with it as a separate program over its socket protocol.
+- Poly's Ingen fork is AGPL-3.0-or-later, as stated in its source headers; `COPYING` contains the AGPLv3 text. The new interface communicates with it as a separate program over its socket protocol. Changes to Ingen retain that license.
+- `PolyLV2/COPYING` contains GPLv2, while generated source sections also carry GPLv3-or-later, LGPLv3-or-later and exceptions. Do not assign one license to every file based only on the root license text.
+- `lenticular_lv2/LICENSE.txt` contains GPLv2; `LICENSE-dist.txt` includes separate upstream notices, including the MIT notice for Mutable Instruments STM32F modules.
+- The Poly NAM LV2 fork includes GPLv3 text in `LICENCE.md`; dependency and file notices remain authoritative for their respective parts.
+- The pinned Casette snapshot has no root license file or license notice in its inspected README and C++ files. It remains a technical reference; copying its code or bundled model/IR assets requires establishing the applicable permissions.
 
-These are observations, not a legal assessment. A licence review would be a separate task before any distribution.
+**Project license — agreed 13 October 2026:** original Pedal PI code and documentation use GPL-3.0-or-later. The root [LICENSE](../LICENSE) contains the complete GPLv3 text. [Third-party notices](../THIRD_PARTY_NOTICES.md) define its scope and record the inspected upstream evidence. The repository license does not relicense reference sources, dependencies, models, IRs, fonts or other third-party assets. Phase 11 includes a license/source inventory for the actual release components.
 
 ## Engine dependency observations
 
@@ -94,6 +98,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D19 | Automatic NAM quality reduction under load | Open; no automatic reduction policy agreed |
 | D20 | Shared Windows 800 × 480 LVGL simulator and Pi UI development workflow | Proposed implementation route documented in Phases 1–4; exact LVGL revision, driver and compiler remain to be selected |
 | D21 | Detailed phase/task implementation plan | Created at the user's request on 13 October 2026; no implementation phase has been executed |
+| D22 | Project license | Agreed 13 October 2026: GPL-3.0-or-later for original Pedal PI files; preserve upstream licenses, including Ingen's AGPL-3.0-or-later |
 
 ## Information needed before implementation
 

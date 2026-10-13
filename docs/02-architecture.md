@@ -9,7 +9,7 @@ Beebo's published `digit_ui` repository is a Qt/QML touchscreen interface wrappe
 - **New interface:** the touchscreen application is written from scratch for this project. Beebo is a reference for concepts and workflow, not a codebase to adapt.
 - **Reused audio side:** Poly's Ingen fork and published LV2 modules remain the intended engine and module collection, extended with compatible MODEP LV2 effects.
 
-The interface and the engine are separate programs connected by the engine's documented protocol. Our interface's code, layout, and licence are our own choice.
+The interface and the engine are separate programs connected by the engine's documented protocol. Original Pedal PI interface code and documentation use GPL-3.0-or-later, selected by the user on 13 October 2026. Ingen retains AGPL-3.0-or-later. Keep upstream notices with any reused code; see [third-party notices](../THIRD_PARTY_NOTICES.md).
 
 Casette is an additional reference for native LVGL and NAM integration. It runs its UI and custom JACK effects chain in one executable; that structure does not meet our independent-interface requirement (R13). Retain the proposed separate interface and Ingen processes. [Casette findings](09-casette-and-nam.md) distinguish reusable lessons from hardware and implementation assumptions.
 
@@ -82,7 +82,7 @@ The engine owns live DSP state; the UI patch model is its synchronized represent
 
 Take as **reference**: the modular-patching concept, the idea of modules connected by cables on a canvas, per-module parameter pages, performance assignments, module groupings, and lessons from its engine integration.
 
-Do **not** take: code, QML, Python modules, icons, fonts, images, or other assets; its 1280 × 720 layout; its hardware handler, firmware, storage, and maintenance routines. `digit_ui`'s README states that uncredited code is GPL; writing our own interface avoids inheriting those obligations and the source's hardware assumptions.
+Do **not** take: code, QML, Python modules, icons, fonts, images, or other assets; its 1280 × 720 layout; its hardware handler, firmware, storage, and maintenance routines. `digit_ui`'s README states that uncredited code is GPL without specifying a version. Our original interface uses the project's GPL-3.0-or-later license and targets our hardware. Third-party code and assets retain their own terms.
 
 ### Module catalogue
 
