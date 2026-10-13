@@ -1,0 +1,11 @@
+# Build output and local caches
+/build/
+/build-*/
+/out/
+/CMakeUserPresets.json
+
+# Local kernel Git object cache; complete source archive is tracked through LFS
+/reference/upstream/linux.git/
+
+# Incomplete downloads are local scratch files
+/reference/archives/*.part

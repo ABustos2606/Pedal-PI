@@ -1,0 +1,63 @@
+[submodule "reference/upstream/avwlv2"]
+    path = reference/upstream/avwlv2
+    url = https://github.com/polyeffects/avwlv2.git
+[submodule "reference/upstream/convoLV2"]
+    path = reference/upstream/convoLV2
+    url = https://github.com/polyeffects/convoLV2.git
+[submodule "reference/upstream/cv_to_cc.lv2"]
+    path = reference/upstream/cv_to_cc.lv2
+    url = https://github.com/polyeffects/cv_to_cc.lv2.git
+[submodule "reference/upstream/digit_carla"]
+    path = reference/upstream/digit_carla
+    url = https://github.com/polyeffects/digit_carla.git
+[submodule "reference/upstream/digit_ui"]
+    path = reference/upstream/digit_ui
+    url = https://github.com/polyeffects/digit_ui.git
+[submodule "reference/upstream/ingen"]
+    path = reference/upstream/ingen
+    url = https://github.com/polyeffects/ingen.git
+[submodule "reference/upstream/lenticular_lv2"]
+    path = reference/upstream/lenticular_lv2
+    url = https://github.com/polyeffects/lenticular_lv2.git
+[submodule "reference/upstream/lv2_to_dict"]
+    path = reference/upstream/lv2_to_dict
+    url = https://github.com/polyeffects/lv2_to_dict.git
+[submodule "reference/upstream/manual"]
+    path = reference/upstream/manual
+    url = https://github.com/polyeffects/manual.git
+[submodule "reference/upstream/neural-amp-modeler-lv2"]
+    path = reference/upstream/neural-amp-modeler-lv2
+    url = https://github.com/polyeffects/neural-amp-modeler-lv2.git
+[submodule "reference/upstream/poly_capture"]
+    path = reference/upstream/poly_capture
+    url = https://github.com/polyeffects/poly_capture.git
+[submodule "reference/upstream/poly_filters"]
+    path = reference/upstream/poly_filters
+    url = https://github.com/polyeffects/poly_filters.git
+[submodule "reference/upstream/polyconvo.lv2"]
+    path = reference/upstream/polyconvo.lv2
+    url = https://github.com/polyeffects/polyconvo.lv2.git
+[submodule "reference/upstream/PolyLV2"]
+    path = reference/upstream/PolyLV2
+    url = https://github.com/polyeffects/PolyLV2.git
+[submodule "reference/upstream/PolyMclkIn.lv2"]
+    path = reference/upstream/PolyMclkIn.lv2
+    url = https://github.com/polyeffects/PolyMclkIn.lv2.git
+[submodule "reference/upstream/serd"]
+    path = reference/upstream/serd
+    url = https://github.com/polyeffects/serd.git
+[submodule "reference/upstream/sooperlooper"]
+    path = reference/upstream/sooperlooper
+    url = https://github.com/polyeffects/sooperlooper.git
+[submodule "reference/upstream/tuna.lv2"]
+    path = reference/upstream/tuna.lv2
+    url = https://github.com/polyeffects/tuna.lv2.git
+[submodule "reference/upstream/xmos_lib_si5351"]
+    path = reference/upstream/xmos_lib_si5351
+    url = https://github.com/polyeffects/xmos_lib_si5351.git
+[submodule "reference/upstream/Casette"]
+    path = reference/upstream/Casette
+    url = https://github.com/pawelKapl/Casette.git
+[submodule "reference/dependencies/autowaf"]
+    path = reference/dependencies/autowaf
+    url = https://gitlab.com/drobilla/autowaf.git
