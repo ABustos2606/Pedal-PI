@@ -70,7 +70,7 @@ int main() {
         check(engine.snapshot().modules.back().x == module_min_x && engine.snapshot().modules.back().y == module_max_y,
             "canvas boundary constraints failed");
         const auto caps = engine.capabilities();
-        check(caps.simulation && caps.session_save && !caps.persistent_save && !caps.plugin_state && !caps.audio_processing,
+        check(caps.simulation && caps.session_save && caps.persistent_save && !caps.plugin_state && !caps.audio_processing,
             "simulator advertised unsupported capability");
         const auto prior_name = engine.snapshot().name;
         engine.submit(NewPatch{"  "}); check(!engine.advance(100)[0].accepted && engine.snapshot().name == prior_name, "blank patch replaced graph");
@@ -84,7 +84,7 @@ int main() {
         engine.submit(LoadSession{}); engine.advance(100);
         check(engine.snapshot().name == "Evening practice" && !engine.snapshot().dirty, "rejected save overwrote session snapshot");
         engine.submit(SaveGraph{SaveScope::Persistent}); events = engine.advance(100);
-        check(!events[0].accepted && events[0].message.find("Unsupported capability") != std::string::npos, "persistent save was not explicitly rejected");
+        check(!events[0].accepted && events[0].message.find("Invalid save location") != std::string::npos, "persistent save without a location was accepted");
         engine.submit(SaveGraph{SaveScope::Session, true}); check(!engine.advance(100)[0].accepted, "plugin state save pretended to succeed");
         engine.disconnect(); engine.advance(0); engine.connect();
         check(engine.state() == EngineState::Connecting, "connect skipped lifecycle");

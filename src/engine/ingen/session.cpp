@@ -19,6 +19,18 @@ const std::string block_type = iri(uri::ingen, "Block"), arc_type = iri(uri::ing
 const std::string value_key = iri(uri::ingen, "value"), enabled_key = iri(uri::ingen, "enabled");
 const std::string x_key = iri(uri::ingen, "canvasX"), y_key = iri(uri::ingen, "canvasY");
 const std::string name_key = iri(uri::pedalpi, "displayName"), patch_name_key = iri(uri::pedalpi, "patchName");
+const std::string patch_id_key = iri(uri::pedalpi, "patchId"), modified_key = iri(uri::pedalpi, "modified");
+// Where the engine may write or read a bundle: a plain file URI to a .ingen
+// directory. Ingen does not decode escaped characters consistently.
+bool bundle_location(const std::string& location) {
+    return location.starts_with("file:///") && location.ends_with(".ingen") && safe_iri(location) && location.find('%') == std::string::npos &&
+           location.find("/../") == std::string::npos;
+}
+std::string joined(const std::vector<std::string>& names) {
+    std::string text;
+    for (const auto& name : names) text += (text.empty() ? "" : ", ") + name;
+    return text;
+}
 std::string child(const std::string& parent, std::string_view symbol) { return parent + "/" + std::string(symbol); }
 std::string parent_of(const std::string& path) { return path.substr(0, path.rfind('/')); }
 std::string symbol_of(const std::string& path) { return path.substr(path.rfind('/') + 1); }
@@ -63,16 +75,16 @@ void Session::closed(std::string reason, bool retrying) {
     // A lost connection cancels requests; reconnecting never applies stale edits.
     fail_edits("Engine disconnected");
     transactions_.clear(); sequences_.clear(); outgoing_.clear(); buffer_.clear(); expected_copies_.clear();
-    depth_ = 0; cpu_.reset(); fault_.reset();
+    depth_ = 0; cpu_.reset(); fault_.reset(); sent_modified_.reset();
     emit(0, true, std::move(reason));
 }
 void Session::fail_edits(const std::string& message) {
     for (const auto& [id, pending] : transactions_) if (pending.purpose == Purpose::Edit) emit(pending.request, false, message);
 }
-void Session::emit(RequestId request, bool accepted, std::string message) {
+void Session::emit(RequestId request, bool accepted, std::string message, bool with_session) {
     if (mirror_changed_) rebuild();
     unreported_ = false;
-    events_.push_back({request, accepted, std::move(message), state_, graph_, {}});
+    events_.push_back({request, accepted, std::move(message), state_, graph_, with_session ? saved_session_ : std::nullopt});
 }
 void Session::reject(RequestId request, std::string message) { events_.push_back({request, false, std::move(message), state_, graph_, {}}); }
 
@@ -210,19 +222,40 @@ void Session::finish_ready() {
     }
 }
 void Session::finish(Transaction& done) {
-    const bool ok = done.status == 0;
+    bool ok = done.status == 0;
     switch (done.purpose) {
-    case Purpose::Edit:
+    case Purpose::Edit: {
+        if (ok && done.next != Transaction::Next::None) { proceed(done); break; }
+        if (!ok && done.restore_id && state_ == EngineState::Ready) {
+            // A refused save must not leave the graph claiming an identity
+            // nothing on disk has. Sent before the re-read below, which then sees it.
+            auto& back = begin(0, Purpose::Refresh);
+            const auto number = sequence();
+            send(back, set_on_graph(number, main_path, "pedalpi:patchId", string_literal(*done.restore_id)), number);
+        }
         if (ok) {
             for (const auto& local : done.local) merge(local.path, {{local.predicate, local.value}});
-            if (done.dirty) dirty_ = *done.dirty;
             mirror_changed_ = true;
         } else if (done.sequences.size() > 1 && state_ == EngineState::Ready) {
             // Some steps of a failed multi-step edit may have taken effect.
             refresh(main_path, true);
         }
-        emit(done.request, ok, ok ? done.message : status_text(done.status));
+        auto message = ok ? done.message : std::string(status_text(done.status));
+        if (ok && done.verify) {
+            bool failed = false;
+            message = verified(done, failed);
+            ok = !failed;
+        }
+        if (ok && done.snapshot) {
+            if (mirror_changed_) rebuild();
+            saved_session_ = graph_;
+        }
+        emit(done.request, ok, std::move(message), ok && done.snapshot);
+        // Once nothing is in flight the mirror says what the engine holds,
+        // including a marker another client changed.
+        if (std::none_of(transactions_.begin(), transactions_.end(), [](const auto& t) { return t.second.purpose == Purpose::Edit; })) sent_modified_.reset();
         break;
+    }
     case Purpose::Sync:
         if (ok) ensure_endpoints();
         else fault_ = std::string("Engine refused to describe its graph: ") + status_text(done.status);
@@ -265,10 +298,12 @@ void Session::rebuild() {
     mirror_changed_ = false;
     Graph graph;
     graph.name = "Untitled";
-    graph.dirty = dirty_;
-    if (const auto root = objects_.find(main_path); root != objects_.end())
+    if (const auto root = objects_.find(main_path); root != objects_.end()) {
         if (const auto* name = find(root->second, patch_name_key); name && name->kind == Value::Kind::String && validate_patch_name(name->text).empty())
             graph.name = name->text;
+        if (const auto* id = find(root->second, patch_id_key); id && id->kind == Value::Kind::String && valid_patch_id(id->text)) graph.patch_id = id->text;
+        if (const auto* modified = find(root->second, modified_key); modified && modified->kind == Value::Kind::Boolean) graph.dirty = modified->boolean;
+    }
     const auto& in = demo_catalogue()[0];
     const auto& out = demo_catalogue()[1];
     graph.modules.push_back({1, in.uri, in.name, 32, 132, true, false, {}, in.ports});
@@ -394,6 +429,47 @@ void Session::name_patch(Transaction& to, const std::string& name) {
     send(to, set_on_graph(number, main_path, "pedalpi:patchName", string_literal(name)), number);
     to.local.push_back({main_path, patch_name_key, {Value::Kind::String, 0, false, name}});
 }
+void Session::identify(Transaction& to, const std::string& id) {
+    const auto number = sequence();
+    send(to, set_on_graph(number, main_path, "pedalpi:patchId", string_literal(id)), number);
+    to.local.push_back({main_path, patch_id_key, {Value::Kind::String, 0, false, id}});
+}
+void Session::mark(Transaction& to, bool modified) {
+    const auto number = sequence();
+    send(to, set_on_graph(number, main_path, "pedalpi:modified", modified ? "true" : "false"), number);
+    to.local.push_back({main_path, modified_key, {Value::Kind::Boolean, 0, modified, {}}});
+    sent_modified_ = modified;
+}
+void Session::proceed(Transaction& done) {
+    // The engine has answered the save or load itself. Its identity steps
+    // took effect; what remains is to read back and clear the marker.
+    for (const auto& local : done.local) merge(local.path, {{local.predicate, local.value}});
+    auto& next = begin(done.request, Purpose::Edit);
+    next.message = std::move(done.message);
+    next.expected = std::move(done.expected);
+    next.location = std::move(done.location);
+    next.patch_id = std::move(done.patch_id);
+    if (done.next == Transaction::Next::Loaded) {
+        // A load is answered before the loaded graph is announced. A Get sent
+        // now is queued behind it, so its answer is the loaded graph.
+        next.replaces = next_sequence_;
+        send(next, get, main_path);
+        next.verify = true;
+        if (!next.patch_id.empty()) identify(next, next.patch_id);
+    }
+    mark(next, false);
+}
+std::string Session::verified(const Transaction& done, bool& failed) {
+    if (mirror_changed_) rebuild();
+    // The engine reports success even when it could not read the bundle at all.
+    std::vector<std::string> lost;
+    for (const auto& block : done.expected) if (!objects_.contains(child(main_path, block.symbol))) lost.push_back(block.name);
+    failed = !done.expected.empty() && lost.size() == done.expected.size();
+    if (failed) return "The engine restored nothing from " + done.location + ". Can the engine see the patch folder at that path?";
+    auto text = "Loaded " + graph_.name + ".";
+    if (!lost.empty()) text += " The engine did not restore: " + joined(lost) + ".";
+    return text;
+}
 std::string Session::clear_engine_graph(Transaction& to) {
     for (const auto& [id, path] : paths_) send(to, remove, path);
     // Cables between two endpoints outlive every block; the rest go with theirs.
@@ -444,6 +520,7 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
                          address(cable.to, cable.input, Direction::Input, false)), number);
     }
     name_patch(to, graph.name);
+    identify(to, graph.patch_id);
     return {};
 }
 std::string Session::plan(const Command& command, Transaction& to) {
@@ -493,11 +570,54 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 send(to, put_arc(number, main_path + "/", main_path + "/in_" + side, main_path + "/out_" + side), number);
             }
             name_patch(to, c.name);
+            identify(to, "");
         } else if constexpr (std::is_same_v<T, RenamePatch>) {
             if (auto issue = validate_patch_name(c.name); !issue.empty()) return issue;
             name_patch(to, c.name);
         } else if constexpr (std::is_same_v<T, SaveGraph>) {
-            result = "Unsupported capability";
+            if (c.scope == SaveScope::Session) {
+                // Kept by the interface, not by the engine: routing, values and layout only.
+                if (c.include_plugin_state) return "Unsupported capability: plugin state capture in a session snapshot";
+                to.dirty = false; to.snapshot = true;
+                to.message = "Session snapshot saved in memory. Closing the app clears it; plugin state is not captured.";
+            } else {
+                // The engine writes the graph, plugin state included, then
+                // answers. The marker is cleared only after that answer.
+                if (!bundle_location(c.location)) return "Invalid save location";
+                if (!valid_patch_id(c.patch_id)) return "Invalid patch identity";
+                to.dirty.reset();
+                to.restore_id = graph_.patch_id;
+                identify(to, c.patch_id);
+                const auto number = sequence();
+                send(to, set_on_graph(number, main_path, "pedalpi:schemaVersion", "\"1\"^^xsd:int"), number);
+                const auto saving = sequence();
+                send(to, copy(saving, main_path, c.location), saving);
+                to.next = Transaction::Next::Saved;
+                to.message = "Saved " + graph_.name + ".";
+            }
+        } else if constexpr (std::is_same_v<T, LoadPatch>) {
+            if (!bundle_location(c.location)) return "Invalid patch location";
+            std::vector<std::string> absent;
+            for (const auto& block : c.blocks) {
+                if (!lv2_symbol(block.symbol) || !safe_iri(block.plugin)) return "The saved patch has a block the engine cannot address";
+                if (!plugins_.contains(block.plugin)) absent.push_back(block.name.empty() ? block.plugin : block.name);
+                else to.expected.push_back(block);
+            }
+            // Ingen loads none of a bundle when one of its plugins is missing.
+            if (!absent.empty()) return "Not installed in the engine: " + joined(absent);
+            if (!c.patch_id.empty() && !valid_patch_id(c.patch_id)) return "Invalid patch identity";
+            to.location = c.location;
+            to.patch_id = c.patch_id;
+            to.dirty.reset();
+            clear_engine_graph(to);
+            // The bundle brings its own identity and name. Graph properties
+            // outlive the blocks, so one without them, or one the engine cannot
+            // read, must not leave the emptied graph claiming the previous patch's.
+            identify(to, "");
+            name_patch(to, "");
+            const auto number = sequence();
+            send(to, copy(number, c.location, main_path), number);
+            to.next = Transaction::Next::Loaded;
         } else {
             const auto* m = find_module(graph_, c.id);
             const auto found = paths_.find(c.id);
@@ -547,25 +667,24 @@ RequestId Session::submit(Command command) {
     const auto id = next_request_++;
     if (state_ != EngineState::Ready) { reject(id, "Engine is unavailable"); return id; }
     if (mirror_changed_ && depth_ == 0) rebuild();
-    if (const auto* save = std::get_if<SaveGraph>(&command)) {
-        if (save->scope != SaveScope::Session) reject(id, "Unsupported capability: persistent patch storage");
-        else if (save->include_plugin_state) reject(id, "Unsupported capability: plugin state capture");
-        else {
-            // Kept by the interface, not by the engine: routing, values and layout only.
-            dirty_ = false; graph_.dirty = false;
-            saved_session_ = graph_;
-            events_.push_back({id, true, "Session snapshot saved in memory. Closing the app clears it; plugin state is not captured.", state_, graph_, saved_session_});
-        }
-        return id;
-    }
     if (transactions_.size() >= options_.max_pending) { reject(id, "Engine is busy; the edit was not sent"); return id; }
-    const auto mark = outgoing_.size();
+    const auto written = outgoing_.size();
+    const auto marked = sent_modified_;
     auto& pending = begin(id, Purpose::Edit);
     if (auto issue = plan(command, pending); !issue.empty()) {
         for (const auto number : pending.sequences) sequences_.erase(number);
-        outgoing_.resize(mark);
+        outgoing_.resize(written);
+        sent_modified_ = marked;
         transactions_.erase(pending.id);
         reject(id, std::move(issue));
+        return id;
+    }
+    // The marker changes with the first edit after a save, and is sent once.
+    if (pending.dirty && *pending.dirty != sent_modified_.value_or(graph_.dirty)) mark(pending, *pending.dirty);
+    if (pending.waiting.empty()) {
+        // Nothing for the engine to do, such as a snapshot of an unchanged graph.
+        auto node = transactions_.extract(pending.id);
+        finish(node.mapped());
     }
     return id;
 }

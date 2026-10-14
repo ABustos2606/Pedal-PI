@@ -1,0 +1,132 @@
+# Patch storage: recorded results, 14 October 2026
+# Debian 13 under WSL2, patched Ingen (tools/ingen-spike/patches), JACK dummy backend.
+# See docs/17-patch-storage.md.
+
+## bash tools/ingen-spike/07-adapter.sh  (unit tests, then the adapter against a live engine over the Unix socket and TCP, audio, engine restart)
+
+(Full output in ingen-adapter-results.txt. The storage checks, run over the Unix socket:)
+
+Bundles, revisions, interrupted saves, fallback, startup choice, foreign bundles, missing files and simulated save/load passed.
+PASS  patch store opens -- /tmp/pedalpi-live-patches
+PASS  add a Mutable-derived module to the patch
+PASS  turn one of its controls
+PASS  the unsaved-changes marker is in the engine: both clients see it
+PASS  the engine saves the patch to disk -- 13.330504 ms; Saved Live "check" é ..
+PASS  what it wrote reads back with the right identity and is published
+PASS  the stored patch lists its name and modules -- 2 blocks
+PASS  replace it with an empty patch
+PASS  load the stored patch -- 83.830714 ms; Loaded Live "check" é ..
+PASS  identity, name, modules, cables, values and positions came back from disk
+PASS  the second client followed the load
+PASS  edit after loading
+PASS  a second save becomes revision 2
+PASS  a patch needing a missing plugin is refused before anything changes
+PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/pedalpi-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
+PASS  the newest revision loads -- Loaded Live "check" é ..
+PASS  a bundle without project properties is offered
+PASS  it loads with default names and layout, its values, and the folder's identity -- Loaded Untitled.
+PASS  back to the stored patch -- Loaded Live "check" é ..
+PASS  remove the granular module again
+PASS  it also knows which stored patch is playing, and whether it has unsaved edits -- p20261014-111902-0d64, unsaved edits
+
+## build\Debug\pedal_ingen_live.exe tcp://127.0.0.1:16180  (Windows build; patches in %TEMP%, seen by the engine under /mnt/c)
+
+PASS  patch store opens -- C:\Users\abust\AppData\Local\Temp\pedalpi-live-patches
+PASS  the engine saves the patch to disk -- 126.293100 ms; Saved Live "check" é ..
+PASS  what it wrote reads back with the right identity and is published
+PASS  the stored patch lists its name and modules -- 2 blocks
+PASS  load the stored patch -- 173.463100 ms; Loaded Live "check" é ..
+PASS  identity, name, modules, cables, values and positions came back from disk
+PASS  the second client followed the load
+PASS  edit after loading
+PASS  a second save becomes revision 2
+PASS  a patch needing a missing plugin is refused before anything changes
+PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/pedalpi-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
+PASS  the newest revision loads -- Loaded Live "check" é ..
+PASS  a bundle without project properties is offered
+PASS  it loads with default names and layout, its values, and the folder's identity -- Loaded Untitled.
+PASS  back to the stored patch -- Loaded Live "check" é ..
+PASS  restore the value
+INFO  edit round trip through the adapter -- median 61.8526 ms, p95 63.3077 ms, max 64.1312 ms (200 edits)
+PASS  it also knows which stored patch is playing, and whether it has unsaved edits -- p20261014-111940-841c, unsaved edits
+INFO  engine load reading -- none yet (none at connect)
+SUMMARY all adapter checks passed
+
+## bash tools/ingen-spike/10-bundle-probe.sh  (raw protocol: what the engine writes and how it loads)
+
+put in_l, out_l                                            (0, 0)
+put amp m3 with name, position                             0
+put params m4 (has LV2 state)                              0
+set gain 6                                                 0
+cables                                                     (0, 0)
+graph property pedalpi:patchName                           0
+graph property pedalpi:patchId                             0
+graph property pedalpi:schemaVersion                       0
+assignment property on a port                              0
+save to /tmp/pedalpi-spike/bundles/one.ingen               (0, '0.01 s')
+files                                                      ['m4', 'main.ttl', 'manifest.ttl', 'plugins.ttl']
+---- m4/ ['manifest.ttl', 'params.ttl', 'state.ttl']
+---- main.ttl
+    (main.ttl, manifest.ttl and plugins.ttl as listed in docs/17-patch-storage.md; m4/state.ttl:)
+---- m4/state.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<>
+	a pset:Preset ;
+	lv2:appliesTo <http://lv2plug.in/plugins/eg-params> ;
+	state:state [
+		<http://lv2plug.in/plugins/eg-params#spring> "0.0"^^xsd:float ;
+		<http://lv2plug.in/plugins/eg-params#int> "0"^^xsd:int ;
+		<http://lv2plug.in/plugins/eg-params#long> "0"^^xsd:long ;
+		<http://lv2plug.in/plugins/eg-params#float> "0.1234"^^xsd:float ;
+		<http://lv2plug.in/plugins/eg-params#double> "0.0"^^xsd:double ;
+		<http://lv2plug.in/plugins/eg-params#bool> false ;
+		<http://lv2plug.in/plugins/eg-params#string> "Hello, world" ;
+		<http://lv2plug.in/plugins/eg-params#path> <params.ttl> ;
+		<http://lv2plug.in/plugins/eg-params#lfo> "0.0"^^xsd:float
+	] .
+
+==== clear the graph, then load the bundle into the root
+load into ingen:/main                                      0
+what arrives first                                         response then content
+blocks afterwards                                          ['ingen:/main/m3', 'ingen:/main/m4']
+gain restored                                              True
+name, position, assignment restored                        (True, True, True)
+graph properties restored                                  (True, True)
+plugin state reloaded (engine log)                         see the engine log below
+==== load again on top of the same blocks
+load into a graph that already has m3                      0
+blocks afterwards                                          ['ingen:/main/m3', 'ingen:/main/m4']
+==== the bundle moved to another folder, plugin state with it
+load the moved bundle                                      0
+blocks afterwards                                          ['ingen:/main/m3', 'ingen:/main/m4']
+saved again: its state and the file it names               ['manifest.ttl', 'params.ttl', 'state.ttl']
+==== a bundle whose plugin is missing
+load bundle with an absent plugin                          0
+blocks afterwards                                          []
+load a bundle that does not exist                          0
+load an unreadable bundle                                  0
+engine still answers; blocks                               (0, [])
+==== a client that connects and never reads
+next request answered while that client is idle            None after 5.0 s
+==== engine log
+      1 Connected to default Jack server
+      6 error: :0:0: unexpected end of anonymous node
+      1 error: :0:0: write error (Connection reset by peer)
+      1 error: failed to open file /tmp/pedalpi-spike/bundles/nothing.ingen (No such file or directory)
+      1 error: /tmp/pedalpi-spike/bundles/garbage.ingen/manifest.ttl:1:8: bad verb
+      1 Loading file:///tmp/pedalpi-spike/bundles/missing.ingen/main.ttl from "/tmp/pedalpi-spike/bundles/missing.ingen/main.ttl"
+      1 Loading file:///tmp/pedalpi-spike/bundles/moved/elsewhere.ingen/main.ttl from "/tmp/pedalpi-spike/bundles/moved/elsewhere.ingen/main.ttl"
+      3 Loading file:///tmp/pedalpi-spike/bundles/one.ingen/main.ttl from "/tmp/pedalpi-spike/bundles/one.ingen/main.ttl"
+      1 No graphs found in "/tmp/pedalpi-spike/bundles/garbage.ingen"
+      1 No graphs found in "/tmp/pedalpi-spike/bundles/nothing.ingen"
+      1 Writing bundle "/tmp/pedalpi-spike/bundles/absent/x.ingen"
+      1 Writing bundle "/tmp/pedalpi-spike/bundles/moved/again.ingen"
+      1 Writing bundle "/tmp/pedalpi-spike/bundles/one.ingen"
+      1 Writing bundle "/tmp/pedalpi-spike/bundles/with space/two.ingen"

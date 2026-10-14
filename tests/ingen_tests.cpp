@@ -44,8 +44,10 @@ struct FakeEngine {
     std::vector<std::pair<std::string, std::string>> arcs;
     std::set<std::string> plugins{amp, switched};
     std::vector<FakeTransport*> clients;
-    bool reachable = true;
+    bool reachable = true, fail_saves = false;
     int mute = 0, requests = 0, label = 0;
+    // Saved bundles by file URI: the objects under ingen:/main and the cables.
+    std::map<std::string, std::pair<std::map<std::string, Properties>, std::vector<std::pair<std::string, std::string>>>> files;
 
     static std::string term(const Value& value) {
         switch (value.kind) {
@@ -180,7 +182,39 @@ struct FakeEngine {
             }
             break;
         case Message::Type::Copy:
-            if (!objects.contains(m.subject)) status = 16;
+            if (m.destination.starts_with("file://")) {
+                // A save: only a graph can be written, and the whole of it.
+                if (m.subject != "ingen:/main") status = 3;
+                else if (fail_saves) status = 12;
+                else {
+                    auto& file = files[m.destination];
+                    file.first.clear();
+                    for (const auto& [path, properties] : objects) if (path.starts_with("ingen:/main")) file.first[path] = properties;
+                    file.second = arcs;
+                }
+                all = node("\ta patch:Copy ;\n\tpatch:sequenceNumber \"" + std::to_string(m.sequence) + "\"^^xsd:int ;\n\tpatch:subject <" + m.subject +
+                           "> ;\n\tpatch:destination <" + m.destination + ">");
+            } else if (m.subject.starts_with("file://")) {
+                // A load is answered at once, whatever the parser made of the file, and
+                // the loaded graph is announced afterwards, as the real engine does.
+                for (auto* client : clients) client->deliver(bundle(true) + (client == &from ? response(m.sequence, 0) : std::string()) + bundle(false));
+                const auto file = files.find(m.subject);
+                if (file == files.end()) return;
+                // One block whose plugin is missing, and the parser builds none of the graph.
+                for (const auto& [path, properties] : file->second.first)
+                    if (const auto* prototype = find(properties, full(uri::lv2, "prototype")); prototype && !plugins.contains(prototype->text)) return;
+                std::string text;
+                for (const auto& [path, properties] : file->second.first) {
+                    merge(objects[path], properties);
+                    text += put(++label, path == "ingen:/main" ? "ingen:/main/" : path, properties);
+                }
+                for (const auto& cable : file->second.second)
+                    if (objects.contains(cable.first) && objects.contains(cable.second) && std::find(arcs.begin(), arcs.end(), cable) == arcs.end()) {
+                        arcs.push_back(cable); text += arc(++label, "Put", cable.first, cable.second);
+                    }
+                for (auto* client : clients) client->deliver(bundle(true) + text + bundle(false));
+                return;
+            } else if (!objects.contains(m.subject)) status = 16;
             else if (objects.contains(m.destination)) status = 11;
             else {
                 std::map<std::string, Properties> copies;
@@ -330,7 +364,7 @@ void adapter() {
     for (const char* port : {"in_l", "in_r", "out_l", "out_r"}) check(fake.objects.contains(std::string("ingen:/main/") + port), "audio endpoint not created");
     check(rig.graph().modules.size() == 2 && rig.graph().connections.empty() && validate_graph(rig.graph()).empty(), "empty engine graph misread");
     const auto caps = engine.capabilities();
-    check(!caps.simulation && caps.audio_processing && caps.session_save && !caps.persistent_save && !caps.plugin_state, "capabilities overstated");
+    check(!caps.simulation && caps.audio_processing && caps.session_save && caps.persistent_save && caps.plugin_state, "capabilities misstated");
 
     // Add: nothing changes before the engine answers.
     auto before = fake.requests;
@@ -438,7 +472,10 @@ void adapter() {
     for (auto& e : rig.settle()) if (e.request == saving) events.push_back(e);
     check(events.size() == 1 && events[0].accepted && events[0].saved_session && !rig.graph().dirty && events[0].saved_session->modules.size() == rig.graph().modules.size(), "session save failed");
     const auto saved = rig.graph();
-    check(!rig.result(SaveGraph{SaveScope::Persistent}).accepted && !rig.result(SaveGraph{SaveScope::Session, true}).accepted, "unsupported save pretended to succeed");
+    check(!rig.result(SaveGraph{SaveScope::Session, true}).accepted, "plugin state in a session snapshot pretended to succeed");
+    check(!rig.result(SaveGraph{SaveScope::Persistent}).accepted && !rig.result(SaveGraph{SaveScope::Persistent, true, "file:///patches/x", "p-one"}).accepted &&
+          !rig.result(SaveGraph{SaveScope::Persistent, true, "file:///with%20space/x.ingen", "p-one"}).accepted &&
+          !rig.result(SaveGraph{SaveScope::Persistent, true, "file:///patches/x.ingen", "Not an id"}).accepted, "unsafe save location or identity accepted");
     check(rig.result(NewPatch{"Blank"}).accepted && rig.graph().modules.size() == 2 && rig.graph().connections.size() == 2 && rig.graph().dirty && rig.graph().name == "Blank", "new patch wrong");
     check(fake.arcs.size() == 2 && std::none_of(fake.objects.begin(), fake.objects.end(), [](const auto& o) { return o.first.starts_with("ingen:/main/m"); }), "engine kept old blocks");
     check(rig.result(LoadSession{}).accepted && !rig.graph().dirty, "session restore failed");
@@ -451,6 +488,70 @@ void adapter() {
     for (const auto& cable : saved.connections) check(std::find(rig.graph().connections.begin(), rig.graph().connections.end(), cable) != rig.graph().connections.end(), "restored cable missing");
     other.settle();
     check(other.graph().modules.size() == saved.modules.size() && other.graph().connections.size() == saved.connections.size() && other.graph().name == saved.name, "second client lost step during restore");
+    // The unsaved-changes marker lives in the engine, so every client sees it.
+    const auto modified = full(uri::pedalpi, "modified"), identity = full(uri::pedalpi, "patchId");
+    check(rig.result(SetParameter{3, "gain", 3}).accepted && rig.graph().dirty && property(fake, "ingen:/main", modified)->boolean, "edit did not mark the engine's graph");
+    before = fake.requests;
+    check(rig.result(SetParameter{3, "gain", 3}).accepted && fake.requests == before + 1, "an already marked graph was marked again");
+    other.settle();
+    check(other.graph().dirty, "another client did not see the marker");
+    // Persistent save: the engine writes the bundle, and only its answer clears the marker.
+    const std::string first_bundle = "file:///patches/p-one/r000001.ingen";
+    auto outcome = rig.result(SaveGraph{SaveScope::Persistent, true, first_bundle, "p-one"});
+    check(outcome.accepted && !rig.graph().dirty && rig.graph().patch_id == "p-one" && fake.files.contains(first_bundle), "persistent save failed");
+    const auto& written = fake.files.at(first_bundle).first.at("ingen:/main");
+    check(find(written, identity)->text == "p-one" && find(written, full(uri::pedalpi, "schemaVersion"))->number == 1, "bundle lacks its identity or schema");
+    check(!property(fake, "ingen:/main", modified)->boolean && property(fake, "ingen:/main", identity)->text == "p-one", "engine not told the save completed");
+    other.settle();
+    check(!other.graph().dirty && other.graph().patch_id == "p-one", "another client did not see the save");
+    // A refused save leaves the identity and the marker as they were.
+    rig.result(SetParameter{3, "gain", 4});
+    fake.fail_saves = true;
+    outcome = rig.result(SaveGraph{SaveScope::Persistent, true, "file:///patches/p-two/r000001.ingen", "p-two"});
+    fake.fail_saves = false;
+    rig.settle();
+    check(!outcome.accepted && rig.graph().patch_id == "p-one" && rig.graph().dirty && property(fake, "ingen:/main", identity)->text == "p-one", "refused save changed identity or marker");
+    // Load: everything goes, the bundle comes in, and the result waits for the loaded graph.
+    check(rig.result(NewPatch{"Elsewhere"}).accepted && rig.graph().patch_id.empty() && rig.graph().modules.size() == 2, "new patch kept the identity or modules");
+    std::vector<SavedBlock> blocks;
+    for (const auto& m : saved.modules) if (!m.fixed) blocks.push_back({"m" + std::to_string(m.id), m.uri, m.name});
+    outcome = rig.result(LoadPatch{first_bundle, blocks});
+    check(outcome.accepted && outcome.message.find("Loaded " + saved.name) == 0 && outcome.message.find("did not restore") == std::string::npos, "load failed or misreported");
+    check(rig.graph().patch_id == "p-one" && !rig.graph().dirty && rig.graph().name == saved.name && rig.graph().modules.size() == saved.modules.size() &&
+          rig.graph().connections.size() == saved.connections.size() && find_module(rig.graph(), 3)->parameters[0].value == 3, "loaded graph differs from the saved one");
+    other.settle();
+    check(other.graph().patch_id == "p-one" && other.graph().modules.size() == saved.modules.size(), "another client did not follow the load");
+    // A restarted interface knows which stored patch is playing, and whether it has unsaved edits.
+    {
+        Rig fresh(fake);
+        fresh.engine->connect(); fresh.settle();
+        check(fresh.graph().patch_id == "p-one" && !fresh.graph().dirty, "restart lost the stored identity");
+        check(rig.result(MoveModule{3, 48, 48}).accepted, "move failed");
+        fresh.settle();
+        check(fresh.graph().dirty, "restarted client did not see the marker change");
+    }
+    // A plugin the engine lacks: refused before anything is sent, since the engine would load none of it.
+    auto with_stranger = blocks;
+    with_stranger.push_back({"m40", "urn:test:not-installed", "Stranger"});
+    before = fake.requests;
+    outcome = rig.result(LoadPatch{first_bundle, with_stranger});
+    check(!outcome.accepted && outcome.message.find("Stranger") != std::string::npos && fake.requests == before && rig.graph().dirty, "missing plugin not refused up front");
+    // The engine says yes to anything it could not parse; what it did not build is named.
+    auto phantom = blocks;
+    phantom.push_back({"m41", amp, "Phantom"});
+    outcome = rig.result(LoadPatch{first_bundle, phantom});
+    check(outcome.accepted && outcome.message.find("did not restore: Phantom") != std::string::npos, "block the engine did not build went unreported");
+    // A bundle the engine cannot see at all is a failure, and leaves no identity behind to save over.
+    outcome = rig.result(LoadPatch{"file:///patches/nothing/r000001.ingen", blocks});
+    check(!outcome.accepted && outcome.message.find("restored nothing") != std::string::npos && rig.graph().modules.size() == 2 && rig.graph().patch_id.empty(),
+          "an unreadable bundle was reported as loaded, or kept the previous identity");
+    check(rig.result(LoadPatch{first_bundle, blocks}).accepted && rig.graph().patch_id == "p-one", "load after a failed load");
+    check(!rig.result(LoadPatch{"file:///patches/x"}).accepted && !rig.result(LoadPatch{"http://example.org/x.ingen"}).accepted, "unsafe load location accepted");
+    check(rig.result(SaveGraph{SaveScope::Persistent, true, first_bundle, "p-one"}).accepted, "save after load failed");
+    // Back to the session snapshot for what follows.
+    check(rig.result(LoadSession{}).accepted && rig.graph().patch_id.empty() && find_module(rig.graph(), 3)->parameters[0].value == 6.5, "session snapshot lost");
+    other.settle();
+
     // A patch the engine cannot build is refused before anything is deleted.
     before = fake.requests;
     check(!rig.result(LoadGraph{parallel_demo_graph()}).accepted && fake.requests == before && rig.graph().modules.size() == saved.modules.size(), "unbuildable patch destroyed the current one");

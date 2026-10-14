@@ -19,7 +19,10 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
     // --catalogue file.json names the modules on offer; by default the
     // exported catalogue.json beside this program, with its overlay. The
     // simulation offers them too, beside its own demo modules.
-    std::string address, catalogue_path, overlay_path;
+    // --patches DIR keeps saved patches there (by default %LOCALAPPDATA%/PedalPI/patches,
+    // or simulator-patches for the simulation). --engine-patches PATH is the same
+    // folder as the engine sees it; for an engine in WSL that is /mnt/c/... by default.
+    std::string address, catalogue_path, overlay_path, patches_path, engine_patches;
     auto utf8 = [](const wchar_t* wide) {
         std::string text(static_cast<std::size_t>(WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr)), '\0');
         WideCharToMultiByte(CP_UTF8, 0, wide, -1, text.data(), static_cast<int>(text.size()), nullptr, nullptr);
@@ -32,6 +35,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
         for (int i = 1; i + 1 < count; ++i) {
             if (wcscmp(arguments[i], L"--engine") == 0) address = utf8(arguments[i + 1]);
             if (wcscmp(arguments[i], L"--catalogue") == 0) catalogue_path = utf8(arguments[i + 1]);
+            if (wcscmp(arguments[i], L"--patches") == 0) patches_path = utf8(arguments[i + 1]);
+            if (wcscmp(arguments[i], L"--engine-patches") == 0) engine_patches = utf8(arguments[i + 1]);
         }
         LocalFree(arguments);
     }
@@ -76,6 +81,19 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
         owned->connect();
     }
     auto& engine = *owned;
+    // Saved patches. The smoke check runs without them, touching no user folder.
+    std::unique_ptr<pedal::PatchStore> store;
+    if (!smoke) {
+        std::filesystem::path root;
+        if (!patches_path.empty()) root = std::filesystem::path(std::u8string(patches_path.begin(), patches_path.end()));
+        else if (const auto* local = _wgetenv(L"LOCALAPPDATA")) root = std::filesystem::path(local) / L"PedalPI" / (address.empty() ? L"simulator-patches" : L"patches");
+        if (!root.empty()) {
+            // The engine in WSL reaches this Windows folder through /mnt/<drive>.
+            store = std::make_unique<pedal::PatchStore>(root, !engine_patches.empty() ? engine_patches : address.empty() ? std::string() : pedal::wsl_path(root));
+            if (const auto issue = store->open(); !issue.empty())
+                MessageBoxW(nullptr, std::wstring(issue.begin(), issue.end()).c_str(), L"Pedal PI - patches", MB_OK | MB_ICONWARNING);
+        }
+    }
     lv_lock();
     bool display_alive = true;
     unsigned completed_flushes = 0;
@@ -85,7 +103,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
     lv_display_add_event_cb(display, [](lv_event_t* e) {
         ++*static_cast<unsigned*>(lv_event_get_user_data(e));
     }, LV_EVENT_FLUSH_FINISH, &completed_flushes);
-    pedal::Application app(engine);
+    pedal::Application app(engine, store.get());
     lv_unlock();
     const auto window = lv_windows_get_display_window_handle(display);
     if (smoke) ShowWindow(window, SW_HIDE);

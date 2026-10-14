@@ -58,6 +58,16 @@ private:
         std::vector<Local> local;
         std::optional<bool> dirty;
         std::string message;
+        // A save or load answered: what to do next, under the same request.
+        enum class Next { None, Saved, Loaded } next = Next::None;
+        // Load: the bundle, and the blocks the engine should then have.
+        std::string location, patch_id;
+        std::vector<SavedBlock> expected;
+        bool verify = false;
+        // Save: the identity to put back if the engine refuses it.
+        std::optional<std::string> restore_id;
+        // Session save: keep the graph once accepted.
+        bool snapshot = false;
     };
     Transaction& begin(RequestId, Purpose);
     void send(Transaction&, std::string (*writer)(int, std::string_view), std::string_view subject);
@@ -71,13 +81,18 @@ private:
     void finish(Transaction&);
     void fail_edits(const std::string& message);
     void reject(RequestId, std::string message);
-    void emit(RequestId, bool accepted, std::string message);
+    void emit(RequestId, bool accepted, std::string message, bool with_session = false);
     void ready();
     void ensure_endpoints();
     void refresh(std::string path, bool replace);
     void rebuild();
     std::string plan(const Command&, Transaction&);
     void name_patch(Transaction&, const std::string& name);
+    void identify(Transaction&, const std::string& id);
+    void mark(Transaction&, bool modified);
+    void proceed(Transaction&);
+    // What a load restored; `failed` when it restored nothing it should have.
+    std::string verified(const Transaction&, bool& failed);
     std::string clear_engine_graph(Transaction&);
     std::string create_graph(const Graph&, Transaction&);
     std::string address(InstanceId, const std::string& symbol, Direction, bool current) const;
@@ -86,7 +101,9 @@ private:
     EngineState state_ = EngineState::Disconnected;
     Graph graph_;
     std::optional<Graph> saved_session_;
-    bool dirty_ = false;
+    // The unsaved-changes marker is a property of the engine's graph, so a
+    // restarted interface sees it. The last value sent, until it is echoed.
+    std::optional<bool> sent_modified_;
     std::optional<double> cpu_;
 
     // The engine's objects under ingen:/main, by path.

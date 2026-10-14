@@ -133,6 +133,9 @@ std::string validate_patch_name(const std::string& name) {
     for (unsigned char c : name) if (c < 32 || c == 127) return "Patch name contains a control character.";
     return {};
 }
+bool valid_patch_id(const std::string& id) {
+    return !id.empty() && id.size() <= 64 && std::all_of(id.begin(), id.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'; });
+}
 std::string validate_parameter(const Parameter& p) {
     if (p.symbol.empty() || !std::isfinite(p.minimum) || !std::isfinite(p.maximum) || !std::isfinite(p.value) ||
         p.minimum > p.maximum || p.value < p.minimum || p.value > p.maximum) return "Invalid parameter range or value";

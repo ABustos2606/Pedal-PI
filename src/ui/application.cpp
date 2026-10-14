@@ -80,7 +80,35 @@ const Parameter& parameter(const Module& m, const std::string& symbol) {
     return *std::find_if(m.parameters.begin(), m.parameters.end(), [&](const Parameter& p) { return p.symbol == symbol; });
 }
 }
-Application::Application(Engine& engine) : engine_(engine), graph_(engine.snapshot()) { rebuild(); }
+Application::Application(Engine& engine, PatchStore* store) : engine_(engine), graph_(engine.snapshot()), store_(store && store->usable() ? store : nullptr) {
+    last_state_ = engine_.state();
+    ever_ready_ = last_state_ == EngineState::Ready;
+    refresh_stored();
+    startup_pending_ = store_ && !store_->startup().empty();
+    rebuild();
+}
+void Application::refresh_stored() {
+    if (store_) stored_ = store_->list();
+}
+std::string Application::status_text() const {
+    switch (engine_.state()) {
+    case EngineState::Ready: return engine_.capabilities().simulation ? "SIMULATED" : "READY";
+    case EngineState::Connecting: return ever_ready_ ? "RECONNECTING" : "STARTING";
+    case EngineState::Disconnected: return "OFFLINE";
+    default: return "ENGINE ERROR";
+    }
+}
+std::string Application::engine_banner() const {
+    const auto reason = engine_note_.empty() ? std::string() : " (" + engine_note_ + ")";
+    switch (engine_.state()) {
+    case EngineState::Ready: return {};
+    case EngineState::Connecting:
+        return ever_ready_ ? "Engine connection lost" + reason + ". Retrying; edits are paused and the last graph is shown."
+                           : "Connecting to the engine" + reason + "...";
+    case EngineState::Disconnected: return "Engine disconnected. Settings > Connect reconnects; the last graph is shown.";
+    default: return "Engine error" + reason + ". Edits are paused.";
+    }
+}
 Application::~Application() { if (screen_) lv_obj_delete(screen_); }
 void Application::message(std::string value) {
     message_ = std::move(value);
@@ -89,13 +117,17 @@ void Application::message(std::string value) {
 void Application::navigate(Page page) {
     // Entering the browser always starts from the closed list of categories.
     if (page == Page::Browser && page_ != Page::Browser) { browser_group_.clear(); browser_scroll_ = 0; browser_reveal_ = false; }
+    // Another program, or a damaged disk, may have changed what is stored.
+    if (page == Page::Patches && page_ != Page::Patches) refresh_stored();
     page_ = page; rebuild_ = true;
 }
 RequestId Application::submit(Command command) {
     if (engine_.state() != EngineState::Ready) {
-        message("Engine unavailable. Reconnect in Settings."); rebuild_ = true; return 0;
+        message(engine_.state() == EngineState::Connecting && ever_ready_ ? "Engine is reconnecting; edits are paused." : "Engine unavailable. Reconnect in Settings.");
+        rebuild_ = true; return 0;
     }
-    auto kind = std::holds_alternative<NewPatch>(command) || std::holds_alternative<LoadSession>(command) || std::holds_alternative<LoadGraph>(command) ? PendingKind::Replace :
+    auto kind = std::holds_alternative<NewPatch>(command) || std::holds_alternative<LoadSession>(command) || std::holds_alternative<LoadGraph>(command) ||
+        std::holds_alternative<LoadPatch>(command) ? PendingKind::Replace :
         std::holds_alternative<RenamePatch>(command) ? PendingKind::Rename : PendingKind::Edit;
     const auto id = engine_.submit(std::move(command));
     pending_[id] = kind;
@@ -127,6 +159,20 @@ void Application::tick(unsigned ms) {
         if (stream_ && e.request && e.request == stream_->in_flight) { stream_->in_flight = 0; send_stream(); }
         if (e.snapshot) graph_ = *e.snapshot;
         if (e.saved_session) { saved_ = *e.saved_session; has_saved_ = true; }
+        if (!e.request) {
+            // The connection's own news: keep the reason for the banner.
+            if (e.state == EngineState::Ready) {
+                engine_note_.clear();
+                if (last_state_ != EngineState::Ready) message(ever_ready_ ? "Engine is back; showing its graph." : "Engine connected.");
+            }
+            else if (!e.message.empty()) engine_note_ = e.message;
+            if (e.state == EngineState::Ready) ever_ready_ = true;
+            // A fresh engine after a restart: offer the startup patch again.
+            if (e.state == EngineState::Ready && last_state_ != EngineState::Ready && store_ && !store_->startup().empty() &&
+                graph_.patch_id.empty() && !graph_.dirty && std::all_of(graph_.modules.begin(), graph_.modules.end(), [](const Module& m) { return m.fixed; }))
+                startup_pending_ = true;
+            last_state_ = e.state;
+        }
         if (e.accepted && e.request && kind == PendingKind::Replace) {
             pan_x_ = pan_y_ = 0; selected_cable_.reset(); parameter_page_ = 0; navigate(Page::Patch);
         } else if (e.accepted && e.request && kind == PendingKind::Rename) navigate(Page::Patches);
@@ -135,7 +181,31 @@ void Application::tick(unsigned ms) {
         if (!e.accepted) message(e.message);
         else if (!e.message.empty()) message(e.message);
         else if (e.request) message("Edit accepted by engine.");
+        if (kind == PendingKind::Add) {
+            if (!e.accepted) message("Could not add " + adding_[e.request] + ": " + e.message);
+            adding_.erase(e.request);
+        } else if (kind == PendingKind::Save && staging_) {
+            // The engine has written the bundle; publish it, or leave the previous revision alone.
+            if (e.accepted) {
+                const auto issue = store_->publish(*staging_);
+                if (issue.empty()) message("Saved " + graph_.name + " (revision " + std::to_string(staging_->revision) + ").");
+                else { store_->discard(*staging_); message("Not saved: " + issue); }
+            } else store_->discard(*staging_);
+            staging_.reset();
+            refresh_stored();
+        } else if (kind == PendingKind::SaveAs) {
+            if (e.accepted) start_save(save_as_id_);
+            save_as_id_.clear();
+        } else if (kind == PendingKind::Replace && e.accepted && !load_note_.empty()) message(e.message.empty() ? load_note_ : e.message + " " + load_note_);
+        if (kind == PendingKind::Replace) load_note_.clear();
         rebuild_ = true;
+    }
+    if (startup_pending_ && engine_.state() == EngineState::Ready && pending_.empty()) {
+        startup_pending_ = false;
+        // Only when the engine plays nothing stored and nothing unsaved: a
+        // restarted interface must never replace the patch being played.
+        const auto id = store_->startup();
+        if (!id.empty() && graph_.patch_id.empty() && !graph_.dirty) load_stored(id, false, false);
     }
     // Rebuilding during a held key can deliver its release to a new button.
     // Keep both pointer and keypad targets alive until their gesture ends.
@@ -168,6 +238,8 @@ lv_obj_t* Application::button(lv_obj_t* parent, const std::string& title, int x,
     lv_obj_set_pos(b, x, y); lv_obj_set_size(b, w, 48);
     lv_obj_set_style_bg_color(b, color(surface), 0); lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(b, color(border), LV_STATE_PRESSED);
+    // Unavailable actions stay visible but read as such.
+    lv_obj_set_style_text_opa(b, LV_OPA_40, LV_STATE_DISABLED);
     lv_obj_set_style_border_width(b, 1, 0); lv_obj_set_style_border_color(b, color(border), 0);
     lv_obj_set_style_radius(b, 10, 0);
     auto* l = label(b, title, 0, 0); lv_obj_center(l);
@@ -342,8 +414,12 @@ void Application::handle(Binding& b, lv_event_t* e) {
     case Action::Duplicate: {
         if (const auto slot = vacant_slot()) {
             const auto [x, y] = *slot;
-            if (b.action == Action::Add) submit(AddModule{b.symbol, x, y});
-            else submit(DuplicateModule{b.id, x, y});
+            if (b.action == Action::Add) {
+                if (const auto request = submit(AddModule{b.symbol, x, y})) {
+                    const auto* d = definition(b.symbol);
+                    pending_[request] = PendingKind::Add; adding_[request] = d ? d->name : b.symbol;
+                }
+            } else submit(DuplicateModule{b.id, x, y});
             reveal(x, y); navigate(Page::Patch);
         } else message("No free module slot remains on this canvas.");
         break;
@@ -387,9 +463,35 @@ void Application::handle(Binding& b, lv_event_t* e) {
         break;
     case Action::NameEntry:
         if (pending()) { message("Wait for pending edits before naming a patch."); break; }
-        renaming_ = b.number == 1; draft_name_ = renaming_ ? graph_.name : "";
-        message(renaming_ ? "Rename keeps modules, values and cables." : "New patch starts with IN connected to OUT.");
+        // 0: new patch, 1: rename, 2: save under a new name as another stored patch.
+        renaming_ = b.number == 1; saving_as_ = b.number == 2;
+        draft_name_ = b.number ? graph_.name : "";
+        message(saving_as_ ? "Saves a separate copy; the original stays as it was saved." :
+                renaming_ ? "Rename keeps modules, values and cables." : "New patch starts with IN connected to OUT.");
         navigate(Page::NamePatch); break;
+    case Action::SavePatch: save_patch(b.number == 1); break;
+    case Action::LoadStored: load_stored(b.symbol, false, true); break;
+    case Action::DeleteStored: {
+        const auto patch = store_ ? store_->find(b.symbol) : std::nullopt;
+        if (!patch) { refresh_stored(); rebuild_ = true; break; }
+        const auto id = patch->id;
+        ask("Delete saved patch?", patch->name, "Every saved revision of this patch is removed from disk.\nThe patch playing now is not changed.", "Delete", [this, id] {
+            const auto issue = store_->remove(id);
+            message(issue.empty() ? "Saved patch deleted." : issue);
+            refresh_stored(); navigate(Page::Patches);
+        });
+        break;
+    }
+    case Action::StartupStored: {
+        if (!store_) break;
+        const bool already = store_->startup() == b.symbol;
+        const auto issue = store_->set_startup(already ? std::string() : b.symbol);
+        message(!issue.empty() ? issue : already ? "No startup patch: the engine keeps whatever it plays." : "This patch loads when the instrument starts.");
+        refresh_stored(); rebuild_ = true; break;
+    }
+    case Action::PatchPage: patch_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
+    case Action::ConfirmAction: if (confirmation_.act) { auto act = std::move(confirmation_.act); confirmation_.act = nullptr; act(); } break;
+    case Action::CancelAction: confirmation_.act = nullptr; navigate(Page::Patches); break;
     case Action::CommitName: commit_name(); break;
     case Action::Confirm:
         if (replacement_ && !pending()) submit(*replacement_);
@@ -412,8 +514,77 @@ void Application::handle(Binding& b, lv_event_t* e) {
 void Application::commit_name() {
     if (pending()) { message("Wait for pending edits before naming a patch."); return; }
     if (auto issue = validate_patch_name(draft_name_); !issue.empty()) { message(issue); return; }
-    if (renaming_) submit(RenamePatch{draft_name_});
+    if (saving_as_) {
+        // A new identity; the name changes first, so the copy is saved under it.
+        const auto id = store_ ? store_->new_id() : std::string();
+        if (id.empty()) { message("Patch storage is not available."); return; }
+        navigate(Page::Patches);
+        if (draft_name_ == graph_.name) { start_save(id); return; }
+        if (const auto request = submit(RenamePatch{draft_name_})) { pending_[request] = PendingKind::SaveAs; save_as_id_ = id; }
+    } else if (renaming_) submit(RenamePatch{draft_name_});
     else replace_patch(NewPatch{draft_name_}, Page::NamePatch);
+}
+void Application::save_patch(bool as_new) {
+    if (!store_) return;
+    if (pending()) { message("Wait for pending edits before saving."); return; }
+    if (as_new) {
+        renaming_ = false; saving_as_ = true; draft_name_ = graph_.name;
+        message("Saves a separate copy; the original stays as it was saved.");
+        navigate(Page::NamePatch);
+        return;
+    }
+    // Save writes a new revision of the stored patch this graph came from.
+    start_save(graph_.patch_id.empty() ? store_->new_id() : graph_.patch_id);
+}
+void Application::start_save(const std::string& id) {
+    std::string issue;
+    auto staging = store_->stage(id, issue);
+    if (!staging) { message(issue); return; }
+    const auto request = submit(SaveGraph{SaveScope::Persistent, engine_.capabilities().plugin_state, staging->location, id});
+    if (!request) { store_->discard(*staging); return; }
+    pending_[request] = PendingKind::Save;
+    staging_ = std::move(*staging);
+    message("Saving " + graph_.name + "...");
+}
+void Application::load_stored(const std::string& id, bool allow_missing, bool guarded) {
+    const auto patch = store_ ? store_->find(id) : std::nullopt;
+    if (!patch) { message("That patch is no longer stored."); refresh_stored(); rebuild_ = true; return; }
+    if (!patch->revision) { message(patch->name + ": " + patch->issue); return; }
+    const auto blocks = saved_blocks(patch->bundle);
+    std::vector<std::string> absent;
+    for (const auto& block : blocks)
+        if (const auto* known = definition(block.plugin); !known || known->availability != Availability::Available) absent.push_back(block.name);
+    std::string names;
+    for (const auto& name : absent) names += (names.empty() ? "" : ", ") + name;
+    if (!absent.empty() && !allow_missing) {
+        ask("Modules unavailable", patch->name, "Not available here: " + names + ".\nLoad the rest without plugin state? Saving afterwards leaves these modules out.", "Load the rest",
+            [this, id, guarded] { navigate(Page::Patches); load_stored(id, true, guarded); });
+        return;
+    }
+    Command command = LoadPatch{patch->location, blocks, patch->id};
+    load_note_ = patch->issue;
+    if (!patch->missing_files.empty()) {
+        std::string files;
+        for (const auto& file : patch->missing_files) files += (files.empty() ? "" : ", ") + file;
+        load_note_ += (load_note_.empty() ? "" : " ") + std::string("Missing files: ") + files + ".";
+    }
+    if (!absent.empty()) {
+        // The engine loads none of a bundle with a missing plugin. Rebuild the
+        // rest from its description instead: routing, values, names, layout.
+        auto rest = bundle_graph(patch->bundle);
+        std::erase_if(rest.modules, [](const Module& m) { const auto* d = definition(m.uri); return !m.fixed && (!d || d->availability != Availability::Available); });
+        std::erase_if(rest.connections, [&](const Connection& c) { return !find_module(rest, c.from) || !find_module(rest, c.to); });
+        rest.patch_id = patch->id;
+        rest.dirty = true;
+        command = LoadGraph{std::move(rest)};
+        load_note_ = "Left out: " + names + ". Plugin state was not restored; saving keeps the patch without them.";
+    }
+    if (guarded) replace_patch(std::move(command), Page::Patches);
+    else submit(std::move(command));
+}
+void Application::ask(std::string title, std::string heading, std::string body, std::string button, std::function<void()> act) {
+    confirmation_ = {std::move(title), std::move(heading), std::move(body), std::move(button), std::move(act)};
+    navigate(Page::ConfirmAction);
 }
 void Application::replace_patch(Command command, Page origin) {
     if (pending()) { message("Wait for pending edits before replacing the patch."); return; }
@@ -446,16 +617,18 @@ void Application::rebuild() {
         lv_label_set_long_mode(title, LV_LABEL_LONG_DOT);
         lv_obj_set_height(title, 28);
         button(header, "Home", 244, 12, 64, Action::Home);
-        const std::string status = engine_.state() == EngineState::Ready ? (engine_.capabilities().simulation ? "SIMULATED" : "READY") :
-            engine_.state() == EngineState::Disconnected ? "DISCONNECTED" : engine_.state() == EngineState::Connecting ? "CONNECTING" : "ENGINE ERROR";
-        label(header, status, 318, 28, 0, engine_.state() == EngineState::Ready ? accent : 0xf0aa72, &lv_font_montserrat_14);
-        button(header, "+ Add", 448, 12, 96, Action::Navigate, 0, {}, static_cast<int>(Page::Browser));
+        label(header, status_text(), 318, 28, 0, engine_.state() == EngineState::Ready ? accent : 0xf0aa72, &lv_font_montserrat_14);
+        auto* add = button(header, "+ Add", 448, 12, 96, Action::Navigate, 0, {}, static_cast<int>(Page::Browser));
+        // Nothing can be added until the engine answers again.
+        if (engine_.state() != EngineState::Ready) lv_obj_add_state(add, LV_STATE_DISABLED);
         button(header, "Patches", 556, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Patches));
         button(header, "Settings", 672, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Settings));
     } else {
         button(header, "< Back", 16, 12, 104, Action::Navigate, 0, {}, static_cast<int>(page_ == Page::NamePatch ? Page::Patches : Page::Patch));
-        std::string title = page_ == Page::Browser ? "Add a module" : page_ == Page::Patches ? "Session patches" : page_ == Page::Settings ? "Simulator settings" : "Parameters";
-        if (page_ == Page::NamePatch) title = renaming_ ? "Rename patch" : "New patch";
+        std::string title = page_ == Page::Browser ? "Add a module" : page_ == Page::Patches ? (store_ ? "Patches" : "Session patches") :
+            page_ == Page::Settings ? (engine_.capabilities().simulation ? "Simulator settings" : "Engine settings") : "Parameters";
+        if (page_ == Page::NamePatch) title = saving_as_ ? "Save as a new patch" : renaming_ ? "Rename patch" : "New patch";
+        if (page_ == Page::ConfirmAction) title = confirmation_.title;
         if (page_ == Page::ConfirmReplace) title = "Replace current patch?";
         if (page_ == Page::CvConnect) title = "Control cable";
         if (page_ == Page::Parameters || page_ == Page::ModuleActions)
@@ -463,7 +636,7 @@ void Application::rebuild() {
         auto* heading = label(header, title, 144, 23, 480, text, &lv_font_montserrat_24);
         lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT);
         lv_obj_set_height(heading, 30);
-        if (page_ == Page::NamePatch) button(header, renaming_ ? "Rename" : "Create", 640, 12, 136, Action::CommitName);
+        if (page_ == Page::NamePatch) button(header, saving_as_ ? "Save" : renaming_ ? "Rename" : "Create", 640, 12, 136, Action::CommitName);
         else label(header, engine_.capabilities().simulation ? "SIMULATED" : "ENGINE", 660, 28, 0, accent, &lv_font_montserrat_14);
     }
     // The browser is a list to scroll; it has no use for the status bar.
@@ -480,6 +653,15 @@ void Application::rebuild() {
     case Page::NamePatch: name_patch(content); break;
     case Page::ConfirmReplace: confirm_replace(content); break;
     case Page::CvConnect: cv_connect(content); break;
+    case Page::ConfirmAction: confirm_action(content); break;
+    }
+    if (patch && engine_.state() != EngineState::Ready) {
+        // Over the canvas, but never in the way: touches pass through to the patch below.
+        auto* banner = panel(content, 24, 8, 752, 40, 0x2e241c);
+        lv_obj_set_style_border_color(banner, color(0xf0aa72), 0);
+        lv_obj_remove_flag(banner, LV_OBJ_FLAG_CLICKABLE);
+        auto* note = label(banner, engine_banner(), 14, 10, 724, 0xf0aa72, &lv_font_montserrat_14);
+        lv_label_set_long_mode(note, LV_LABEL_LONG_DOT); lv_obj_set_height(note, 18);
     }
     if (!status_bar) { lv_obj_update_layout(screen_); return; }
     auto* foot = panel(screen_, 0, 432, 800, 48, background); lv_obj_set_style_radius(foot, 0, 0);
@@ -867,7 +1049,57 @@ void Application::delay_parameters(lv_obj_t* parent, const Module& m) {
     parameter_tile(parent, m, parameter(m, "feedback"), 408, 176, 72, ink);
     parameter_tile(parent, m, parameter(m, "mix"), 408, 260, 72, ink);
 }
+void Application::confirm_action(lv_obj_t* parent) {
+    auto* heading = label(parent, confirmation_.heading, 24, 44, 752, accent, &lv_font_montserrat_24);
+    lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT); lv_obj_set_height(heading, 32);
+    label(parent, confirmation_.body, 24, 104, 752, muted);
+    button(parent, "Cancel", 24, 268, 200, Action::CancelAction);
+    button(parent, confirmation_.button, 552, 268, 224, Action::ConfirmAction);
+}
+void Application::stored_patches(lv_obj_t* parent) {
+    constexpr std::size_t rows = 3;
+    label(parent, "Saved patches", 24, 16, 0, text, &lv_font_montserrat_24);
+    const auto pages = std::max<std::size_t>(1, (stored_.size() + rows - 1) / rows);
+    patch_page_ = std::min(patch_page_, pages - 1);
+    if (pages > 1) {
+        auto* previous = button(parent, "<", 600, 4, 48, Action::PatchPage, 0, {}, static_cast<int>(patch_page_ ? patch_page_ - 1 : 0));
+        if (!patch_page_) lv_obj_add_state(previous, LV_STATE_DISABLED);
+        label(parent, std::to_string(patch_page_ + 1) + " / " + std::to_string(pages), 664, 18, 56, muted, &lv_font_montserrat_14);
+        auto* next = button(parent, ">", 728, 4, 48, Action::PatchPage, 0, {}, static_cast<int>(std::min(patch_page_ + 1, pages - 1)));
+        if (patch_page_ + 1 >= pages) lv_obj_add_state(next, LV_STATE_DISABLED);
+    }
+    if (stored_.empty()) label(parent, "Nothing saved yet. Save keeps this patch on disk, with its\nplugin state, and survives restarting the app and the engine.", 24, 72, 752, muted);
+    for (std::size_t i = patch_page_ * rows; i < std::min(stored_.size(), patch_page_ * rows + rows); ++i) {
+        const auto& patch = stored_[i];
+        auto* row = panel(parent, 24, 60 + static_cast<int>(i - patch_page_ * rows) * 64, 752, 56);
+        const bool playing = patch.id == graph_.patch_id;
+        if (playing) lv_obj_set_style_border_color(row, color(accent), 0);
+        auto* name = label(row, patch.name, 16, 6, 424, text);
+        lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, 22);
+        std::string detail = patch.revision ? "Revision " + std::to_string(patch.revision) + " / " + std::to_string(patch.bundle.blocks.size()) + " modules" : "Unreadable";
+        if (patch.startup) detail += " / loads at startup";
+        if (playing) detail += graph_.dirty ? " / playing, unsaved edits" : " / playing";
+        if (!patch.missing_files.empty()) detail += " / " + std::to_string(patch.missing_files.size()) + " missing files";
+        if (!patch.issue.empty()) detail += " / " + patch.issue;
+        auto* info = label(row, detail, 16, 30, 424, patch.issue.empty() && patch.missing_files.empty() ? muted : 0xf0aa72, &lv_font_montserrat_14);
+        lv_label_set_long_mode(info, LV_LABEL_LONG_DOT); lv_obj_set_height(info, 18);
+        auto* load = button(row, "Load", 448, 3, 96, Action::LoadStored, 0, patch.id);
+        if (!patch.revision) lv_obj_add_state(load, LV_STATE_DISABLED);
+        auto* startup = button(row, "Startup", 552, 3, 104, Action::StartupStored, 0, patch.id);
+        if (patch.startup) { lv_obj_set_style_border_color(startup, color(accent), 0); lv_obj_set_style_text_color(lv_obj_get_child(startup, 0), color(accent), 0); }
+        button(row, "Delete", 664, 3, 80, Action::DeleteStored, 0, patch.id);
+    }
+    const std::string playing = graph_.patch_id.empty() ? "never saved" : graph_.dirty ? "unsaved edits since its last save" : "saved";
+    auto* now = label(parent, "Playing: " + graph_.name + " / " + playing, 24, 252, 752, muted, &lv_font_montserrat_14);
+    lv_label_set_long_mode(now, LV_LABEL_LONG_DOT); lv_obj_set_height(now, 18);
+    button(parent, "Save", 24, 280, 140, Action::SavePatch, 0, {}, 0);
+    button(parent, "Save as", 176, 280, 140, Action::SavePatch, 0, {}, 1);
+    button(parent, "New patch", 328, 280, 140, Action::NameEntry, 0, {}, 0);
+    button(parent, "Rename", 480, 280, 140, Action::NameEntry, 0, {}, 1);
+    if (engine_.capabilities().simulation) button(parent, "Parallel demo", 632, 280, 144, Action::ParallelDemo);
+}
 void Application::patches(lv_obj_t* parent) {
+    if (store_) { stored_patches(parent); return; }
     label(parent, "Keep a snapshot while exploring", 24, 24, 0, text, &lv_font_montserrat_24);
     label(parent, "Session storage is in memory. Closing the app clears it.\nDisk persistence and plugin state arrive in Phase 5.", 24, 68, 710, muted);
     auto* row = panel(parent, 24, 140, 752, 100);
@@ -937,7 +1169,7 @@ void Application::confirm_replace(lv_obj_t* parent) {
     label(parent, "Current edits have not been saved", 24, 44, 752, text, &lv_font_montserrat_24);
     auto* name = label(parent, graph_.name, 24, 104, 752, accent, &lv_font_montserrat_24); lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
     lv_obj_set_height(name, 32);
-    label(parent, "Replace this patch and discard its current unsaved edits?\nCancel to return and save a session snapshot first.", 24, 168, 752, muted);
+    label(parent, std::string("Replace this patch and discard its current unsaved edits?\nCancel to return and save ") + (store_ ? "it first." : "a session snapshot first."), 24, 168, 752, muted);
     button(parent, "Cancel", 24, 268, 200, Action::CancelReplace);
     button(parent, "Replace patch", 552, 268, 224, Action::Confirm);
 }
@@ -953,6 +1185,17 @@ void Application::module_actions(lv_obj_t* parent) {
     label(parent, "Duplicate keeps parameter values and software bypass.\nCables and control assignments stay with the original.\nPhysical switch assignment will arrive with control mapping.", 24, 240, 752, muted);
 }
 void Application::settings(lv_obj_t* parent) {
+    if (!engine_.capabilities().simulation) {
+        label(parent, "Engine connection", 24, 20, 0, text, &lv_font_montserrat_24);
+        auto* state = label(parent, status_text() + (engine_note_.empty() ? std::string() : ": " + engine_note_), 24, 65, 752, engine_.state() == EngineState::Ready ? accent : 0xf0aa72);
+        lv_label_set_long_mode(state, LV_LABEL_LONG_DOT); lv_obj_set_height(state, 24);
+        label(parent, "Disconnecting stops only this interface; the engine keeps playing.\nA lost engine is retried every second.", 24, 96, 752, muted, &lv_font_montserrat_14);
+        button(parent, "Connect", 24, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Ready));
+        button(parent, "Disconnect", 200, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Disconnected));
+        label(parent, store_ ? "Patches are stored in " + store_->root().generic_string() : "Patch storage is not available: session snapshots only.", 24, 216, 752, muted, &lv_font_montserrat_14);
+        label(parent, "CPU is the engine's mean run load. Xruns, memory and temperature: not measured", 24, 300, 752, muted, &lv_font_montserrat_14);
+        return;
+    }
     label(parent, "Windows simulator / 800 x 480", 24, 20, 0, text, &lv_font_montserrat_24);
     label(parent, "No audio processing. No hardware connection required.\nUse these states to exercise the interface.", 24, 65, 710, muted);
     button(parent, "Ready", 24, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Ready));

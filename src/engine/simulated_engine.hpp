@@ -13,7 +13,8 @@ public:
     std::vector<EngineEvent> advance(unsigned milliseconds) override;
     EngineState state() const override { return state_; }
     const Graph& snapshot() const override { return graph_; }
-    EngineCapabilities capabilities() const override { return {true, true, false, false, false}; }
+    // Persistent saves write main.ttl only: simulated modules have no plugin state.
+    EngineCapabilities capabilities() const override { return {true, true, true, false, false}; }
     EngineTelemetry telemetry() const override {
         // Fixed display fixtures, not a clock or measured processor utilization.
         return {120.0, state_ == EngineState::Ready ? std::optional<double>{12.0} : std::nullopt};
@@ -31,6 +32,7 @@ private:
     std::uint64_t clock_ = 0;
     std::optional<std::uint64_t> connect_due_;
     std::optional<Graph> saved_session_;
+    std::string note_;
     RequestId next_request_ = 1;
     InstanceId next_instance_ = 6;
     bool reject_next_ = false;

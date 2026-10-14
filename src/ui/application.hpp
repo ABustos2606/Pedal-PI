@@ -2,15 +2,18 @@
 // Copyright (C) 2026 Pedal PI contributors
 #pragma once
 #include "engine/engine.hpp"
+#include "storage/patch_store.hpp"
 #include "lvgl.h"
 #include <deque>
+#include <functional>
 #include <map>
 
 namespace pedal {
-enum class Page { Patch, Browser, Parameters, Patches, Settings, ModuleActions, NamePatch, ConfirmReplace, CvConnect };
+enum class Page { Patch, Browser, Parameters, Patches, Settings, ModuleActions, NamePatch, ConfirmReplace, CvConnect, ConfirmAction };
 class Application {
 public:
-    explicit Application(Engine&);
+    // Without a store the Patches page offers the in-memory session snapshot.
+    explicit Application(Engine&, PatchStore* = nullptr);
     ~Application();
     void tick(unsigned milliseconds);
     const Graph& graph() const { return graph_; }
@@ -22,7 +25,8 @@ private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
                         NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserGroup, MissingFixture,
-                        ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage };
+                        ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage,
+                        SavePatch, LoadStored, DeleteStored, StartupStored, PatchPage, ConfirmAction, CancelAction };
     struct Binding {
         Application* app;
         Action action;
@@ -52,6 +56,15 @@ private:
     void cv_connect(lv_obj_t*);
     void commit_name();
     void replace_patch(Command, Page origin);
+    void confirm_action(lv_obj_t*);
+    void stored_patches(lv_obj_t*);
+    void refresh_stored();
+    void save_patch(bool as_new);
+    void start_save(const std::string& id);
+    void load_stored(const std::string& id, bool allow_missing, bool guarded);
+    void ask(std::string title, std::string heading, std::string body, std::string button, std::function<void()> act);
+    std::string status_text() const;
+    std::string engine_banner() const;
     void update_viewport();
     void update_cables();
     void update_metrics();
@@ -69,8 +82,26 @@ private:
     InstanceId selected_ = 0;
     bool rebuild_ = true;
     std::string message_ = "Drag space to pan. Hold a module for actions. Drag output to input.";
-    enum class PendingKind { Edit, Rename, Replace };
+    enum class PendingKind { Edit, Rename, Replace, Add, Save, SaveAs };
     std::map<RequestId, PendingKind> pending_;
+    // Module names of adds in flight, to say which plugin failed.
+    std::map<RequestId, std::string> adding_;
+    // Saved patches on disk; null when the application has no store.
+    PatchStore* store_ = nullptr;
+    std::vector<StoredPatch> stored_;
+    std::size_t patch_page_ = 0;
+    // A save the engine is writing, published once it answers.
+    std::optional<PatchStore::Staging> staging_;
+    std::string save_as_id_, load_note_;
+    bool saving_as_ = false;
+    // Load the startup patch once the engine is ready, if it plays no stored patch.
+    bool startup_pending_ = false;
+    // The connection: whether it was ever ready, and the last reason given for its state.
+    bool ever_ready_ = false;
+    EngineState last_state_ = EngineState::Ready;
+    std::string engine_note_;
+    struct Confirmation { std::string title, heading, body, button; std::function<void()> act; };
+    Confirmation confirmation_;
     std::size_t parameter_page_ = 0;
     // The module browser: the one open category, and where the list was scrolled.
     std::string browser_group_;

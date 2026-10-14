@@ -1,7 +1,7 @@
 # Implementation roadmap
 
-**Updated:** 13 October 2026.  
-**Current state:** Windows LVGL desktop editor accepted with a simulated engine; Phase 2 is complete on the PC. The engine adapter and catalogue export of Phase 4 (P4.1–P4.4) are implemented and verified against a real Ingen under WSL2. Phase 1 retains Linux platform and debugger setup work. Phase 0 hardware work is deferred while the Pi is packed.
+**Updated:** 14 October 2026.  
+**Current state:** Windows LVGL desktop editor accepted with a simulated engine; Phase 2 is complete on the PC. The engine adapter, catalogue export and connection states of Phase 4 (P4.1–P4.4, P4.6) are implemented and verified against a real Ingen under WSL2, as are patches on disk with plugin state and revisions (Phase 5, apart from power-loss tests); see [patch storage](17-patch-storage.md). Phase 1 retains Linux platform and debugger setup work. Phase 0 hardware work is deferred while the Pi is packed.
 
 The detailed task list, component boundaries, dependencies, deliverables and exit checks are in the [technical implementation plan](10-technical-implementation-plan.md). That plan is the authoritative phase sequence and supersedes this document's earlier Stage 0–9 outline.
 

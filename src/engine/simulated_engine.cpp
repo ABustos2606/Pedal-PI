@@ -1,13 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pedal PI contributors
 #include "engine/simulated_engine.hpp"
+#include "storage/bundle.hpp"
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <type_traits>
 #include <unordered_set>
 #include <limits>
 
 namespace pedal {
+namespace {
+// file:///C:/x or file:///home/x as a local path; empty for anything else.
+std::filesystem::path local_path(const std::string& location) {
+    if (!location.starts_with("file:///") || !location.ends_with(".ingen") || location.find('%') != std::string::npos) return {};
+    auto path = location.substr(7);
+    if (path.size() > 3 && path[2] == ':') path.erase(0, 1);
+    return std::filesystem::path(std::u8string(path.begin(), path.end()));
+}
+}
 RequestId SimulatedEngine::submit(Command c) {
     const auto id = next_request_++;
     if (state_ != EngineState::Ready) {
@@ -45,10 +58,11 @@ std::vector<EngineEvent> SimulatedEngine::advance(unsigned milliseconds) {
         else if (reject_next_) { error = "Simulated command rejection"; reject_next_ = false; }
         else error = apply(p.command);
         EngineEvent event{p.id, error.empty(), error, state_, graph_};
-        if (error.empty() && std::holds_alternative<SaveGraph>(p.command)) {
+        if (error.empty() && std::holds_alternative<SaveGraph>(p.command) && std::get<SaveGraph>(p.command).scope == SaveScope::Session) {
             event.saved_session = saved_session_;
             event.message = "Session snapshot saved in memory. Closing the app clears it.";
-        }
+        } else if (error.empty()) event.message = std::move(note_);
+        note_.clear();
         events_.push_back(std::move(event));
     }
     auto result = std::move(events_); events_.clear(); return result;
@@ -80,12 +94,52 @@ std::string SimulatedEngine::apply(const Command& command) {
             if (auto issue = validate_patch_name(c.name); !issue.empty()) return issue;
             graph_.name = c.name;
         } else if constexpr (std::is_same_v<T, SaveGraph>) {
-            if (c.scope != SaveScope::Session) return "Unsupported capability: persistent patch storage";
             if (c.include_plugin_state) return "Unsupported capability: plugin state capture";
+            if (c.scope == SaveScope::Persistent) {
+                // Written in the engine's bundle layout, so the patch store
+                // treats both alike. Simulated modules have no plugin state.
+                const auto path = local_path(c.location);
+                if (path.empty() || !valid_patch_id(c.patch_id)) return "Invalid save location";
+                auto saved = graph_;
+                saved.patch_id = c.patch_id; saved.dirty = false;
+                std::error_code failure;
+                std::filesystem::create_directories(path, failure);
+                std::ofstream main(path / "main.ttl", std::ios::binary), manifest(path / "manifest.ttl", std::ios::binary);
+                main << write_main_ttl(saved); manifest << write_manifest_ttl();
+                if (failure || !main || !manifest) return "Could not write the patch";
+                graph_ = std::move(saved);
+                note_ = "Saved " + graph_.name + ".";
+                return {};
+            }
             saved_session_ = graph_; saved_session_->dirty = false; graph_.dirty = false;
         } else if constexpr (std::is_same_v<T, LoadSession>) {
             if (!saved_session_) return "No session snapshot saved";
             graph_ = *saved_session_;
+        } else if constexpr (std::is_same_v<T, LoadPatch>) {
+            const auto path = local_path(c.location);
+            std::ifstream in(path / "main.ttl", std::ios::binary);
+            if (path.empty() || !in) return "Saved patch is not readable";
+            std::ostringstream text; text << in.rdbuf();
+            Bundle bundle;
+            if (auto issue = read_bundle(text.str(), bundle); !issue.empty()) return issue;
+            std::vector<std::string> absent;
+            for (const auto& block : saved_blocks(bundle)) {
+                const auto* known = definition(block.plugin);
+                if (!known || known->availability != Availability::Available) absent.push_back(block.name);
+            }
+            // As Ingen does: one missing plugin and none of the bundle loads.
+            if (!absent.empty()) {
+                std::string names;
+                for (const auto& name : absent) names += (names.empty() ? "" : ", ") + name;
+                return "Not installed in the engine: " + names;
+            }
+            auto loaded = bundle_graph(bundle);
+            loaded.dirty = false;
+            if (!c.patch_id.empty()) loaded.patch_id = c.patch_id;
+            if (auto issue = validate_graph(loaded); !issue.empty()) return issue;
+            graph_ = std::move(loaded);
+            for (const auto& m : graph_.modules) next_instance_ = std::max(next_instance_, m.id + 1);
+            note_ = "Loaded " + graph_.name + ".";
         } else {
             auto* m = find_module(graph_, c.id);
             if (!m) return "Module is missing";
@@ -123,7 +177,7 @@ std::string SimulatedEngine::apply(const Command& command) {
         return {};
     }, command);
     if (error.empty() && !std::holds_alternative<LoadGraph>(command) && !std::holds_alternative<SaveGraph>(command) &&
-        !std::holds_alternative<LoadSession>(command)) graph_.dirty = true;
+        !std::holds_alternative<LoadSession>(command) && !std::holds_alternative<LoadPatch>(command)) graph_.dirty = true;
     return error;
 }
 }

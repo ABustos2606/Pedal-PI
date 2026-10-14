@@ -66,6 +66,9 @@ struct Assignment {
 };
 struct Graph {
     std::string name = "First light";
+    // The stored patch this graph was loaded from or last saved as; empty
+    // when it has never been saved. Independent of the editable name.
+    std::string patch_id;
     std::vector<Module> modules;
     std::vector<Connection> connections;
     std::vector<Assignment> assignments;
@@ -98,6 +101,8 @@ Graph missing_module_graph();
 const std::vector<Port>& module_ports(const Module&);
 bool module_available(const Module&);
 std::string validate_patch_name(const std::string&);
+// Stored patch identities: 1-64 lowercase letters, digits and hyphens.
+bool valid_patch_id(const std::string&);
 std::string validate_parameter(const Parameter&);
 std::string validate_graph(const Graph&);
 std::string validate_connection(const Graph&, const Connection&, bool retain_unavailable = false);

@@ -1,6 +1,6 @@
 # Ingen engine adapter
 
-**Implemented:** 13 October 2026, on the Windows PC. **Scope:** P4.1 (protocol adapter), P4.2 (communication threading) and P4.3 (state synchronization), plus the reconnecting half of P4.6. **Verified against:** the patched Ingen of [the engine evidence](14-ingen-engine-evidence.md), running under WSL2 on JACK's dummy backend, with the LV2 example amplifier. **Not covered:** the Pi, an ARM build, a real audio interface, the Mutable-derived plugins, plugin state, patches on disk and physical controls.
+**Implemented:** 13 October 2026, on the Windows PC. **Scope:** P4.1 (protocol adapter), P4.2 (communication threading) and P4.3 (state synchronization), and, since 14 October 2026, the rest of P4.6 and patches on disk ([patch storage](17-patch-storage.md)). **Verified against:** the patched Ingen of [the engine evidence](14-ingen-engine-evidence.md), running under WSL2 on JACK's dummy backend, with the LV2 example amplifier. **Not covered:** the Pi, an ARM build, a real audio interface and physical controls.
 
 `IngenEngine` implements the same `Engine` contract as the simulated engine, so the interface code is unchanged. The interface now runs against a real engine: `pedal_pi.exe --engine tcp://127.0.0.1:16180` shows and edits the graph of an Ingen started under WSL.
 
@@ -8,7 +8,7 @@
 
 ## What was verified
 
-`bash tools/ingen-spike/07-adapter.sh`, as root inside the Debian of the engine evidence, builds the adapter, runs its tests and then runs it against a live engine. The recorded output is in [evidence/ingen-adapter-results.txt](evidence/ingen-adapter-results.txt): 39 checks passed, none failed.
+`bash tools/ingen-spike/07-adapter.sh`, as root inside the Debian of the engine evidence, builds the adapter, runs its tests and then runs it against a live engine. The recorded output is in [evidence/ingen-adapter-results.txt](evidence/ingen-adapter-results.txt): 60 checks passed, none failed (39 on 13 October; the other 21 are the storage checks of [patch storage](17-patch-storage.md)).
 
 | Check | Result |
 | --- | --- |
@@ -51,7 +51,7 @@ Ports are taken from the engine, not from the catalogue. A block whose plugin ha
 
 ## Session snapshot
 
-**Save snapshot / Load** works as in the simulator, but the snapshot is held by the interface: routing, values, bypass, names and layout. Restoring it deletes the engine's blocks and builds the saved ones again. It does not capture plugin state and is lost when the interface closes. Saving patches to disk through the engine's bundle format is Phase 5 and is reported as unsupported.
+**Save snapshot / Load** works as in the simulator, but the snapshot is held by the interface: routing, values, bypass, names and layout. Restoring it deletes the engine's blocks and builds the saved ones again. It does not capture plugin state and is lost when the interface closes. Patches saved to disk, with plugin state, go through the engine's own bundle format; see [patch storage](17-patch-storage.md).
 
 ## Run it
 
@@ -75,7 +75,7 @@ A Unix socket address (`unix:///tmp/pedalpi-ingen.sock`) is the route on Linux a
 
 - **The engine's TCP port is open to the network.** Ingen listens on every interface at port 16180 with no authentication. On the Pi it must be closed or firewalled before the instrument is used on a shared network; the adapter itself needs only the Unix socket.
 - **Catalogue.** Exported from the installed plugins since 13 October 2026 ([record](16-catalogue-export.md)); 58 modules are offered on the WSL engine. A control the catalogue leaves out is not shown.
-- **Unsaved-changes marker.** It is kept by the adapter. A restarted interface starts with it clear, and another client's edits do not set it.
+- **Unsaved-changes marker.** Since 14 October 2026 it is a property of the engine's graph (`pedalpi:modified`), so a restarted interface and a second client see it. Another client's edits set it only if that client sets it too.
 - **Control assignments** stored on ports are not read yet; that belongs with Phase 7.
 - **Merge level.** The engine still sums several cables into one input at unity. The adapter passes them through; the merge rule of P3.7 is undecided.
 - **Windows timing.** Round trips measured from Windows (16 ms to the WSL address, 56 ms through `127.0.0.1`) are dominated by the Windows timer and the WSL relay, not by the adapter; the same code measures 5.9 ms over TCP inside Linux.

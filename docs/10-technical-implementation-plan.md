@@ -2,7 +2,7 @@
 
 **Project:** Pedal PI  
 **Prepared:** 13 October 2026 (America/Buenos_Aires)  
-**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter and catalogue export (P4.1–P4.4) are implemented and verified on the PC against Ingen under WSL2. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
+**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter and catalogue export (P4.1–P4.4) and its error and reconnect states (P4.6) are implemented and verified on the PC against Ingen under WSL2, as is Phase 5's patch storage (P5.1–P5.8) apart from power-loss tests. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
@@ -170,7 +170,9 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 - [x] **P4.4 — Metadata discovery:** export installed LV2 metadata on Linux using the selected host/Lilv facilities. Generate a versioned catalogue consumed by the UI; use an exported fixture on Windows so PC work does not need native LV2 binaries.
 - [ ] **P4.5 — Pi platform backend:** build the same views/domain code for Linux with a validated DRM/KMS or framebuffer driver and evdev/libinput touch. Configure stable device selection, 800 × 480 output and rotation/calibration where needed.
-- [ ] **P4.6 — Error and reconnect states:** show starting/disconnected/reconnecting/plugin-failed status, reject unavailable operations, and recover the current graph after UI-only restart. A transient communication error must not launch a competing audio engine.
+**Execution record - 14 October 2026 (PC only):** P4.6 is complete. The interface shows starting, ready, reconnecting, offline and engine-error states with the reason, keeps the last graph while edits are paused, disables adding, and names the module when a plugin fails to load. A restarted interface recovers the graph, the stored identity and the unsaved-changes marker, which now live in the engine. Nothing in the interface starts or stops an engine. Verified with LVGL pointer checks and against the WSL engine stopped and restarted under a running interface; see [patch storage](17-patch-storage.md).
+
+- [x] **P4.6 — Error and reconnect states:** show starting/disconnected/reconnecting/plugin-failed status, reject unavailable operations, and recover the current graph after UI-only restart. A transient communication error must not launch a competing audio engine.
 - [ ] **P4.7 — Initial live workflows:** add/connect/edit/remove the simple effect on the physical screen; verify actual audio against the displayed graph. Test source/output endpoints, invalid cables and merge policy from Phase 3.
 - [ ] **P4.8 — Deployment loop:** document copying/installing the UI to an isolated Pi prefix and starting/restarting only the UI over configured remote access. Keep Windows simulation independent; direct Windows-to-Pi Ingen control is optional and requires an explicitly verified transport.
 
@@ -182,14 +184,16 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** preserve the entire musical patch, not merely its screen positions and numeric values.
 
-- [ ] **P5.1 — Storage contract:** assign stable patch identities, schema versions and display names. Use one Ingen graph/state bundle per patch, with positions, view state and control assignments stored as `urn:pedalpi:ns#` properties on blocks, ports and the graph.
-- [ ] **P5.2 — Confirm bundle format:** verify actual host output and load behaviour. The inspected Ingen serializer supports `.ingen` directory bundles containing `main.ttl`, `manifest.ttl` and related state; do not assume the `.ingen` path always names one flat file.
-- [ ] **P5.3 — Property schema:** define the project properties for positions, colours/names, assignments and view settings, with a schema version on the graph. Missing or unreadable properties should permit usable audio graph loading and default layout recovery.
-- [ ] **P5.4 — Asset policy:** define model/IR/sample locations, referenced versus imported assets, portable state/path mapping and missing-file detection. Store plugin assets/state through host-supported mechanisms and verify relocation rather than rewriting paths blindly.
-- [ ] **P5.5 — Complete saves:** save the bundle into staging, wait for the engine's reply, then publish it with an atomic rename where the platform supports it. Preserve the previous complete revision until the new one is in place.
-- [ ] **P5.6 — Patch manager:** load, save, save as, rename, delete and select startup patch, with touch keyboard and explicit handling of unsaved changes. Renaming a display label must not invalidate instance/control identities.
-- [ ] **P5.7 — Restore/error handling:** recover routing, values, plugin state/assets and UI metadata; report absent plugins, wrong versions and invalid mappings without silent substitution. Distinguish the selected startup patch from the currently edited patch.
-- [ ] **P5.8 — Persistence evidence:** test stateful/file-based plugins, save/reload, a bundle with its project properties removed, missing assets and interrupted staging. Validate schema migration and revision selection with meaningful tests; defer abrupt power-loss tests until recovery storage is ready.
+**Execution record - 14 October 2026 (PC only):** P5.1–P5.8 are implemented in `src/storage/`, the adapter and the interface, and verified against the patched Ingen under WSL2 and from the Windows build through `/mnt/c`. The engine writes each revision with plugin state into staging; the interface publishes it with an atomic rename and keeps two revisions. The live checks reload a patch with a Mutable-derived module and measure the reloaded patch's level; the probe saves and reloads a stateful plugin's state, also after moving the bundle. They also load a bundle stripped of every project property, and refuse missing plugins and unreadable bundles. See [patch storage](17-patch-storage.md) and [the results](evidence/patch-storage-results.txt). Not done: power-loss tests and `fsync` (deferred to P10.5, as P5.8 allows), real model, impulse-response and sample assets (Phase 8), and control-assignment mappings (Phase 7).
+
+- [x] **P5.1 — Storage contract:** assign stable patch identities, schema versions and display names. Use one Ingen graph/state bundle per patch, with positions, view state and control assignments stored as `urn:pedalpi:ns#` properties on blocks, ports and the graph.
+- [x] **P5.2 — Confirm bundle format:** verify actual host output and load behaviour. The inspected Ingen serializer supports `.ingen` directory bundles containing `main.ttl`, `manifest.ttl` and related state; do not assume the `.ingen` path always names one flat file.
+- [x] **P5.3 — Property schema:** define the project properties for positions, colours/names, assignments and view settings, with a schema version on the graph. Missing or unreadable properties should permit usable audio graph loading and default layout recovery.
+- [x] **P5.4 — Asset policy:** define model/IR/sample locations, referenced versus imported assets, portable state/path mapping and missing-file detection. Store plugin assets/state through host-supported mechanisms and verify relocation rather than rewriting paths blindly.
+- [x] **P5.5 — Complete saves:** save the bundle into staging, wait for the engine's reply, then publish it with an atomic rename where the platform supports it. Preserve the previous complete revision until the new one is in place.
+- [x] **P5.6 — Patch manager:** load, save, save as, rename, delete and select startup patch, with touch keyboard and explicit handling of unsaved changes. Renaming a display label must not invalidate instance/control identities.
+- [x] **P5.7 — Restore/error handling:** recover routing, values, plugin state/assets and UI metadata; report absent plugins, wrong versions and invalid mappings without silent substitution. Distinguish the selected startup patch from the currently edited patch.
+- [x] **P5.8 — Persistence evidence:** test stateful/file-based plugins, save/reload, a bundle with its project properties removed, missing assets and interrupted staging. Validate schema migration and revision selection with meaningful tests; defer abrupt power-loss tests until recovery storage is ready.
 
 **Deliverable:** patch manager, documented/versioned storage format, saved examples and recovery results.
 

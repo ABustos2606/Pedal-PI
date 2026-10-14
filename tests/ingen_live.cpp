@@ -8,9 +8,12 @@
 // started again, and reports whether the adapter found its way back.
 #include "catalogue/catalogue.hpp"
 #include "engine/ingen/ingen_engine.hpp"
+#include "storage/patch_store.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <thread>
 
@@ -146,6 +149,92 @@ int main(int argc, char** argv) {
     check(b.graph().modules.size() == 3 && std::abs(gain_of(b.graph(), first.id) - 6.0206) < 1e-4 && b.graph().connections.size() == saved.connections.size(),
           "the second client followed the rebuild, including values it was never sent directly");
 
+    // Patches on disk: the engine writes the bundle, the store publishes it, and
+    // a load rebuilds the graph from it. From Windows the engine is in WSL and
+    // sees the same folder under /mnt/<drive>.
+    {
+        const char* folder = std::getenv("PEDALPI_PATCHES");
+        const std::filesystem::path root = folder ? std::filesystem::path(folder) : std::filesystem::temp_directory_path() / "pedalpi-live-patches";
+        std::filesystem::remove_all(root);
+#ifdef _WIN32
+        PatchStore store(root, wsl_path(root));
+#else
+        PatchStore store(root);
+#endif
+        check(store.open().empty(), "patch store opens", root.string());
+        const std::string granular = "http://polyeffects.com/lv2/polyclouds#granular";
+        event = a->result(AddModule{granular, 456, 264});
+        const auto mist = a->graph().modules.back();
+        check(event.accepted && mist.uri == granular && !mist.parameters.empty(), "add a Mutable-derived module to the patch", event.message);
+        const auto& knob = mist.parameters.front();
+        const double turned = knob.minimum + (knob.maximum - knob.minimum) * 0.75;
+        a->ok(SetParameter{mist.id, knob.symbol, turned}, "turn one of its controls");
+        b.pump(150);
+        check(a->graph().dirty && b.graph().dirty, "the unsaved-changes marker is in the engine: both clients see it");
+        const auto id = store.new_id();
+        std::string issue;
+        auto staging = store.stage(id, issue);
+        double took = 0;
+        event = a->result(SaveGraph{SaveScope::Persistent, true, staging->location, id}, &took);
+        check(event.accepted && !a->graph().dirty && a->graph().patch_id == id, "the engine saves the patch to disk", std::to_string(took) + " ms; " + event.message);
+        check(store.publish(*staging).empty(), "what it wrote reads back with the right identity and is published");
+        const auto stored = store.find(id);
+        check(stored && stored->revision == 1 && stored->name == awkward && stored->bundle.blocks.size() == 2, "the stored patch lists its name and modules",
+              stored ? std::to_string(stored->bundle.blocks.size()) + " blocks" : "missing");
+        const auto before_load = a->graph();
+        a->ok(NewPatch{"Scratch 2"}, "replace it with an empty patch");
+        event = a->result(LoadPatch{stored->location, saved_blocks(stored->bundle)}, &took);
+        check(event.accepted && event.message.find("did not restore") == std::string::npos, "load the stored patch", std::to_string(took) + " ms; " + event.message);
+        const auto* back = find_module(a->graph(), mist.id);
+        const auto* turned_back = back ? &*std::find_if(back->parameters.begin(), back->parameters.end(), [&](const Parameter& p) { return p.symbol == knob.symbol; }) : nullptr;
+        check(a->graph().patch_id == id && !a->graph().dirty && a->graph().name == awkward && a->graph().modules.size() == before_load.modules.size() &&
+              a->graph().connections.size() == before_load.connections.size() && std::abs(gain_of(a->graph(), first.id) - 6.0206) < 1e-4 &&
+              back && back->x == 456 && back->y == 264 && turned_back && std::abs(turned_back->value - turned) < 1e-3,
+              "identity, name, modules, cables, values and positions came back from disk");
+        b.pump(200);
+        check(b.graph().patch_id == id && b.graph().modules.size() == before_load.modules.size() && !b.graph().dirty, "the second client followed the load");
+        a->ok(MoveModule{mist.id, 600, 264}, "edit after loading");
+        staging = store.stage(id, issue);
+        check(a->result(SaveGraph{SaveScope::Persistent, true, staging->location, id}).accepted && store.publish(*staging).empty() && store.find(id)->revision == 2,
+              "a second save becomes revision 2");
+        auto stranger = saved_blocks(stored->bundle);
+        stranger.push_back({"m90", "urn:pedalpi:not-installed", "Stranger"});
+        check(!a->result(LoadPatch{stored->location, stranger}).accepted && a->graph().patch_id == id, "a patch needing a missing plugin is refused before anything changes");
+        event = a->result(LoadPatch{"file:///tmp/pedalpi-live-nowhere/r000001.ingen", saved_blocks(stored->bundle)});
+        check(!event.accepted && event.message.find("restored nothing") != std::string::npos && a->graph().patch_id.empty(), "a bundle the engine cannot read is a failure, not a silent empty patch", event.message);
+        event = a->result(LoadPatch{store.find(id)->location, saved_blocks(store.find(id)->bundle)});
+        check(event.accepted && find_module(a->graph(), mist.id) && find_module(a->graph(), mist.id)->x == 600, "the newest revision loads", event.message);
+        // The same bundle with every project property and position removed:
+        // still a usable graph, laid out by default, under its folder's identity.
+        {
+            const auto source = store.find(id)->path;
+            const auto stripped = root / "p-stripped" / "r000001.ingen";
+            std::filesystem::create_directories(stripped.parent_path());
+            std::filesystem::copy(source, stripped, std::filesystem::copy_options::recursive);
+            std::ifstream in(source / "main.ttl");
+            std::vector<std::string> kept;
+            for (std::string line; std::getline(in, line);) {
+                const bool ours = line.find("pedalpi:") != std::string::npos || line.find("ingen:canvas") != std::string::npos;
+                if (!ours) { kept.push_back(line); continue; }
+                // Dropping a statement's last property moves its full stop up a line.
+                if (line.ends_with(" .") && !kept.empty() && kept.back().ends_with(" ;")) kept.back().replace(kept.back().size() - 2, 2, " .");
+            }
+            std::ofstream out(stripped / "main.ttl", std::ios::trunc);
+            for (const auto& line : kept) out << line << "\n";
+        }
+        const auto bare = store.find("p-stripped");
+        check(bare && bare->revision == 1 && bare->issue.empty() && bare->name == "p-stripped" && bare->bundle.id.empty(), "a bundle without project properties is offered", bare ? bare->issue : "missing");
+        event = a->result(LoadPatch{bare->location, saved_blocks(bare->bundle), bare->id});
+        const auto* plain = find_module(a->graph(), first.id);
+        check(event.accepted && a->graph().patch_id == "p-stripped" && a->graph().name == "Untitled" && a->graph().modules.size() == before_load.modules.size() &&
+              plain && plain->name == "Simple Amplifier" && plain->y == 276 && std::abs(gain_of(a->graph(), first.id) - 6.0206) < 1e-4,
+              "it loads with default names and layout, its values, and the folder's identity", event.message);
+        event = a->result(LoadPatch{store.find(id)->location, saved_blocks(store.find(id)->bundle), id});
+        check(event.accepted && a->graph().patch_id == id, "back to the stored patch", event.message);
+        a->ok(RemoveModule{mist.id}, "remove the granular module again");
+        b.pump(150);
+    }
+
     std::vector<double> times;
     for (int i = 0; i < 200; ++i) { double took = 0; a->result(SetParameter{first.id, "gain", 6.0206 - 0.001 * (i % 2)}, &took); times.push_back(took); }
     a->ok(SetParameter{first.id, "gain", 6.0206}, "restore the value");
@@ -160,6 +249,8 @@ int main(int argc, char** argv) {
     check(restarted.ready() && restarted.graph().modules.size() == running.modules.size() && restarted.graph().name == running.name &&
           restarted.graph().connections.size() == running.connections.size() && find_module(restarted.graph(), first.id) &&
           std::abs(gain_of(restarted.graph(), first.id) - 6.0206) < 1e-4, "a restarted interface recovers the graph under the same identities");
+    check(restarted.graph().patch_id == running.patch_id && restarted.graph().dirty == running.dirty,
+          "it also knows which stored patch is playing, and whether it has unsaved edits", running.patch_id + (running.dirty ? ", unsaved edits" : ", saved"));
     const auto load = restarted.engine.telemetry().cpu_percent;
     restarted.pump(300);
     std::cout << "INFO  engine load reading -- " << (restarted.engine.telemetry().cpu_percent ? std::to_string(*restarted.engine.telemetry().cpu_percent) + " %" : std::string("none yet"))

@@ -20,7 +20,8 @@ public:
     EngineState state() const override { return session_.state(); }
     const Graph& snapshot() const override { return session_.snapshot(); }
     // The session snapshot is held by the interface: routing, values and layout.
-    EngineCapabilities capabilities() const override { return {false, true, false, false, true}; }
+    // A persistent save is the engine's own bundle, plugin state included.
+    EngineCapabilities capabilities() const override { return {false, true, true, true, true}; }
     // No tempo yet. CPU is Ingen's mean run load: the share of the audio
     // period spent processing, averaged since the engine started.
     EngineTelemetry telemetry() const override { return session_.telemetry(); }

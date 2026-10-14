@@ -33,10 +33,31 @@ struct LoadGraph { Graph graph; };
 struct NewPatch { std::string name; };
 struct RenamePatch { std::string name; };
 enum class SaveScope { Session, Persistent };
-struct SaveGraph { SaveScope scope = SaveScope::Session; bool include_plugin_state = false; };
+// Persistent: write the whole graph, plugin state included, as a bundle at
+// `location` (a file:// URI as the engine sees it, ending in .ingen) and give
+// the graph the stored identity `patch_id`. The bundle is complete when the
+// command is accepted; publishing it is the patch store's business.
+struct SaveGraph {
+    SaveScope scope = SaveScope::Session;
+    bool include_plugin_state = false;
+    std::string location, patch_id;
+};
 struct LoadSession {};
+// One block of a saved bundle, as the patch store read it.
+struct SavedBlock { std::string symbol, plugin, name; };
+// Replace the graph with a saved bundle, plugin state included. A bundle that
+// needs a plugin the engine lacks is refused before anything changes: Ingen
+// would load none of it. (The interface can still offer the rest, rebuilt from
+// the bundle's description with LoadGraph, without plugin state.)
+struct LoadPatch {
+    std::string location;
+    std::vector<SavedBlock> blocks;
+    // The stored identity, given to the loaded graph even when the bundle
+    // lacks it (a bundle stripped of its project properties).
+    std::string patch_id;
+};
 using Command = std::variant<AddModule, RemoveModule, MoveModule, DuplicateModule, SetParameter, SetBypass, Connect, Disconnect,
-                             LoadGraph, NewPatch, RenamePatch, SaveGraph, LoadSession>;
+                             LoadGraph, NewPatch, RenamePatch, SaveGraph, LoadSession, LoadPatch>;
 struct EngineEvent {
     RequestId request = 0;
     bool accepted = true;

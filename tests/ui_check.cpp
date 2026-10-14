@@ -476,6 +476,83 @@ int main(int argc, char** argv) {
             click(app, 500, 456);
             check(!has({6, 7, "out1", "freeze"}), "control cable could not be deleted");
         }
+        // Saved patches on disk, through the same Patches page and real clicks.
+        const auto root = std::filesystem::temp_directory_path() / "pedalpi-ui-patches";
+        std::filesystem::remove_all(root);
+        {
+            pedal::PatchStore store(root);
+            check(store.open().empty(), "patch store did not open");
+            pedal::SimulatedEngine stored_engine;
+            pedal::Application app(stored_engine, &store); step(app);
+            click(app, 600, 36); check(app.page() == pedal::Page::Patches && text_label(app.screen(), "Nothing saved yet") != nullptr, "empty store not shown");
+            click(app, 94, 376); step(app, 256);
+            check(store.list().size() == 1 && app.graph().patch_id == store.list()[0].id && !app.graph().dirty, "Save did not store the patch");
+            const auto first = store.list()[0].id;
+            check(text_label(app.screen(), "Revision 1") != nullptr && text_label(app.screen(), "Playing: First light / saved") != nullptr, "saved patch not listed");
+            click(app, 70, 36); drag(app, 225, 244, 225, 124); check(app.graph().dirty, "edit after save not marked");
+            click(app, 600, 36); check(text_label(app.screen(), "playing, unsaved edits") != nullptr, "unsaved edits not shown on the stored patch");
+            click(app, 94, 376); step(app, 256);
+            check(store.find(first)->revision == 2 && !app.graph().dirty && store.list().size() == 1, "second save did not add a revision");
+            // Save as: a separate stored patch under a new name.
+            click(app, 246, 376); check(app.page() == pedal::Page::NamePatch, "Save as did not ask for a name");
+            keyboard_key(app, LV_SYMBOL_BACKSPACE); keyboard_key(app, "x");
+            click(app, 710, 36); step(app, 256);
+            check(store.list().size() == 2 && app.graph().name == "First lighx" && app.graph().patch_id != first, "Save as did not create a second patch");
+            capture(app, output / "33-stored-patches.bmp");
+            // Rows are by name: "First light", then "First lighx". Mark the first as the startup patch.
+            click(app, 628, 159);
+            check(store.startup() == first && text_label(app.screen(), "loads at startup") != nullptr, "startup choice not recorded");
+            // Load the first; the current one is saved, so nothing is guarded.
+            click(app, 520, 159); step(app, 256);
+            check(app.page() == pedal::Page::Patch && app.graph().patch_id == first && app.graph().name == "First light" && pedal::find_module(app.graph(), 3)->y == 24, "stored patch not loaded");
+            // A patch whose module is unavailable asks before loading the rest.
+            stored_engine.submit(pedal::LoadGraph{pedal::missing_module_graph()}); step(app, 256);
+            click(app, 600, 36); click(app, 246, 376);
+            for (const auto* key : {"z", "z"}) keyboard_key(app, key);
+            click(app, 710, 36); step(app, 256);
+            const auto missing = app.graph().patch_id;
+            check(store.find(missing).has_value(), "patch with a missing module not saved");
+            click(app, 70, 36); click(app, 600, 36);
+            const auto listed = store.list();
+            const auto row = std::find_if(listed.begin(), listed.end(), [&](const pedal::StoredPatch& p) { return p.id == missing; }) - listed.begin();
+            click(app, 520, 159 + static_cast<int>(row) * 64);
+            check(app.page() == pedal::Page::ConfirmAction && text_label(app.screen(), "Not available here") != nullptr, "missing module did not ask before loading");
+            capture(app, output / "34-missing-on-load.bmp");
+            click(app, 664, 364); step(app, 256);
+            check(app.graph().patch_id == missing && app.graph().dirty && app.message().find("Left out: Missing texture") != std::string::npos && !pedal::find_module(app.graph(), 4),
+                  "load without the missing module failed or went unreported");
+            // Delete asks first, and leaves the playing patch alone.
+            click(app, 600, 36);
+            click(app, 728, 159 + static_cast<int>(row) * 64);
+            check(app.page() == pedal::Page::ConfirmAction, "delete did not ask");
+            click(app, 130, 364); check(store.list().size() == 3, "cancelled delete removed the patch");
+            click(app, 728, 159 + static_cast<int>(row) * 64); click(app, 664, 364);
+            check(store.list().size() == 2 && !store.find(missing) && app.graph().patch_id == missing, "delete failed or changed the playing patch");
+
+            // The engine away: the last graph stays, with a banner, and nothing can be added.
+            stored_engine.set_state(pedal::EngineState::Connecting); step(app);
+            click(app, 70, 36);
+            check(text_label(app.screen(), "RECONNECTING") != nullptr && text_label(app.screen(), "Engine connection lost") != nullptr, "lost engine not shown");
+            capture(app, output / "35-reconnecting.bmp");
+            click(app, 490, 36); check(app.page() == pedal::Page::Patch, "Add opened while the engine was away");
+            click(app, 232, 244); check(app.page() == pedal::Page::Parameters, "the last graph could not be inspected while away");
+            click(app, 70, 36);
+            stored_engine.set_state(pedal::EngineState::Ready); step(app);
+            check(text_label(app.screen(), "Engine connection lost") == nullptr, "banner stayed after reconnecting");
+        }
+        {
+            // Starting up: a store with a startup patch loads it into an engine that plays nothing stored.
+            pedal::PatchStore store(root);
+            check(store.open().empty() && !store.startup().empty(), "startup choice lost");
+            pedal::SimulatedEngine fresh;
+            pedal::Application app(fresh, &store); step(app, 256);
+            check(app.graph().patch_id == store.startup() && pedal::find_module(app.graph(), 3)->y == 24, "startup patch not loaded");
+            // An interface restart over an engine playing something else leaves it alone.
+            fresh.submit(pedal::NewPatch{"Live edit"}); step(app, 256);
+            pedal::Application again(fresh, &store); step(again, 256);
+            check(again.graph().name == "Live edit", "restart replaced an unsaved patch with the startup patch");
+        }
+        std::filesystem::remove_all(root);
         // Release the headless devices before the global runtime.
         lv_indev_delete(indev);
         lv_indev_delete(keypad);

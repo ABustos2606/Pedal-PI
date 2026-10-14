@@ -10,7 +10,8 @@ include(CTest)
 add_library(pedal_core src/core/model.cpp src/core/reference_catalogue.cpp src/engine/simulated_engine.cpp
   src/engine/ingen/turtle.cpp src/engine/ingen/protocol.cpp src/engine/ingen/session.cpp
   src/engine/ingen/socket_transport.cpp src/engine/ingen/ingen_engine.cpp
-  src/catalogue/json.cpp src/catalogue/catalogue.cpp)
+  src/catalogue/json.cpp src/catalogue/catalogue.cpp
+  src/storage/bundle.cpp src/storage/patch_store.cpp)
 target_include_directories(pedal_core PUBLIC src)
 find_package(Threads REQUIRED)
 target_link_libraries(pedal_core PUBLIC Threads::Threads)
@@ -94,6 +95,9 @@ if(BUILD_TESTING)
   add_executable(pedal_catalogue_tests tests/catalogue_tests.cpp)
   target_link_libraries(pedal_catalogue_tests PRIVATE pedal_core)
   add_test(NAME catalogue_files COMMAND pedal_catalogue_tests "${CMAKE_CURRENT_SOURCE_DIR}/config/catalogue")
+  add_executable(pedal_storage_tests tests/storage_tests.cpp)
+  target_link_libraries(pedal_storage_tests PRIVATE pedal_core)
+  add_test(NAME patch_storage COMMAND pedal_storage_tests)
   # These need a running engine, so they are not CTests: see tools/ingen-spike/07-adapter.sh and 08-catalogue.sh.
   add_executable(pedal_ingen_live tests/ingen_live.cpp)
   target_link_libraries(pedal_ingen_live PRIVATE pedal_core)
