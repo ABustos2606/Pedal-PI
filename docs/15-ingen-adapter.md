@@ -30,7 +30,7 @@ The stand-in engine in `tests/ingen_tests.cpp` covers what a live run cannot pro
 | IN and OUT modules | The graph's own audio ports `in_l`, `in_r`, `out_l`, `out_r`, created on first connection. They appear to JACK as `ingen:in_l` and so on. |
 | Module with ID *n* | Block `ingen:/main/m`*n*. A block with any other name gets an unused number for as long as it exists. |
 | Module name, position | `urn:pedalpi:ns#displayName`, `ingen:canvasX`, `ingen:canvasY` on the block |
-| Software bypass | `ingen:enabled false` on the block |
+| Software bypass | `ingen:enabled false` on the block; for a plugin with its own on/off control, that control (see [catalogue export](16-catalogue-export.md)) |
 | Parameter | `ingen:value` on a control input port. Name, unit and range come from the catalogue; the engine supplies only the value. |
 | Cable | One `ingen:Arc` between two ports |
 | Patch name | `urn:pedalpi:ns#patchName` on the graph, set with `patch:context ingen:internalContext` |
@@ -67,14 +67,14 @@ Then on Windows:
 & '.\build\Debug\pedal_pi.exe' --engine tcp://127.0.0.1:16180
 ```
 
-**+ Add** lists the whole catalogue, but only **Amp** (the LV2 example amplifier) can be added: the demo modules and the Mutable-derived entries are not installed in that engine, and the adapter says so. No sound is produced; the dummy backend has no audio device. Without `--engine` the application runs the simulation as before.
+**+ Add** lists the modules exported from that engine's installed plugins; see [catalogue export](16-catalogue-export.md). No sound is produced; the dummy backend has no audio device. Without `--engine` the application runs the simulation as before.
 
 A Unix socket address (`unix:///tmp/pedalpi-ingen.sock`) is the route on Linux and the one intended for the Pi. TCP exists so the Windows build can reach an engine in WSL.
 
 ## Limits and open points
 
 - **The engine's TCP port is open to the network.** Ingen listens on every interface at port 16180 with no authentication. On the Pi it must be closed or firewalled before the instrument is used on a shared network; the adapter itself needs only the Unix socket.
-- **Catalogue.** Only the example amplifier has an entry that matches an installed plugin. Exporting real metadata on Linux is P4.4.
+- **Catalogue.** Exported from the installed plugins since 13 October 2026 ([record](16-catalogue-export.md)); 58 modules are offered on the WSL engine. A control the catalogue leaves out is not shown.
 - **Unsaved-changes marker.** It is kept by the adapter. A restarted interface starts with it clear, and another client's edits do not set it.
 - **Control assignments** stored on ports are not read yet; that belongs with Phase 7.
 - **Merge level.** The engine still sums several cables into one input at unity. The adapter passes them through; the merge rule of P3.7 is undecided.

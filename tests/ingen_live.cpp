@@ -2,10 +2,11 @@
 // Copyright (C) 2026 Pedal PI contributors
 // The Ingen adapter against a running engine. Needs the LV2 example amplifier
 // and replaces whatever patch the engine holds:
-//   pedal_ingen_live unix:///tmp/pedalpi-ingen.sock
+//   pedal_ingen_live unix:///tmp/pedalpi-ingen.sock catalogue.json
 // It leaves IN (left) -> amp at +6.02 dB -> OUT (left) for a level measurement.
 // With --survive-restart it instead waits for the engine to be stopped and
 // started again, and reports whether the adapter found its way back.
+#include "catalogue/catalogue.hpp"
 #include "engine/ingen/ingen_engine.hpp"
 #include <algorithm>
 #include <chrono>
@@ -70,11 +71,14 @@ double gain_of(const Graph& graph, InstanceId id) { const auto* m = find_module(
 }
 int main(int argc, char** argv) {
     const std::string address = argc > 1 ? argv[1] : "unix:///tmp/pedalpi-ingen.sock";
-    register_definitions(ingen_development_catalogue());
+    // The catalogue exported from this engine's plugins, not a hand-written entry.
+    std::vector<ModuleDefinition> offered;
+    if (const auto issue = load_catalogue(argc > 2 ? argv[2] : "catalogue.json", "", offered); !issue.empty()) { std::cerr << issue << std::endl; return 2; }
+    replace_catalogue(std::move(offered));
     auto a = std::make_unique<Client>(address);
     a->engine.connect();
     if (!check(a->ready(), "connect, read the graph and create the audio endpoints", address)) return 1;
-    if (argc > 2 && std::string(argv[2]) == "--survive-restart") {
+    if (argc > 3 && std::string(argv[3]) == "--survive-restart") {
         a->ok(NewPatch{"Before restart"}, "edit before the engine goes away");
         std::cout << "WAITING for the engine to stop" << std::endl;
         std::vector<EngineEvent> seen;

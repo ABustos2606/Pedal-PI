@@ -68,10 +68,4 @@ std::vector<EngineEvent> IngenEngine::advance(unsigned milliseconds) {
     flush();
     return events;
 }
-std::vector<ModuleDefinition> ingen_development_catalogue() {
-    // Ranges from lv2/plugins/eg-amp.lv2/amp.ttl, which every LV2 installation ships.
-    return {{"http://lv2plug.in/plugins/eg-amp", "Amp", "Utility", "LV2 example amplifier / engine development", 0xa6c8ec,
-             {{"in", Direction::Input}, {"out", Direction::Output}},
-             {{"gain", "Gain", "dB", ParameterKind::Continuous, -90, 24, 0}}}};
-}
 }

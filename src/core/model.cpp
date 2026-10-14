@@ -67,6 +67,10 @@ const std::deque<ModuleDefinition>& catalogue() { return entries(); }
 void register_definitions(std::vector<ModuleDefinition> added) {
     for (auto& d : added) if (!definition(d.uri)) entries().push_back(std::move(d));
 }
+void replace_catalogue(std::vector<ModuleDefinition> offered) {
+    std::erase_if(entries(), [](const ModuleDefinition& d) { return d.category != "Endpoint"; });
+    register_definitions(std::move(offered));
+}
 const ModuleDefinition* definition(const std::string& uri) {
     for (const auto& d : catalogue()) if (d.uri == uri) return &d;
     return nullptr;

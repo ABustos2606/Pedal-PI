@@ -8,6 +8,8 @@ LV2 provides a shared plugin format. It does not guarantee that every MODEP bund
 
 ## Mutable Instruments-derived families — observed
 
+**Update, 13 October 2026:** all seven libraries below were built for x86-64 at the pinned commit and every one of their 21 plugins loads in Ingen with ports and controls matching its metadata; Clouds and Warps passed a measured signal. Clouds, Warps and Rings are silent until their own `enabled` control is set. See [catalogue export](16-catalogue-export.md). Nothing has been built for the Pi or judged by ear.
+
 Poly's `lenticular_lv2` Makefile defines these processing libraries:
 
 | Original family | Library | Examples of Beebo module mappings in the inspected source |

@@ -7,14 +7,16 @@
 D="$(dirname "$(readlink -f "$0")")"
 . "$D/env.sh"
 BUILD="${PEDALPI_BUILD:-/tmp/pedalpi-adapter-build}"
+# The modules this engine offers, as exported by 08-catalogue.sh.
+CATALOGUE="$D/../../config/catalogue/wsl-debian.json"
 command -v cmake >/dev/null || apt-get install -y -q cmake >/dev/null
 cmake -S "$D/../.." -B "$BUILD" -G Ninja -DPEDAL_BUILD_UI=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo >/dev/null || exit 1
 cmake --build "$BUILD" 2>&1 | grep -E "error|warning|FAILED" ; [ -x "$BUILD/pedal_ingen_live" ] || exit 1
 "$BUILD/pedal_ingen_tests" || exit 1
 start_engine || exit 1
-"$BUILD/pedal_ingen_live" unix:///tmp/pedalpi-ingen.sock; live=$?
+"$BUILD/pedal_ingen_live" unix:///tmp/pedalpi-ingen.sock "$CATALOGUE"; live=$?
 # The same checks over TCP, which is how a Windows build reaches an engine in WSL.
-"$BUILD/pedal_ingen_live" tcp://127.0.0.1:16180 | grep -E "^(FAIL|SUMMARY)"; tcp=${PIPESTATUS[0]}
+"$BUILD/pedal_ingen_live" tcp://127.0.0.1:16180 "$CATALOGUE" | grep -E "^(FAIL|SUMMARY)"; tcp=${PIPESTATUS[0]}
 python3 - <<'PY'
 import time
 import jack
@@ -37,7 +39,7 @@ raise SystemExit(0 if ok else 1)
 PY
 audio=$?
 # Stop the engine under a connected adapter, start a fresh one, and see it return.
-"$BUILD/pedal_ingen_live" unix:///tmp/pedalpi-ingen.sock --survive-restart > "$RUN/restart.log" 2>&1 &
+"$BUILD/pedal_ingen_live" unix:///tmp/pedalpi-ingen.sock "$CATALOGUE" --survive-restart > "$RUN/restart.log" 2>&1 &
 waiter=$!
 for _ in $(seq 100); do grep -q WAITING "$RUN/restart.log" && break; sleep 0.1; done
 start_engine

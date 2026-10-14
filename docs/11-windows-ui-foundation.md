@@ -52,12 +52,13 @@ The Debug build/PDBs and JSON configurations are present and checked. The C/C++ 
 | Path | Responsibility |
 | --- | --- |
 | `src/core/` | Stable IDs/URIs/display names, explicit port types/channel symbols, tagged parameters, graph validation, logical/physical routing plans and retained missing-module metadata; no LVGL/Windows dependency |
+| `src/catalogue/` | Catalogue files exported from installed plugins: reader, writer, overlay rules and a small JSON reader; see [the catalogue record](16-catalogue-export.md) |
 | `src/engine/ingen/` | The real engine backend: Turtle reader, protocol, session state machine, socket threads and `IngenEngine`; see [the adapter record](15-ingen-adapter.md) |
 | `src/engine/` | Abstract engine interface and deterministic backend; connection lifecycle, capabilities, requests, 100 ms delayed results, snapshots, new/rename/session save/load and errors |
 | `src/ui/` | Shared LVGL screens and view state; callbacks queue edits and screen rebuilds happen outside event dispatch |
 | `src/platform/windows/` | Native display/input initialization and event loop |
 | `config/lv_conf.h` | LVGL configuration and selected fonts |
-| `tests/` | Domain/engine checks, the Ingen adapter against a stand-in engine (`ingen_tests`) and a live one (`ingen_live`), and actual LVGL pointer interactions on an in-memory display |
+| `tests/` | Domain/engine checks, catalogue files (`catalogue_tests`), the Ingen adapter against a stand-in engine (`ingen_tests`) and a live one (`ingen_live`, `catalogue_live`), and actual LVGL pointer interactions on an in-memory display |
 
 The simulation owns the graph. The application consumes accepted snapshots and keeps pending requests separately. Continuous sliders send their value while the finger moves: one request is in flight per control and the newest value replaces anything waiting, so the rate follows engine acknowledgment. Release sends the final position; a touch that moves nothing is not an edit. Disconnect cancels queued edits so reconnect cannot apply stale requests. UI drawing and simulation updates run on the LVGL thread under its Windows lock; a future network adapter will need its own I/O thread and bounded event queue.
 
@@ -83,6 +84,10 @@ The simulator advertises session snapshots but explicitly rejects persistent-sav
 
 **Control cables, 13 October 2026 (user-requested):** modules with control outputs show an amber square connector on top, modules with control inputs one underneath. Dragging between them opens a port list (eight per page) for the output and then the input. Grids, Marbles and Tides are now available in the browser. Port lists show the plugin's raw symbols such as `slope_input`.
 
+**Module browser by category, 14 October 2026 (user-requested):** "Add a module" now opens as a scrollable list of collapsed category headers (Drive, Amp, Cabinet, Dynamics, Filter, Modulation, Pitch, Delay, Reverb, Texture, Resonator, Sound source, Utility, then any other category alphabetically). Tapping a header opens it, closes any other open category, and scrolls it to the top. Each module row shows only its name and description; tapping the row adds the module. Pages, per-row Add buttons and status labels such as DEMO / available are gone, and so is the bottom message/BPM/CPU bar on this screen. Untested and unavailable entries are dimmed, cannot be tapped, and show their reason in place of the description. Every visit starts with all categories closed.
+
+![Module browser with Texture open](images/ui-reference-catalogue.png)
+
 ![Choosing a control output](images/ui-control-ports.png)
 
 ![Envelope modulating the granular module](images/ui-control-cable.png)
@@ -90,8 +95,6 @@ The simulator advertises session snapshots but explicitly rejects persistent-sav
 This is metadata only: nothing was built, loaded in a host or heard. The upstream files declare no units, toggles, integer steps or enumerations, so Freeze appears as a 0-1 slider and names are raw (Rings is published as "Random CV Sampler"); the planned presentation overlay has to supply those. The hand-made Clouds and Delay fixtures and their custom pages remain for the existing checks; they do not match the real Clouds parameters. Cable drawing still overlaps when two cables leave one jack for the same module.
 
 ![Two-input, two-output reference module](images/ui-multi-port.png)
-
-![Reference catalogue page](images/ui-reference-catalogue.png)
 
 ![Generic page for the real granular module](images/ui-reference-parameters.png)
 
@@ -119,6 +122,6 @@ These checks verify desktop interaction and drawing. They provide no evidence fo
 
 ## Remaining work
 
-Phase 1 still needs C/C++ debugger installation/runtime validation and the Linux UI build route/platform target once the OS is known. Phase 2 desktop scope is accepted. The current catalogue has five available demo effects, two disabled status fixtures and paginated controls. Actual plugin discovery, protocol adaptation, audio port identities and merge levels are later integration work.
+Phase 1 still needs C/C++ debugger installation/runtime validation and the Linux UI build route/platform target once the OS is known. Phase 2 desktop scope is accepted. The current catalogue has five available demo effects, two disabled status fixtures, and a category-grouped module browser. Actual plugin discovery, protocol adaptation, audio port identities and merge levels are later integration work.
 
 The palette and typography are a first proposal for review. They can be changed independently of hardware. Phase 0, real Ingen integration, persistent graph/plugin state, physical control assignments and audio measurements remain deferred.

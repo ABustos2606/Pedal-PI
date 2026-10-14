@@ -29,7 +29,7 @@ PASS  engine graph emptied
 PASS  session snapshot rebuilt in the engine
 PASS  the second client followed the rebuild, including values it was never sent directly
 PASS  restore the value
-INFO  edit round trip through the adapter -- median 5.78907 ms, p95 6.17615 ms, max 6.86431 ms (200 edits)
+INFO  edit round trip through the adapter -- median 5.75378 ms, p95 6.08288 ms, max 7.87744 ms (200 edits)
 PASS  a restarted interface recovers the graph under the same identities
 INFO  engine load reading -- none yet (none at connect)
 PASS  the restarted interface can edit

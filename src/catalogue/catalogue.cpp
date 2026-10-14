@@ -1,0 +1,269 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Pedal PI contributors
+#include "catalogue/catalogue.hpp"
+#include "catalogue/json.hpp"
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <set>
+#include <sstream>
+
+namespace pedal {
+namespace {
+using json::Value;
+constexpr std::size_t max_file_bytes = std::size_t{16} << 20;
+constexpr const char* kinds[] = {"continuous", "integer", "toggle", "enumeration"};
+constexpr const char* types[] = {"audio", "control", "midi", "cv"};
+constexpr const char* availabilities[] = {"available", "untested", "unavailable"};
+template <std::size_t N> int index_of(const char* const (&names)[N], std::string_view name) {
+    for (std::size_t i = 0; i < N; ++i) if (name == names[i]) return static_cast<int>(i);
+    return -1;
+}
+std::string color_text(std::uint32_t color) {
+    static const char digits[] = "0123456789abcdef";
+    std::string text = "#";
+    for (int shift = 20; shift >= 0; shift -= 4) text += digits[(color >> shift) & 15];
+    return text;
+}
+bool parse_color(std::string_view text, std::uint32_t& color) {
+    if (text.size() != 7 || text[0] != '#') return false;
+    color = 0;
+    for (const char c : text.substr(1)) {
+        const int digit = c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+        if (digit < 0) return false;
+        color = color * 16 + static_cast<std::uint32_t>(digit);
+    }
+    return true;
+}
+bool plain(std::string_view text, std::size_t limit) {
+    if (text.size() > limit) return false;
+    for (const unsigned char c : text) if (c < 0x20 || c == 0x7f) return false;
+    return true;
+}
+bool address(std::string_view uri) {
+    if (uri.empty() || uri.size() > 1024 || uri.find(':') == std::string_view::npos) return false;
+    for (const unsigned char c : uri) if (c <= 0x20 || c == 0x7f || c == '<' || c == '>' || c == '"' || c == '\\') return false;
+    return true;
+}
+bool symbol(std::string_view text) {
+    if (text.empty() || text.size() > 256 || (text[0] >= '0' && text[0] <= '9')) return false;
+    for (const char c : text) if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_')) return false;
+    return true;
+}
+// Typed access that names the missing or mistyped key.
+struct Fields {
+    const Value& object;
+    std::string where;
+    std::string issue;
+    const Value* find(std::string_view key, Value::Kind kind, bool required) {
+        const auto* value = object.get(key);
+        if (!value) { if (required && issue.empty()) issue = where + ": \"" + std::string(key) + "\" is missing"; return nullptr; }
+        if (value->kind != kind) { if (issue.empty()) issue = where + ": \"" + std::string(key) + "\" has the wrong type"; return nullptr; }
+        return value;
+    }
+    std::string text(std::string_view key, bool required = true, std::size_t limit = 512) {
+        const auto* value = find(key, Value::Kind::String, required);
+        if (value && !plain(value->text, limit)) { if (issue.empty()) issue = where + ": \"" + std::string(key) + "\" is too long or has control characters"; return {}; }
+        return value ? value->text : std::string();
+    }
+    double number(std::string_view key) { const auto* value = find(key, Value::Kind::Number, true); return value ? value->number : 0; }
+    bool flag(std::string_view key) { const auto* value = find(key, Value::Kind::Boolean, false); return value && value->boolean; }
+    template <std::size_t N> int choice(std::string_view key, const char* const (&names)[N]) {
+        const auto* value = find(key, Value::Kind::String, true);
+        if (!value) return 0;
+        const int found = index_of(names, value->text);
+        if (found < 0 && issue.empty()) issue = where + ": \"" + std::string(key) + "\" is \"" + value->text + "\", which is not known";
+        return found < 0 ? 0 : found;
+    }
+};
+std::string header(const Value& root, std::string_view format) {
+    if (root.kind != Value::Kind::Object) return "not a JSON object";
+    const auto* name = root.get("format");
+    const auto* version = root.get("version");
+    if (!name || name->kind != Value::Kind::String || name->text != format) return "not a " + std::string(format) + " file";
+    if (!version || version->kind != Value::Kind::Number || version->number != std::floor(version->number) || version->number < 1) return "file has no usable version";
+    if (version->number > catalogue_version) return "file was written by a newer version of the project";
+    return {};
+}
+std::string read_file(const std::string& path, std::string& out) {
+    // The path is UTF-8; a narrow open would misread it on Windows.
+    std::ifstream file(std::filesystem::path(std::u8string(path.begin(), path.end())), std::ios::binary);
+    if (!file) return "cannot open " + path;
+    std::ostringstream text;
+    text << file.rdbuf();
+    out = text.str();
+    if (out.size() > max_file_bytes) return path + " is too large";
+    if (out.starts_with("\xef\xbb\xbf")) out.erase(0, 3);
+    return {};
+}
+}
+std::uint32_t category_color(std::string_view category) {
+    static const std::pair<std::string_view, std::uint32_t> colors[] = {
+        {"Drive", 0xf0aa72}, {"Amp", 0xf0aa72}, {"Modulation", 0xf0aa72}, {"Texture", 0xbfa1ed}, {"Pitch", 0xbfa1ed},
+        {"Delay", 0x7bbaed}, {"Sound source", 0x7bbaed}, {"Reverb", 0x81c9b8}, {"Resonator", 0x81c9b8},
+        {"Filter", 0xa6c8ec}, {"Dynamics", 0xa6c8ec}, {"Utility", 0x93a4b5}};
+    for (const auto& [name, color] : colors) if (name == category) return color;
+    return 0x93a4b5;
+}
+std::string write_catalogue(const CatalogueDocument& document) {
+    std::string out = "{\n  \"format\": \"pedalpi-catalogue\",\n  \"version\": " + std::to_string(catalogue_version) + ",\n  \"provenance\": {";
+    for (std::size_t i = 0; i < document.provenance.size(); ++i)
+        out += std::string(i ? "," : "") + "\n    " + json::quote(document.provenance[i].first) + ": " + json::quote(document.provenance[i].second);
+    out += document.provenance.empty() ? "},\n  \"modules\": [" : "\n  },\n  \"modules\": [";
+    for (std::size_t i = 0; i < document.modules.size(); ++i) {
+        const auto& d = document.modules[i];
+        const auto origin = document.origins.find(d.uri);
+        out += std::string(i ? "," : "") + "\n    {\n      \"uri\": " + json::quote(d.uri) + ",\n      \"name\": " + json::quote(d.name) +
+               ",\n      \"category\": " + json::quote(d.category) + ",\n      \"description\": " + json::quote(d.description) +
+               ",\n      \"color\": \"" + color_text(d.color) + "\",\n      \"availability\": \"" + availabilities[static_cast<int>(d.availability)] +
+               "\",\n      \"reason\": " + json::quote(d.availability_reason) +
+               ",\n      \"origin\": " + json::quote(origin == document.origins.end() ? std::string() : origin->second) +
+               ",\n      \"enable\": " + json::quote(d.enable_symbol) + ",\n      \"ports\": [";
+        for (std::size_t p = 0; p < d.ports.size(); ++p)
+            out += std::string(p ? "," : "") + "\n        {\"symbol\": " + json::quote(d.ports[p].symbol) + ", \"direction\": \"" +
+                   (d.ports[p].direction == Direction::Input ? "input" : "output") + "\", \"type\": \"" + types[static_cast<int>(d.ports[p].type)] + "\"}";
+        out += d.ports.empty() ? "],\n      \"parameters\": [" : "\n      ],\n      \"parameters\": [";
+        for (std::size_t p = 0; p < d.parameters.size(); ++p) {
+            const auto& parameter = d.parameters[p];
+            out += std::string(p ? "," : "") + "\n        {\"symbol\": " + json::quote(parameter.symbol) + ", \"name\": " + json::quote(parameter.name) +
+                   ", \"unit\": " + json::quote(parameter.unit) + ", \"kind\": \"" + kinds[static_cast<int>(parameter.kind)] +
+                   "\", \"minimum\": " + json::number(parameter.minimum) + ", \"maximum\": " + json::number(parameter.maximum) +
+                   ", \"default\": " + json::number(parameter.value) + ", \"logarithmic\": " + (parameter.logarithmic ? "true" : "false") + ", \"choices\": [";
+            for (std::size_t c = 0; c < parameter.choices.size(); ++c) out += std::string(c ? ", " : "") + json::quote(parameter.choices[c]);
+            out += "]}";
+        }
+        out += d.parameters.empty() ? "]\n    }" : "\n      ]\n    }";
+    }
+    return out + (document.modules.empty() ? "]\n}\n" : "\n  ]\n}\n");
+}
+std::string read_catalogue(std::string_view text, CatalogueDocument& out) {
+    Value root;
+    if (auto issue = json::parse(text, root); !issue.empty()) return "catalogue is not valid JSON: " + issue;
+    if (auto issue = header(root, "pedalpi-catalogue"); !issue.empty()) return issue;
+    CatalogueDocument document;
+    if (const auto* provenance = root.get("provenance"); provenance && provenance->kind == Value::Kind::Object)
+        for (const auto& [key, value] : provenance->members) if (value.kind == Value::Kind::String) document.provenance.emplace_back(key, value.text);
+    const auto* modules = root.get("modules");
+    if (!modules || modules->kind != Value::Kind::Array) return "catalogue has no module list";
+    std::set<std::string> seen;
+    for (const auto& entry : modules->items) {
+        if (entry.kind != Value::Kind::Object) return "a module entry is not an object";
+        Fields fields{entry, "module " + std::to_string(document.modules.size() + 1), {}};
+        ModuleDefinition d{};
+        d.uri = fields.text("uri", true, 1024);
+        if (!fields.issue.empty()) return fields.issue;
+        fields.where = "module " + d.uri;
+        if (!address(d.uri)) return fields.where + ": not a usable plugin address";
+        if (!seen.insert(d.uri).second) return fields.where + ": listed twice";
+        d.name = fields.text("name", true, 96);
+        d.category = fields.text("category", true, 48);
+        d.description = fields.text("description", false);
+        d.availability = static_cast<Availability>(fields.choice("availability", availabilities));
+        d.availability_reason = fields.text("reason", false);
+        // Read from LV2 metadata, as opposed to an invented demo fixture.
+        d.reference = true;
+        const auto color = fields.text("color", false);
+        if (color.empty()) d.color = category_color(d.category);
+        else if (!parse_color(color, d.color)) return fields.where + ": \"color\" must look like #a6c8ec";
+        if (const auto origin = fields.text("origin", false, 2048); !origin.empty()) document.origins[d.uri] = origin;
+        d.enable_symbol = fields.text("enable", false, 256);
+        const auto* ports = fields.find("ports", Value::Kind::Array, true);
+        const auto* parameters = fields.find("parameters", Value::Kind::Array, true);
+        if (!fields.issue.empty()) return fields.issue;
+        if (d.name.empty() || d.category.empty() || d.category == "Endpoint") return fields.where + ": needs a name and a category of its own";
+        std::set<std::string> symbols;
+        if (!d.enable_symbol.empty() && (!symbol(d.enable_symbol) || !symbols.insert(d.enable_symbol).second)) return fields.where + ": \"enable\" is not a usable symbol";
+        for (const auto& item : ports->items) {
+            if (item.kind != Value::Kind::Object) return fields.where + ": a port is not an object";
+            Fields port{item, fields.where + " port", {}};
+            Port made{port.text("symbol"), {}, 1, {}, {}};
+            port.where += " " + made.symbol;
+            const auto* direction = port.find("direction", Value::Kind::String, true);
+            if (direction && direction->text != "input" && direction->text != "output") return port.where + ": direction must be input or output";
+            made.direction = direction && direction->text == "input" ? Direction::Input : Direction::Output;
+            made.type = static_cast<PortType>(port.choice("type", types));
+            if (!port.issue.empty()) return port.issue;
+            if (!symbol(made.symbol) || !symbols.insert(made.symbol).second) return port.where + ": symbol is invalid or repeated";
+            d.ports.push_back(std::move(made));
+        }
+        for (const auto& item : parameters->items) {
+            if (item.kind != Value::Kind::Object) return fields.where + ": a parameter is not an object";
+            Fields parameter{item, fields.where + " parameter", {}};
+            Parameter made;
+            made.symbol = parameter.text("symbol");
+            parameter.where += " " + made.symbol;
+            made.name = parameter.text("name", true, 96);
+            made.unit = parameter.text("unit", false, 16);
+            made.kind = static_cast<ParameterKind>(parameter.choice("kind", kinds));
+            made.minimum = parameter.number("minimum");
+            made.maximum = parameter.number("maximum");
+            made.value = parameter.number("default");
+            made.logarithmic = parameter.flag("logarithmic");
+            if (const auto* choices = parameter.find("choices", Value::Kind::Array, false))
+                for (const auto& choice : choices->items) {
+                    if (choice.kind != Value::Kind::String || !plain(choice.text, 96)) return parameter.where + ": a choice is not plain text";
+                    made.choices.push_back(choice.text);
+                }
+            if (!parameter.issue.empty()) return parameter.issue;
+            // A port and a parameter are both ports of the plugin: one namespace.
+            if (!symbol(made.symbol) || !symbols.insert(made.symbol).second) return parameter.where + ": symbol is invalid or repeated";
+            if (made.name.empty()) return parameter.where + ": needs a name";
+            if (auto issue = validate_parameter(made); !issue.empty()) return parameter.where + ": " + issue;
+            d.parameters.push_back(std::move(made));
+        }
+        document.modules.push_back(std::move(d));
+    }
+    out = std::move(document);
+    return {};
+}
+std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDefinition>& modules) {
+    Value root;
+    if (auto issue = json::parse(text, root); !issue.empty()) return "overlay is not valid JSON: " + issue;
+    if (auto issue = header(root, "pedalpi-catalogue-overlay"); !issue.empty()) return issue;
+    const auto* rules = root.get("rules");
+    if (!rules || rules->kind != Value::Kind::Array) return "overlay has no rule list";
+    auto changed = modules;
+    std::size_t number = 0;
+    for (const auto& item : rules->items) {
+        if (item.kind != Value::Kind::Object) return "an overlay rule is not an object";
+        Fields rule{item, "overlay rule " + std::to_string(++number), {}};
+        const auto uri = rule.text("uri", false, 1024), match = rule.text("match", false, 1024);
+        if (uri.empty() == match.empty()) return rule.where + ": needs exactly one of \"uri\" and \"match\"";
+        const auto name = rule.text("name", false, 96), category = rule.text("category", false, 48), description = rule.text("description", false);
+        const auto color = rule.text("color", false), reason = rule.text("reason", false), prefix = rule.text("strip_prefix", false, 48);
+        const bool has_availability = item.get("availability") != nullptr;
+        const auto availability = has_availability ? static_cast<Availability>(rule.choice("availability", availabilities)) : Availability::Available;
+        std::uint32_t parsed = 0;
+        if (!rule.issue.empty()) return rule.issue;
+        if (!color.empty() && !parse_color(color, parsed)) return rule.where + ": \"color\" must look like #a6c8ec";
+        if (category == "Endpoint") return rule.where + ": that category is reserved";
+        // A rule may not hand out what the export withheld: only the engine's
+        // own metadata can say a plugin is loadable.
+        if (has_availability && availability == Availability::Available) return rule.where + ": an overlay can restrict availability, not grant it";
+        for (auto& d : changed) {
+            if (uri.empty() ? d.uri.find(match) == std::string::npos : d.uri != uri) continue;
+            // A maker's name in front of every module says nothing on a small square.
+            if (!prefix.empty() && d.name.size() > prefix.size() && d.name.starts_with(prefix)) d.name.erase(0, prefix.size());
+            if (!name.empty()) d.name = name;
+            if (!description.empty()) d.description = description;
+            if (!category.empty()) { d.category = category; d.color = category_color(category); }
+            if (!color.empty()) d.color = parsed;
+            if (has_availability && static_cast<int>(availability) > static_cast<int>(d.availability)) { d.availability = availability; d.availability_reason = reason; }
+        }
+    }
+    modules = std::move(changed);
+    return {};
+}
+std::string load_catalogue(const std::string& path, const std::string& overlay_path, std::vector<ModuleDefinition>& out) {
+    std::string text;
+    if (auto issue = read_file(path, text); !issue.empty()) return issue;
+    CatalogueDocument document;
+    if (auto issue = read_catalogue(text, document); !issue.empty()) return path + ": " + issue;
+    if (!overlay_path.empty()) {
+        if (auto issue = read_file(overlay_path, text); !issue.empty()) return issue;
+        if (auto issue = apply_catalogue_overlay(text, document.modules); !issue.empty()) return overlay_path + ": " + issue;
+    }
+    out = std::move(document.modules);
+    return {};
+}
+}

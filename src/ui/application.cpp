@@ -86,7 +86,11 @@ void Application::message(std::string value) {
     message_ = std::move(value);
     if (footer_) lv_label_set_text(footer_, message_.c_str());
 }
-void Application::navigate(Page page) { page_ = page; rebuild_ = true; }
+void Application::navigate(Page page) {
+    // Entering the browser always starts from the closed list of categories.
+    if (page == Page::Browser && page_ != Page::Browser) { browser_group_.clear(); browser_scroll_ = 0; browser_reveal_ = false; }
+    page_ = page; rebuild_ = true;
+}
 RequestId Application::submit(Command command) {
     if (engine_.state() != EngineState::Ready) {
         message("Engine unavailable. Reconnect in Settings."); rebuild_ = true; return 0;
@@ -393,14 +397,14 @@ void Application::handle(Binding& b, lv_event_t* e) {
         break;
     case Action::CancelReplace: replacement_.reset(); navigate(confirm_origin_); break;
     case Action::ParameterPage: parameter_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
-    case Action::BrowserPage: browser_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
+    case Action::BrowserGroup:
+        // One category open at a time; tapping the open one closes it.
+        browser_group_ = browser_group_ == b.symbol ? std::string() : b.symbol;
+        browser_reveal_ = !browser_group_.empty(); rebuild_ = true; break;
     case Action::CvPage: cv_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
     case Action::CvChoice:
         if (cv_output_.empty()) { cv_output_ = b.symbol; cv_page_ = 0; rebuild_ = true; }
         else { submit(Connect{{cv_from_, cv_to_, cv_output_, b.symbol}}); navigate(Page::Patch); }
-        break;
-    case Action::AvailabilityInfo:
-        if (const auto* d = definition(b.symbol)) message(d->availability_reason);
         break;
     default: break;
     }
@@ -426,7 +430,11 @@ void Application::rebuild() {
         lv_obj_remove_style_all(screen_); lv_obj_set_size(screen_, 800, 480);
         lv_obj_set_style_bg_color(screen_, color(background), 0); lv_obj_set_style_bg_opa(screen_, LV_OPA_COVER, 0);
         lv_screen_load(screen_);
-    } else lv_obj_clean(screen_);
+    } else {
+        if (browser_list_) browser_scroll_ = lv_obj_get_scroll_y(browser_list_);
+        lv_obj_clean(screen_);
+    }
+    browser_list_ = nullptr;
     bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); cv_inputs_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
     tempo_value_ = cpu_value_ = nullptr;
     auto* header = panel(screen_, 0, 0, 800, 72, background);
@@ -458,7 +466,9 @@ void Application::rebuild() {
         if (page_ == Page::NamePatch) button(header, renaming_ ? "Rename" : "Create", 640, 12, 136, Action::CommitName);
         else label(header, engine_.capabilities().simulation ? "SIMULATED" : "ENGINE", 660, 28, 0, accent, &lv_font_montserrat_14);
     }
-    auto* content = panel(screen_, 0, 72, 800, 360, background);
+    // The browser is a list to scroll; it has no use for the status bar.
+    const bool status_bar = page_ != Page::Browser;
+    auto* content = panel(screen_, 0, 72, 800, status_bar ? 360 : 408, background);
     lv_obj_set_style_border_width(content, 0, 0); lv_obj_set_style_radius(content, 0, 0);
     switch (page_) {
     case Page::Patch: patch_view(content); break;
@@ -471,6 +481,7 @@ void Application::rebuild() {
     case Page::ConfirmReplace: confirm_replace(content); break;
     case Page::CvConnect: cv_connect(content); break;
     }
+    if (!status_bar) { lv_obj_update_layout(screen_); return; }
     auto* foot = panel(screen_, 0, 432, 800, 48, background); lv_obj_set_style_radius(foot, 0, 0);
     footer_ = label(foot, message_, 24, 7, patch && selected_cable_ ? 240 : 568, muted, &lv_font_montserrat_14);
     lv_obj_set_height(footer_, 34); lv_label_set_long_mode(footer_, LV_LABEL_LONG_DOT);
@@ -650,31 +661,92 @@ void Application::update_cables() {
     }
 }
 void Application::browser(lv_obj_t* parent) {
-    std::vector<const ModuleDefinition*> entries;
-    for (const auto& d : catalogue()) if (d.category != "Endpoint") entries.push_back(&d);
-    const auto count = (entries.size() + 3) / 4;
-    browser_page_ = std::min(browser_page_, count - 1);
-    label(parent, "Demo + reference metadata / no plugin discovery", 24, 12, 440, muted, &lv_font_montserrat_14);
-    auto* previous = button(parent, "<", 472, 0, 48, Action::BrowserPage, 0, {}, static_cast<int>(browser_page_ ? browser_page_ - 1 : 0));
-    if (!browser_page_) lv_obj_add_state(previous, LV_STATE_DISABLED);
-    label(parent, std::to_string(browser_page_ + 1) + " / " + std::to_string(count), 536, 14, 80, muted, &lv_font_montserrat_14);
-    auto* next = button(parent, ">", 632, 0, 48, Action::BrowserPage, 0, {}, static_cast<int>(std::min(browser_page_ + 1, count - 1)));
-    if (browser_page_ + 1 >= count) lv_obj_add_state(next, LV_STATE_DISABLED);
-    int y = 44;
-    for (std::size_t i = browser_page_ * 4; i < std::min(entries.size(), browser_page_ * 4 + 4); ++i) {
-        const auto& d = *entries[i];
-        auto* row = panel(parent, 24, y, 752, 66);
-        if (d.availability != Availability::Available) bind(row, Action::AvailabilityInfo, 0, d.uri);
-        auto* mark = panel(row, 14, 14, 5, 38, d.color); lv_obj_set_style_border_width(mark, 0, 0);
-        label(row, d.name, 34, 8, 280, d.color, &lv_font_montserrat_20);
-        auto* description = label(row, d.category + " / " + d.description, 34, 36, 560, muted, &lv_font_montserrat_14);
-        lv_label_set_long_mode(description, LV_LABEL_LONG_DOT);
-        label(row, d.availability == Availability::Available ? (d.reference ? "REFERENCE / simulated" : "DEMO / available") : d.availability == Availability::Untested ? "Untested" : "Unavailable",
-              400, 10, 225, d.availability == Availability::Available ? accent : 0xf0aa72, &lv_font_montserrat_14);
-        auto* add = button(row, d.availability == Availability::Available ? "+ Add" : "Disabled", 638, 9, 96, Action::Add, 0, d.uri);
-        if (d.availability != Availability::Available) { lv_obj_add_state(add, LV_STATE_DISABLED); lv_obj_set_style_opa(add, LV_OPA_50, 0); }
-        y += 76;
+    // Categories in signal-chain order; any the catalogue invents follow alphabetically.
+    static const std::vector<std::string> order = {"Drive", "Amp", "Cabinet", "Dynamics", "Filter", "Modulation", "Pitch",
+        "Delay", "Reverb", "Texture", "Resonator", "Sound source", "Utility"};
+    const auto rank = [](const std::string& category) {
+        return static_cast<std::size_t>(std::find(order.begin(), order.end(), category) - order.begin());
+    };
+    std::map<std::string, std::vector<const ModuleDefinition*>> groups;
+    for (const auto& d : catalogue()) if (d.category != "Endpoint") groups[d.category].push_back(&d);
+    std::vector<std::string> categories;
+    for (const auto& [category, _] : groups) categories.push_back(category);
+    std::stable_sort(categories.begin(), categories.end(), [&](const auto& a, const auto& b) { return rank(a) < rank(b); });
+
+    browser_list_ = parent;
+    lv_obj_add_flag(parent, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scroll_dir(parent, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(parent, LV_SCROLLBAR_MODE_ACTIVE);
+    lv_obj_set_style_pad_bottom(parent, 16, 0);
+    auto* group = lv_group_get_default();
+    lv_obj_t* open = nullptr;
+    int y = 12;
+    for (const auto& category : categories) {
+        auto& entries = groups[category];
+        // Usable modules first, each part alphabetical.
+        std::stable_sort(entries.begin(), entries.end(), [](const ModuleDefinition* a, const ModuleDefinition* b) {
+            const bool ua = a->availability == Availability::Available, ub = b->availability == Availability::Available;
+            return ua != ub ? ua : a->name < b->name;
+        });
+        const bool expanded = category == browser_group_;
+        auto* header = lv_button_create(parent); lv_obj_remove_style_all(header);
+        lv_obj_set_pos(header, 16, y); lv_obj_set_size(header, 768, 56);
+        lv_obj_set_style_bg_color(header, color(expanded ? border : surface), 0); lv_obj_set_style_bg_opa(header, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(header, color(border), LV_STATE_PRESSED);
+        lv_obj_set_style_border_width(header, 1, 0); lv_obj_set_style_border_color(header, color(border), 0);
+        lv_obj_set_style_radius(header, 10, 0);
+        const auto ink = entries.front()->color;
+        auto* chevron = label(header, expanded ? LV_SYMBOL_DOWN : LV_SYMBOL_RIGHT, 18, 0, 0, muted, &lv_font_montserrat_18);
+        lv_obj_align(chevron, LV_ALIGN_LEFT_MID, 18, 0);
+        auto* name = label(header, category, 0, 0, 560, ink, &lv_font_montserrat_20);
+        lv_obj_align(name, LV_ALIGN_LEFT_MID, 52, 0);
+        auto* count = label(header, std::to_string(entries.size()), 0, 0, 80, muted, &lv_font_montserrat_14);
+        lv_obj_set_style_text_align(count, LV_TEXT_ALIGN_RIGHT, 0);
+        lv_obj_align(count, LV_ALIGN_RIGHT_MID, -20, 0);
+        bind(header, Action::BrowserGroup, 0, category);
+        if (group) lv_group_add_obj(group, header);
+        if (expanded) open = header;
+        y += 64;
+        if (!expanded) continue;
+        y -= 4;
+        // A row is just the name and what it does; tapping it adds the module.
+        for (const auto* d : entries) {
+            const bool usable = d->availability == Availability::Available;
+            auto* row = lv_button_create(parent); lv_obj_remove_style_all(row);
+            lv_obj_set_pos(row, 16, y); lv_obj_set_size(row, 768, 60);
+            lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
+            lv_obj_set_style_bg_color(row, color(surface), LV_STATE_PRESSED); lv_obj_set_style_bg_opa(row, LV_OPA_COVER, LV_STATE_PRESSED);
+            lv_obj_set_style_radius(row, 8, 0);
+            lv_obj_set_style_border_side(row, LV_BORDER_SIDE_BOTTOM, 0);
+            lv_obj_set_style_border_width(row, 1, 0); lv_obj_set_style_border_color(row, color(border), 0);
+            auto* title = label(row, d->name, 0, 0, 220, d->color, &lv_font_montserrat_18);
+            lv_label_set_long_mode(title, LV_LABEL_LONG_DOT); lv_obj_set_height(title, 22);
+            lv_obj_align(title, LV_ALIGN_LEFT_MID, 36, 0);
+            // An entry that cannot be added says why instead of what it does.
+            const auto& about = usable || d->availability_reason.empty() ? d->description : d->availability_reason;
+            auto* description = label(row, about, 0, 0, 488, muted, &lv_font_montserrat_14);
+            // At most two lines, centred against the name.
+            lv_label_set_long_mode(description, LV_LABEL_LONG_DOT);
+            lv_obj_set_height(description, LV_SIZE_CONTENT); lv_obj_set_style_max_height(description, 36, 0);
+            lv_obj_align(description, LV_ALIGN_LEFT_MID, 268, 0);
+            if (usable) {
+                bind(row, Action::Add, 0, d->uri);
+                if (group) lv_group_add_obj(group, row);
+            } else {
+                // Not clickable, so a drag starting here still scrolls the list.
+                lv_obj_remove_flag(row, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_set_style_opa(row, LV_OPA_40, 0);
+            }
+            y += 60;
+        }
+        y += 12;
     }
+    lv_obj_update_layout(parent);
+    if (browser_reveal_ && open) {
+        // Bring the opened category to the top so its modules are in view.
+        lv_obj_scroll_to_y(parent, lv_obj_get_y(open) - 12, LV_ANIM_OFF);
+        browser_reveal_ = false;
+    } else lv_obj_scroll_to_y(parent, browser_scroll_, LV_ANIM_OFF);
 }
 void Application::parameters(lv_obj_t* parent) {
     const auto* m = find_module(graph_, selected_);

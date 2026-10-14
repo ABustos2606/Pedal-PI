@@ -35,7 +35,4 @@ private:
     bool wanted_ = false, open_ = false, connecting_ = false, reported_ = false;
     unsigned retry_in_ = 0;
 };
-// Entries for the plugins a bare LV2 installation provides, so a development
-// engine has something to load. Real catalogues are exported from the Pi.
-std::vector<ModuleDefinition> ingen_development_catalogue();
 }

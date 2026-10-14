@@ -1,0 +1,15 @@
+{
+  "format": "pedalpi-catalogue-overlay",
+  "version": 1,
+  "rules": [
+    {"match": "polyeffects.com/lv2/", "strip_prefix": "Poly "},
+    {"match": "polyclouds", "category": "Texture"},
+    {"match": "polywarps", "category": "Modulation"},
+    {"match": "polyplaits", "category": "Sound source"},
+    {"match": "polyrings", "category": "Resonator"},
+    {"uri": "http://polyeffects.com/lv2/polyrings", "name": "Resonator", "description": "Upstream names this module \"Random CV Sampler\", as it does the random source"},
+    {"match": "drobilla.net/plugins/mda/", "strip_prefix": "MDA "},
+    {"match": "lv2plug.in/plugins/eg-", "strip_prefix": "Example "},
+    {"uri": "http://lv2plug.in/plugins/eg-amp", "name": "Amp"}
+  ]
+}

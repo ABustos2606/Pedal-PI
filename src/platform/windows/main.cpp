@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pedal PI contributors
 #include "ui/application.hpp"
+#include "catalogue/catalogue.hpp"
 #include "engine/ingen/ingen_engine.hpp"
 #include "engine/simulated_engine.hpp"
 #include <windows.h>
 #include <shellapi.h>
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -14,17 +16,53 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
     bool smoke = command_line && wcscmp(command_line, L"--smoke") == 0;
     // --engine tcp://host:port drives a running Ingen instead of the simulation,
     // for example one started under WSL, which Windows reaches on 127.0.0.1.
-    std::string address;
+    // --catalogue file.json names the modules on offer; by default the
+    // exported catalogue.json beside this program, with its overlay. The
+    // simulation offers them too, beside its own demo modules.
+    std::string address, catalogue_path, overlay_path;
+    auto utf8 = [](const wchar_t* wide) {
+        std::string text(static_cast<std::size_t>(WideCharToMultiByte(CP_UTF8, 0, wide, -1, nullptr, 0, nullptr, nullptr)), '\0');
+        WideCharToMultiByte(CP_UTF8, 0, wide, -1, text.data(), static_cast<int>(text.size()), nullptr, nullptr);
+        text.resize(text.empty() ? 0 : text.size() - 1);
+        return text;
+    };
     int count = 0;
     if (auto* arguments = CommandLineToArgvW(GetCommandLineW(), &count)) {
         for (int i = 1; i < count; ++i) smoke = smoke || wcscmp(arguments[i], L"--smoke") == 0;
-        for (int i = 1; i + 1 < count; ++i) if (wcscmp(arguments[i], L"--engine") == 0) {
-            address.resize(static_cast<std::size_t>(WideCharToMultiByte(CP_UTF8, 0, arguments[i + 1], -1, nullptr, 0, nullptr, nullptr)));
-            WideCharToMultiByte(CP_UTF8, 0, arguments[i + 1], -1, address.data(), static_cast<int>(address.size()), nullptr, nullptr);
-            address.resize(address.empty() ? 0 : address.size() - 1);
+        for (int i = 1; i + 1 < count; ++i) {
+            if (wcscmp(arguments[i], L"--engine") == 0) address = utf8(arguments[i + 1]);
+            if (wcscmp(arguments[i], L"--catalogue") == 0) catalogue_path = utf8(arguments[i + 1]);
         }
         LocalFree(arguments);
     }
+    const bool named = !catalogue_path.empty();
+    if (!named) {
+        wchar_t program[MAX_PATH]{};
+        GetModuleFileNameW(nullptr, program, MAX_PATH);
+        auto folder = utf8(program);
+        folder.resize(folder.find_last_of("\\/") + 1);
+        catalogue_path = folder + "catalogue.json";
+        overlay_path = folder + "catalogue-overlay.json";
+    }
+    std::vector<pedal::ModuleDefinition> offered;
+    const auto catalogue_issue = pedal::load_catalogue(catalogue_path, overlay_path, offered);
+    if (!address.empty()) {
+        // Without a readable catalogue the engine's graph is still shown; its
+        // modules are placeholders and nothing can be added.
+        pedal::replace_catalogue(std::move(offered));
+    } else if (catalogue_issue.empty()) {
+        // The simulation keeps its demo modules: its sample patches and custom
+        // pages are built around them. The exported entries take the place of
+        // the built-in reference ones, which describe the same plugins.
+        std::vector<pedal::ModuleDefinition> both;
+        for (const auto& d : pedal::demo_catalogue()) if (d.category != "Endpoint") both.push_back(d);
+        both.insert(both.end(), offered.begin(), offered.end());
+        pedal::replace_catalogue(std::move(both));
+    }
+    // A simulation without the default file simply keeps its built-in list.
+    const bool expected = !address.empty() || named || std::filesystem::exists(std::filesystem::path(std::u8string(catalogue_path.begin(), catalogue_path.end())));
+    if (!catalogue_issue.empty() && expected && !smoke)
+        MessageBoxW(nullptr, std::wstring(catalogue_issue.begin(), catalogue_issue.end()).c_str(), L"Pedal PI - catalogue", MB_OK | MB_ICONWARNING);
     lv_init();
     auto* display = lv_windows_create_display(address.empty() ? L"Pedal PI - UI simulator" : L"Pedal PI - Ingen engine", 800, 480, 100, true, true);
     if (!display) return 1;
@@ -34,7 +72,6 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
     std::unique_ptr<pedal::Engine> owned;
     if (address.empty()) owned = std::make_unique<pedal::SimulatedEngine>();
     else {
-        pedal::register_definitions(pedal::ingen_development_catalogue());
         owned = std::make_unique<pedal::IngenEngine>(pedal::ingen::Options{address});
         owned->connect();
     }

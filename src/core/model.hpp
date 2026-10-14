@@ -40,6 +40,9 @@ struct ModuleDefinition {
     std::string availability_reason;
     // Generated from upstream LV2 metadata, rather than an invented demo fixture.
     bool reference = false;
+    // The plugin's own on/off control, when it has one. Such a module is
+    // silent until that control is set, and bypass means clearing it.
+    std::string enable_symbol;
 };
 struct Module {
     InstanceId id;
@@ -81,6 +84,10 @@ const std::deque<ModuleDefinition>& catalogue();
 // Add entries an engine adapter can vouch for. Call before the interface
 // starts; an entry whose URI is already known is ignored.
 void register_definitions(std::vector<ModuleDefinition>);
+// Offer exactly these modules, as a real engine's exported catalogue does:
+// the demo and reference entries go, the IN and OUT endpoints stay. Call
+// before the interface starts.
+void replace_catalogue(std::vector<ModuleDefinition>);
 const ModuleDefinition* definition(const std::string& uri);
 const Module* find_module(const Graph&, InstanceId);
 Module* find_module(Graph&, InstanceId);

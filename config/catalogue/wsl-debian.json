@@ -1,0 +1,1837 @@
+{
+  "format": "pedalpi-catalogue",
+  "version": 1,
+  "provenance": {
+    "tool": "pedal_catalogue_export",
+    "lilv": "0.24.26",
+    "machine": "x86_64",
+    "lv2_path": "/usr/lib/lv2:/opt/pedalpi/lib/x86_64-linux-gnu/lv2:/opt/pedalpi/lib/lv2",
+    "sample_rate": "48000"
+  },
+  "modules": [
+    {
+      "uri": "http://drobilla.net/plugins/mda/Ambience",
+      "name": "MDA Ambience",
+      "category": "Reverb",
+      "description": "Reverb by David Robillard",
+      "color": "#81c9b8",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Reverb; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "size", "name": "Size", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "hf_damp", "name": "HF Damp", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "mix", "name": "Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.9, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Bandisto",
+      "name": "MDA Bandisto",
+      "category": "Drive",
+      "description": "Distortion by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Distortion; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "listen", "name": "Listen", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "l_m", "name": "L <> M", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.4, "logarithmic": false, "choices": []},
+        {"symbol": "m_h", "name": "M <> H", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "l_dist", "name": "L Dist", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "m_dist", "name": "M Dist", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "h_dist", "name": "H Dist", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "l_out", "name": "L Out", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "m_out", "name": "M Out", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "h_out", "name": "H Out", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "enumeration", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": ["Bipolar", "Unipolar"]}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/BeatBox",
+      "name": "MDA BeatBox",
+      "category": "Sound source",
+      "description": "Generator by David Robillard",
+      "color": "#7bbaed",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Generator; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "hat_thr", "name": "Hat Thr", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
+        {"symbol": "hat_rate", "name": "Hat Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.45, "logarithmic": false, "choices": []},
+        {"symbol": "hat_mix", "name": "Hat Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "kik_thr", "name": "Kik Thr", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.46, "logarithmic": false, "choices": []},
+        {"symbol": "kik_trig", "name": "Kik Trig", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.15, "logarithmic": false, "choices": []},
+        {"symbol": "kik_mix", "name": "Kik Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "snr_thr", "name": "Snr Thr", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "snr_trig", "name": "Snr Trig", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "snr_mix", "name": "Snr Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "dynamics", "name": "Dynamics", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "record", "name": "Record", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "thru_mix", "name": "Thru Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Combo",
+      "name": "MDA Combo",
+      "category": "Amp",
+      "description": "Simulator by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Simulator; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "model", "name": "Model", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "drive", "name": "Drive", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "bias", "name": "Bias", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "stereo", "name": "Stereo", "unit": "", "kind": "toggle", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "hpf_freq", "name": "HPF Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "hpf_reso", "name": "HPF Reso", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/DX10",
+      "name": "MDA DX10",
+      "category": "Sound source",
+      "description": "Instrument by David Robillard",
+      "color": "#7bbaed",
+      "availability": "untested",
+      "reason": "Played by MIDI notes, which cannot be routed yet.",
+      "origin": "class Instrument; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"},
+        {"symbol": "event_in", "direction": "input", "type": "midi"}
+      ],
+      "parameters": [
+        {"symbol": "attack", "name": "Attack", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "decay", "name": "Decay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.65, "logarithmic": false, "choices": []},
+        {"symbol": "release", "name": "Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.441, "logarithmic": false, "choices": []},
+        {"symbol": "coarse", "name": "Coarse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.842, "logarithmic": false, "choices": []},
+        {"symbol": "fine", "name": "Fine", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.329, "logarithmic": false, "choices": []},
+        {"symbol": "mod_init", "name": "Mod Init", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.23, "logarithmic": false, "choices": []},
+        {"symbol": "mod_dec", "name": "Mod Dec", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.8, "logarithmic": false, "choices": []},
+        {"symbol": "mod_sus", "name": "Mod Sus", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.05, "logarithmic": false, "choices": []},
+        {"symbol": "mod_rel", "name": "Mod Rel", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.8, "logarithmic": false, "choices": []},
+        {"symbol": "mod_vel", "name": "Mod Vel", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.9, "logarithmic": false, "choices": []},
+        {"symbol": "vibrato", "name": "Vibrato", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "octave", "name": "Octave", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "finetune", "name": "FineTune", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "waveform", "name": "Waveform", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.447, "logarithmic": false, "choices": []},
+        {"symbol": "mod_thru", "name": "Mod Thru", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_rate", "name": "LFO Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.414, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/DeEss",
+      "name": "MDA De-ess",
+      "category": "Dynamics",
+      "description": "Dynamics by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Dynamics; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "thresh", "name": "Thresh", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "freq", "name": "Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "hf_drive", "name": "HF Drive", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Degrade",
+      "name": "MDA Degrade",
+      "category": "Drive",
+      "description": "Distortion by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Distortion; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "headroom", "name": "Headroom", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.8, "logarithmic": false, "choices": []},
+        {"symbol": "quant", "name": "Quant", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "rate", "name": "Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.65, "logarithmic": false, "choices": []},
+        {"symbol": "post_filt", "name": "Post Filter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.9, "logarithmic": false, "choices": []},
+        {"symbol": "non_lin", "name": "Non-Lin", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.58, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Delay",
+      "name": "MDA Delay",
+      "category": "Delay",
+      "description": "Delay by David Robillard",
+      "color": "#7bbaed",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Delay; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "l_delay", "name": "L Delay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "r_delay", "name": "R Delay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.27, "logarithmic": false, "choices": []},
+        {"symbol": "feedback", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "fb_tone", "name": "Fb Tone", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "fx_mix", "name": "FX Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.33, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Detune",
+      "name": "MDA Detune",
+      "category": "Pitch",
+      "description": "Pitch Shifter by David Robillard",
+      "color": "#bfa1ed",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Pitch Shifter; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "detune", "name": "Detune", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.2, "logarithmic": false, "choices": []},
+        {"symbol": "mix", "name": "Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.9, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "latency", "name": "Latency", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Dither",
+      "name": "MDA Dither",
+      "category": "Drive",
+      "description": "Distortion by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Distortion; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "word_len", "name": "Word Len", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "dither", "name": "Dither", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "dith_amp", "name": "Dith Amp", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "dc_trim", "name": "DC Trim", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "zoom", "name": "Zoom", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/DubDelay",
+      "name": "MDA DubDelay",
+      "category": "Delay",
+      "description": "Delay by David Robillard",
+      "color": "#7bbaed",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Delay; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "delay", "name": "Delay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "feedback", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "fb_tone", "name": "Fb Tone", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.4, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_depth", "name": "LFO Depth", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_rate", "name": "LFO Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "fx_mix", "name": "FX Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.33, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Dynamics",
+      "name": "MDA Dynamics",
+      "category": "Dynamics",
+      "description": "Dynamics by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Dynamics; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "thresh", "name": "Thresh", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "ratio", "name": "Ratio", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.4, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.1, "logarithmic": false, "choices": []},
+        {"symbol": "attack", "name": "Attack", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.18, "logarithmic": false, "choices": []},
+        {"symbol": "release", "name": "Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.55, "logarithmic": false, "choices": []},
+        {"symbol": "limiter", "name": "Limiter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "gate_thr", "name": "Gate Thr", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "gate_att", "name": "Gate Att", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.1, "logarithmic": false, "choices": []},
+        {"symbol": "gate_rel", "name": "Gate Rel", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "mix", "name": "Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/EPiano",
+      "name": "MDA ePiano",
+      "category": "Sound source",
+      "description": "Instrument by David Robillard",
+      "color": "#7bbaed",
+      "availability": "untested",
+      "reason": "Played by MIDI notes, which cannot be routed yet.",
+      "origin": "class Instrument; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"},
+        {"symbol": "event_in", "direction": "input", "type": "midi"}
+      ],
+      "parameters": [
+        {"symbol": "env_decay", "name": "Envelope Decay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "env_release", "name": "Envelope Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "hardness", "name": "Hardness", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "treble_boost", "name": "Treble Boost", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "modulation", "name": "Modulation", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_rate", "name": "LFO Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.65, "logarithmic": false, "choices": []},
+        {"symbol": "vel_sense", "name": "Velocity Sense", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.25, "logarithmic": false, "choices": []},
+        {"symbol": "stereo_width", "name": "Stereo Width", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "polyphonic", "name": "Polyphonic", "unit": "", "kind": "toggle", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "fine_tuning", "name": "Fine Tuning", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "random_tuning", "name": "Random Tuning", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.146, "logarithmic": false, "choices": []},
+        {"symbol": "overdrive", "name": "Overdrive", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Image",
+      "name": "MDA Image",
+      "category": "Utility",
+      "description": "Spatial by David Robillard",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Spatial; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "s_width", "name": "S Width", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.75, "logarithmic": false, "choices": []},
+        {"symbol": "s_pan", "name": "S Pan", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "m_level", "name": "M Level", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.75, "logarithmic": false, "choices": []},
+        {"symbol": "m_pan", "name": "M Pan", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/JX10",
+      "name": "MDA JX10",
+      "category": "Sound source",
+      "description": "Instrument by David Robillard",
+      "color": "#7bbaed",
+      "availability": "untested",
+      "reason": "Played by MIDI notes, which cannot be routed yet.",
+      "origin": "class Instrument; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"},
+        {"symbol": "event_in", "direction": "input", "type": "midi"}
+      ],
+      "parameters": [
+        {"symbol": "osc_mix", "name": "OSC Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "osc_tune", "name": "OSC Tune", "unit": "st", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.37, "logarithmic": false, "choices": []},
+        {"symbol": "osc_fine", "name": "OSC Fine", "unit": "ct", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.25, "logarithmic": false, "choices": []},
+        {"symbol": "glide", "name": "Glide", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
+        {"symbol": "gld_rate", "name": "Gld Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.32, "logarithmic": false, "choices": []},
+        {"symbol": "gld_bend", "name": "Gld Bend", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_freq", "name": "VCF Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.9, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_reso", "name": "VCF Reso", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_env", "name": "VCF Env", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.12, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_lfo", "name": "VCF LFO", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_vel", "name": "VCF Vel", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_att", "name": "VCF Att", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.9, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_dec", "name": "VCF Dec", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.89, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_sus", "name": "VCF Sus", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.9, "logarithmic": false, "choices": []},
+        {"symbol": "vcf_rel", "name": "VCF Rel", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.73, "logarithmic": false, "choices": []},
+        {"symbol": "env_att", "name": "ENV Att", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "env_dec", "name": "ENV Dec", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "env_sus", "name": "ENV Sus", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "env_rel", "name": "ENV Rel", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.71, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_rate", "name": "LFO Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.81, "logarithmic": false, "choices": []},
+        {"symbol": "vibrato", "name": "Vibrato", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.65, "logarithmic": false, "choices": []},
+        {"symbol": "noise", "name": "Noise", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "octave", "name": "Octave", "unit": "oct", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "tuning", "name": "Tuning", "unit": "ct", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Leslie",
+      "name": "MDA Leslie",
+      "category": "Amp",
+      "description": "Simulator by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Simulator; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "lo_width", "name": "Lo Width", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "lo_throb", "name": "Lo Throb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "hi_width", "name": "Hi Width", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "hi_depth", "name": "Hi Depth", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "hi_throb", "name": "Hi Throb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "x_over", "name": "X-Over", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.48, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "speed", "name": "Speed", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Limiter",
+      "name": "MDA Limiter",
+      "category": "Dynamics",
+      "description": "Limiter by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Limiter; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "thresh", "name": "Thresh", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "release", "name": "Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "attack", "name": "Attack", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.15, "logarithmic": false, "choices": []},
+        {"symbol": "knee", "name": "Knee", "unit": "", "kind": "enumeration", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": ["Hard", "Soft"]}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Loudness",
+      "name": "MDA Loudness",
+      "category": "Dynamics",
+      "description": "Dynamics by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Dynamics; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "loudness", "name": "Loudness", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "link", "name": "Link", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.35, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/MultiBand",
+      "name": "MDA MultiBand",
+      "category": "Filter",
+      "description": "Multiband EQ by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Multiband EQ; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "listen", "name": "Listen", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "l_m", "name": "L <> M", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.103, "logarithmic": false, "choices": []},
+        {"symbol": "m_h", "name": "M <> H", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.878, "logarithmic": false, "choices": []},
+        {"symbol": "l_comp", "name": "L Comp", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.54, "logarithmic": false, "choices": []},
+        {"symbol": "m_comp", "name": "M Comp", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "h_comp", "name": "H Comp", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "l_out", "name": "L Out", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.45, "logarithmic": false, "choices": []},
+        {"symbol": "m_out", "name": "M Out", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "h_out", "name": "H Out", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "attack", "name": "Attack", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.22, "logarithmic": false, "choices": []},
+        {"symbol": "release", "name": "Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.602, "logarithmic": false, "choices": []},
+        {"symbol": "stereo", "name": "Stereo", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.55, "logarithmic": false, "choices": []},
+        {"symbol": "process", "name": "Process", "unit": "", "kind": "toggle", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Overdrive",
+      "name": "MDA Overdrive",
+      "category": "Drive",
+      "description": "Distortion by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Distortion; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "drive", "name": "Drive", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "muffle", "name": "Muffle", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Piano",
+      "name": "MDA Piano",
+      "category": "Sound source",
+      "description": "Instrument by David Robillard",
+      "color": "#7bbaed",
+      "availability": "untested",
+      "reason": "Played by MIDI notes, which cannot be routed yet.",
+      "origin": "class Instrument; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"},
+        {"symbol": "event_in", "direction": "input", "type": "midi"}
+      ],
+      "parameters": [
+        {"symbol": "env_decay", "name": "Envelope Decay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "env_release", "name": "Envelope Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "hardness_offset", "name": "Hardness Offset", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "vel_to_hardness", "name": "Velocity to Hardness", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "muffling_filter", "name": "Muffling Filter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.803, "logarithmic": false, "choices": []},
+        {"symbol": "vel_to_muffling", "name": "Velocity to Muffling", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.251, "logarithmic": false, "choices": []},
+        {"symbol": "vel_sensitivity", "name": "Velocity Sensitivity", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.376, "logarithmic": false, "choices": []},
+        {"symbol": "stereo_width", "name": "Stereo Width", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "polyphony", "name": "Polyphony", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.33, "logarithmic": false, "choices": []},
+        {"symbol": "fine_tuning", "name": "Fine Tuning", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "random_detuning", "name": "Random Detuning", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.246, "logarithmic": false, "choices": []},
+        {"symbol": "stretch_tuning", "name": "Stretch Tuning", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/RePsycho",
+      "name": "MDA RePsycho!",
+      "category": "Pitch",
+      "description": "Pitch Shifter by David Robillard",
+      "color": "#bfa1ed",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Pitch Shifter; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "tune", "name": "Tune", "unit": "st", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "fine", "name": "Fine", "unit": "ct", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "decay", "name": "Decay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "thresh", "name": "Thresh", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "hold", "name": "Hold", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.45, "logarithmic": false, "choices": []},
+        {"symbol": "mix", "name": "Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "quality", "name": "Quality", "unit": "", "kind": "enumeration", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": ["Low", "High"]}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/RezFilter",
+      "name": "MDA RezFilter",
+      "category": "Filter",
+      "description": "Filter by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Filter; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "freq", "name": "Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.33, "logarithmic": false, "choices": []},
+        {"symbol": "res", "name": "Res", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "env_vcf", "name": "Env->VCF", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.85, "logarithmic": false, "choices": []},
+        {"symbol": "attack", "name": "Attack", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "release", "name": "Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_vcf", "name": "LFO->VCF", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_rate", "name": "LFO Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.4, "logarithmic": false, "choices": []},
+        {"symbol": "trigger", "name": "Trigger", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "max_freq", "name": "Max Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.75, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/RingMod",
+      "name": "MDA RingMod",
+      "category": "Modulation",
+      "description": "Modulator by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Modulator; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "freq", "name": "Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.0625, "logarithmic": false, "choices": []},
+        {"symbol": "fine", "name": "Fine", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "feedback", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/RoundPan",
+      "name": "MDA RoundPan",
+      "category": "Utility",
+      "description": "Spatial by David Robillard",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Spatial; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "pan", "name": "Pan", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "auto", "name": "Auto", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.8, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Shepard",
+      "name": "MDA Shepard",
+      "category": "Sound source",
+      "description": "Generator by David Robillard",
+      "color": "#7bbaed",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Generator; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "rate", "name": "Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Splitter",
+      "name": "MDA Splitter",
+      "category": "Dynamics",
+      "description": "Dynamics by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Dynamics; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "freq", "name": "Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "freq_sw", "name": "Freq SW", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "level", "name": "Level", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "level_sw", "name": "Level SW", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "envelope", "name": "Envelope", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Stereo",
+      "name": "MDA Stereo",
+      "category": "Utility",
+      "description": "Spatial by David Robillard",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Spatial; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "width", "name": "Width", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.78, "logarithmic": false, "choices": []},
+        {"symbol": "delay", "name": "Delay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.43, "logarithmic": false, "choices": []},
+        {"symbol": "balance", "name": "Balance", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "mod", "name": "Mod", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "rate", "name": "Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/SubSynth",
+      "name": "MDA SubSynth",
+      "category": "Drive",
+      "description": "Distortion by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Distortion; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "type", "name": "Type", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "level", "name": "Level", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
+        {"symbol": "tune", "name": "Tune", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "dry_mix", "name": "Dry Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "thresh", "name": "Thresh", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "release", "name": "Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.65, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/TalkBox",
+      "name": "MDA TalkBox",
+      "category": "Filter",
+      "description": "Filter by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Filter; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "wet", "name": "Wet", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "dry", "name": "Dry", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "carrier", "name": "Carrier", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "quality", "name": "Quality", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/TestTone",
+      "name": "MDA TestTone",
+      "category": "Sound source",
+      "description": "Generator by David Robillard",
+      "color": "#7bbaed",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Generator; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "level", "name": "Level", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.71, "logarithmic": false, "choices": []},
+        {"symbol": "channel", "name": "Channel", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "f1", "name": "F1", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.57, "logarithmic": false, "choices": []},
+        {"symbol": "f2", "name": "F2", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "sweep", "name": "Sweep", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
+        {"symbol": "thru", "name": "Thru", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "zero_db", "name": "Zero dB", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/ThruZero",
+      "name": "MDA ThruZero",
+      "category": "Modulation",
+      "description": "Flanger by David Robillard",
+      "color": "#f0aa72",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Flanger; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "rate", "name": "Rate", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
+        {"symbol": "depth", "name": "Depth", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.43, "logarithmic": false, "choices": []},
+        {"symbol": "mix", "name": "Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.47, "logarithmic": false, "choices": []},
+        {"symbol": "feedback", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
+        {"symbol": "depth_mod", "name": "Depth Mod", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Tracker",
+      "name": "MDA Tracker",
+      "category": "Utility",
+      "description": "Spectral by David Robillard",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Spectral; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "dynamics", "name": "Dynamics", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "mix", "name": "Mix", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "glide", "name": "Glide", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.97, "logarithmic": false, "choices": []},
+        {"symbol": "transpose", "name": "Transpose", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "maximum", "name": "Maximum", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.8, "logarithmic": false, "choices": []},
+        {"symbol": "trigger", "name": "Trigger", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Transient",
+      "name": "MDA Transient",
+      "category": "Dynamics",
+      "description": "Dynamics by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Dynamics; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "attack", "name": "Attack", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "release", "name": "Release", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "filter", "name": "Filter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.49, "logarithmic": false, "choices": []},
+        {"symbol": "att_hold", "name": "Att Hold", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.35, "logarithmic": false, "choices": []},
+        {"symbol": "rel_hold", "name": "Rel Hold", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.35, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/VocInput",
+      "name": "MDA VocInput",
+      "category": "Utility",
+      "description": "Spectral by David Robillard",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Spectral; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "tracking", "name": "Tracking", "unit": "", "kind": "integer", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "pitch", "name": "Pitch", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "breath", "name": "Breath", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.2, "logarithmic": false, "choices": []},
+        {"symbol": "s_thresh", "name": "S Thresh", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "max_freq", "name": "Max Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.35, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://drobilla.net/plugins/mda/Vocoder",
+      "name": "MDA Vocoder",
+      "category": "Filter",
+      "description": "Filter by David Robillard",
+      "color": "#a6c8ec",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Filter; bundle file:///usr/lib/lv2/mda.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "left_in", "direction": "input", "type": "audio"},
+        {"symbol": "right_in", "direction": "input", "type": "audio"},
+        {"symbol": "left_out", "direction": "output", "type": "audio"},
+        {"symbol": "right_out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "mod_in", "name": "Mod In", "unit": "", "kind": "enumeration", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": ["Left", "Right"]},
+        {"symbol": "output", "name": "Output", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "hi_thru", "name": "Hi Thru", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.4, "logarithmic": false, "choices": []},
+        {"symbol": "hi_band", "name": "Hi Band", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.4, "logarithmic": false, "choices": []},
+        {"symbol": "envelope", "name": "Envelope", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.16, "logarithmic": false, "choices": []},
+        {"symbol": "filter_q", "name": "Filter Q", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.55, "logarithmic": false, "choices": []},
+        {"symbol": "mid_freq", "name": "Mid Freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6667, "logarithmic": false, "choices": []},
+        {"symbol": "quality", "name": "Quality", "unit": "", "kind": "toggle", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://lv2plug.in/plugins/eg-amp",
+      "name": "Simple Amplifier",
+      "category": "Utility",
+      "description": "Amplifier",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Amplifier; bundle file:///usr/lib/lv2/eg-amp.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "in", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"}
+      ],
+      "parameters": [
+        {"symbol": "gain", "name": "Gain", "unit": "dB", "kind": "continuous", "minimum": -90, "maximum": 24, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://lv2plug.in/plugins/eg-fifths",
+      "name": "Example Fifths",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "unavailable",
+      "reason": "This module has no audio or control connectors to patch.",
+      "origin": "class Plugin; bundle file:///usr/lib/lv2/eg-fifths.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "in", "direction": "input", "type": "midi"},
+        {"symbol": "out", "direction": "output", "type": "midi"}
+      ],
+      "parameters": []
+    },
+    {
+      "uri": "http://lv2plug.in/plugins/eg-metro",
+      "name": "Example Metronome",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///usr/lib/lv2/eg-metro.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "control", "direction": "input", "type": "midi"}
+      ],
+      "parameters": []
+    },
+    {
+      "uri": "http://lv2plug.in/plugins/eg-midigate",
+      "name": "Example MIDI Gate",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///usr/lib/lv2/eg-midigate.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "in", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "control", "direction": "input", "type": "midi"}
+      ],
+      "parameters": []
+    },
+    {
+      "uri": "http://lv2plug.in/plugins/eg-params",
+      "name": "Example Parameters",
+      "category": "Utility",
+      "description": "Utility",
+      "color": "#93a4b5",
+      "availability": "unavailable",
+      "reason": "This module has no audio or control connectors to patch.",
+      "origin": "class Utility; bundle file:///usr/lib/lv2/eg-params.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "in", "direction": "input", "type": "midi"},
+        {"symbol": "out", "direction": "output", "type": "midi"}
+      ],
+      "parameters": []
+    },
+    {
+      "uri": "http://lv2plug.in/plugins/eg-scope#Mono",
+      "name": "Example Scope (Mono)",
+      "category": "Utility",
+      "description": "Analyser by Robin Gareus",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Analyser; bundle file:///usr/lib/lv2/eg-scope.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "in", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "control", "direction": "input", "type": "midi"},
+        {"symbol": "notify", "direction": "output", "type": "midi"}
+      ],
+      "parameters": []
+    },
+    {
+      "uri": "http://lv2plug.in/plugins/eg-scope#Stereo",
+      "name": "Example Scope (Stereo)",
+      "category": "Utility",
+      "description": "Analyser by Robin Gareus",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Analyser; bundle file:///usr/lib/lv2/eg-scope.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "in0", "direction": "input", "type": "audio"},
+        {"symbol": "in1", "direction": "input", "type": "audio"},
+        {"symbol": "out0", "direction": "output", "type": "audio"},
+        {"symbol": "out1", "direction": "output", "type": "audio"},
+        {"symbol": "control", "direction": "input", "type": "midi"},
+        {"symbol": "notify", "direction": "output", "type": "midi"}
+      ],
+      "parameters": []
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyclouds#beat_repeat",
+      "name": "Poly Beat Repeat",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "l_in", "direction": "input", "type": "audio"},
+        {"symbol": "r_in", "direction": "input", "type": "audio"},
+        {"symbol": "l_out", "direction": "output", "type": "audio"},
+        {"symbol": "r_out", "direction": "output", "type": "audio"},
+        {"symbol": "freeze", "direction": "input", "type": "cv"},
+        {"symbol": "trig", "direction": "input", "type": "cv"},
+        {"symbol": "position", "direction": "input", "type": "cv"},
+        {"symbol": "size", "direction": "input", "type": "cv"},
+        {"symbol": "pitch", "direction": "input", "type": "cv"},
+        {"symbol": "blend", "direction": "input", "type": "cv"},
+        {"symbol": "spread", "direction": "input", "type": "cv"},
+        {"symbol": "Feedback", "direction": "input", "type": "cv"},
+        {"symbol": "reverb", "direction": "input", "type": "cv"},
+        {"symbol": "density", "direction": "input", "type": "cv"},
+        {"symbol": "texture", "direction": "input", "type": "cv"},
+        {"symbol": "reverse", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "position_param", "name": "Loop Start", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.24, "logarithmic": false, "choices": []},
+        {"symbol": "size_param", "name": "Loop Size", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.69, "logarithmic": false, "choices": []},
+        {"symbol": "pitch_param", "name": "Pitch", "unit": "", "kind": "continuous", "minimum": -48, "maximum": 48, "default": 0.1, "logarithmic": false, "choices": []},
+        {"symbol": "in_gain_param", "name": "Gain", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "density_param", "name": "Size Mod", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.27, "logarithmic": false, "choices": []},
+        {"symbol": "texture_param", "name": "Slice Step", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.73, "logarithmic": false, "choices": []},
+        {"symbol": "blend_param", "name": "Slice Probability", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.78, "logarithmic": false, "choices": []},
+        {"symbol": "spread_param", "name": "Clock Divider", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "feedback_param", "name": "Pitch Mod", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.55, "logarithmic": false, "choices": []},
+        {"symbol": "reverb_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyclouds#granular",
+      "name": "Poly Mist Granular",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "l_in", "direction": "input", "type": "audio"},
+        {"symbol": "r_in", "direction": "input", "type": "audio"},
+        {"symbol": "l_out", "direction": "output", "type": "audio"},
+        {"symbol": "r_out", "direction": "output", "type": "audio"},
+        {"symbol": "freeze", "direction": "input", "type": "cv"},
+        {"symbol": "trig", "direction": "input", "type": "cv"},
+        {"symbol": "position", "direction": "input", "type": "cv"},
+        {"symbol": "size", "direction": "input", "type": "cv"},
+        {"symbol": "pitch", "direction": "input", "type": "cv"},
+        {"symbol": "blend", "direction": "input", "type": "cv"},
+        {"symbol": "spread", "direction": "input", "type": "cv"},
+        {"symbol": "Feedback", "direction": "input", "type": "cv"},
+        {"symbol": "reverb", "direction": "input", "type": "cv"},
+        {"symbol": "density", "direction": "input", "type": "cv"},
+        {"symbol": "texture", "direction": "input", "type": "cv"},
+        {"symbol": "reverse", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "position_param", "name": "Position", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.24, "logarithmic": false, "choices": []},
+        {"symbol": "size_param", "name": "Size", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.69, "logarithmic": false, "choices": []},
+        {"symbol": "pitch_param", "name": "Pitch", "unit": "", "kind": "continuous", "minimum": -48, "maximum": 48, "default": 0.1, "logarithmic": false, "choices": []},
+        {"symbol": "in_gain_param", "name": "In gain", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "density_param", "name": "Density", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.27, "logarithmic": false, "choices": []},
+        {"symbol": "texture_param", "name": "Texture", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.73, "logarithmic": false, "choices": []},
+        {"symbol": "blend_param", "name": "Blend", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.78, "logarithmic": false, "choices": []},
+        {"symbol": "spread_param", "name": "Spread", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "feedback_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.55, "logarithmic": false, "choices": []},
+        {"symbol": "reverb_param", "name": "Reverb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyclouds#looping_delay",
+      "name": "Poly Mist Looping Delay",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "l_in", "direction": "input", "type": "audio"},
+        {"symbol": "r_in", "direction": "input", "type": "audio"},
+        {"symbol": "l_out", "direction": "output", "type": "audio"},
+        {"symbol": "r_out", "direction": "output", "type": "audio"},
+        {"symbol": "freeze", "direction": "input", "type": "cv"},
+        {"symbol": "trig", "direction": "input", "type": "cv"},
+        {"symbol": "position", "direction": "input", "type": "cv"},
+        {"symbol": "size", "direction": "input", "type": "cv"},
+        {"symbol": "pitch", "direction": "input", "type": "cv"},
+        {"symbol": "blend", "direction": "input", "type": "cv"},
+        {"symbol": "spread", "direction": "input", "type": "cv"},
+        {"symbol": "Feedback", "direction": "input", "type": "cv"},
+        {"symbol": "reverb", "direction": "input", "type": "cv"},
+        {"symbol": "density", "direction": "input", "type": "cv"},
+        {"symbol": "texture", "direction": "input", "type": "cv"},
+        {"symbol": "reverse", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "position_param", "name": "Tape Length", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.4, "logarithmic": false, "choices": []},
+        {"symbol": "size_param", "name": "Pitch Window", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "pitch_param", "name": "Pitch", "unit": "", "kind": "continuous", "minimum": -48, "maximum": 48, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "in_gain_param", "name": "In gain", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "density_param", "name": "Diffusion", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "texture_param", "name": "Filter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.44, "logarithmic": false, "choices": []},
+        {"symbol": "blend_param", "name": "Blend", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.44, "logarithmic": false, "choices": []},
+        {"symbol": "spread_param", "name": "Spread", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.81, "logarithmic": false, "choices": []},
+        {"symbol": "feedback_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.53, "logarithmic": false, "choices": []},
+        {"symbol": "reverb_param", "name": "Reverb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
+        {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyclouds#oliverb",
+      "name": "Poly Mist Oliverb",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "l_in", "direction": "input", "type": "audio"},
+        {"symbol": "r_in", "direction": "input", "type": "audio"},
+        {"symbol": "l_out", "direction": "output", "type": "audio"},
+        {"symbol": "r_out", "direction": "output", "type": "audio"},
+        {"symbol": "freeze", "direction": "input", "type": "cv"},
+        {"symbol": "trig", "direction": "input", "type": "cv"},
+        {"symbol": "position", "direction": "input", "type": "cv"},
+        {"symbol": "size", "direction": "input", "type": "cv"},
+        {"symbol": "pitch", "direction": "input", "type": "cv"},
+        {"symbol": "blend", "direction": "input", "type": "cv"},
+        {"symbol": "spread", "direction": "input", "type": "cv"},
+        {"symbol": "Feedback", "direction": "input", "type": "cv"},
+        {"symbol": "reverb", "direction": "input", "type": "cv"},
+        {"symbol": "density", "direction": "input", "type": "cv"},
+        {"symbol": "texture", "direction": "input", "type": "cv"},
+        {"symbol": "reverse", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "position_param", "name": "Pre-delay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.54, "logarithmic": false, "choices": []},
+        {"symbol": "size_param", "name": "Size", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.79, "logarithmic": false, "choices": []},
+        {"symbol": "pitch_param", "name": "Pitch", "unit": "", "kind": "continuous", "minimum": -48, "maximum": 48, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "in_gain_param", "name": "In gain", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "density_param", "name": "Decay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.7, "logarithmic": false, "choices": []},
+        {"symbol": "texture_param", "name": "Damp", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.33, "logarithmic": false, "choices": []},
+        {"symbol": "blend_param", "name": "Blend", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "spread_param", "name": "Diffusion", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.09, "logarithmic": false, "choices": []},
+        {"symbol": "feedback_param", "name": "Modulation Speed", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.44, "logarithmic": false, "choices": []},
+        {"symbol": "reverb_param", "name": "Modulation Amount", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "freeze_param", "name": "Hold", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyclouds#resonestor",
+      "name": "Poly Mist Resonestor",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "l_in", "direction": "input", "type": "audio"},
+        {"symbol": "r_in", "direction": "input", "type": "audio"},
+        {"symbol": "l_out", "direction": "output", "type": "audio"},
+        {"symbol": "r_out", "direction": "output", "type": "audio"},
+        {"symbol": "freeze", "direction": "input", "type": "cv"},
+        {"symbol": "trig", "direction": "input", "type": "cv"},
+        {"symbol": "position", "direction": "input", "type": "cv"},
+        {"symbol": "size", "direction": "input", "type": "cv"},
+        {"symbol": "pitch", "direction": "input", "type": "cv"},
+        {"symbol": "blend", "direction": "input", "type": "cv"},
+        {"symbol": "spread", "direction": "input", "type": "cv"},
+        {"symbol": "feedback", "direction": "input", "type": "cv"},
+        {"symbol": "reverb", "direction": "input", "type": "cv"},
+        {"symbol": "density", "direction": "input", "type": "cv"},
+        {"symbol": "texture", "direction": "input", "type": "cv"},
+        {"symbol": "reverse", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "position_param", "name": "Timbre", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.83, "logarithmic": false, "choices": []},
+        {"symbol": "size_param", "name": "Chord", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.36, "logarithmic": false, "choices": []},
+        {"symbol": "pitch_param", "name": "Pitch", "unit": "", "kind": "continuous", "minimum": -48, "maximum": 48, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "in_gain_param", "name": "In gain", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "density_param", "name": "Decay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.52, "logarithmic": false, "choices": []},
+        {"symbol": "texture_param", "name": "Filter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "blend_param", "name": "Random mod", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.05, "logarithmic": false, "choices": []},
+        {"symbol": "spread_param", "name": "Spread", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.82, "logarithmic": false, "choices": []},
+        {"symbol": "feedback_param", "name": "Harmonics", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
+        {"symbol": "reverb_param", "name": "Scatter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.08, "logarithmic": false, "choices": []},
+        {"symbol": "freeze_param", "name": "Switch Voice", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyclouds#spectral",
+      "name": "Poly Mist Spectral",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "l_in", "direction": "input", "type": "audio"},
+        {"symbol": "r_in", "direction": "input", "type": "audio"},
+        {"symbol": "l_out", "direction": "output", "type": "audio"},
+        {"symbol": "r_out", "direction": "output", "type": "audio"},
+        {"symbol": "freeze", "direction": "input", "type": "cv"},
+        {"symbol": "trig", "direction": "input", "type": "cv"},
+        {"symbol": "position", "direction": "input", "type": "cv"},
+        {"symbol": "size", "direction": "input", "type": "cv"},
+        {"symbol": "pitch", "direction": "input", "type": "cv"},
+        {"symbol": "blend", "direction": "input", "type": "cv"},
+        {"symbol": "spread", "direction": "input", "type": "cv"},
+        {"symbol": "Feedback", "direction": "input", "type": "cv"},
+        {"symbol": "reverb", "direction": "input", "type": "cv"},
+        {"symbol": "density", "direction": "input", "type": "cv"},
+        {"symbol": "texture", "direction": "input", "type": "cv"},
+        {"symbol": "reverse", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "position_param", "name": "Position", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "size_param", "name": "Size", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "pitch_param", "name": "Pitch", "unit": "", "kind": "continuous", "minimum": -48, "maximum": 48, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "in_gain_param", "name": "In gain", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "density_param", "name": "Density", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "texture_param", "name": "Texture", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "blend_param", "name": "Blend", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "spread_param", "name": "Spread", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "feedback_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "reverb_param", "name": "Reverb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyclouds#stretch",
+      "name": "Poly Mist Stretch",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "l_in", "direction": "input", "type": "audio"},
+        {"symbol": "r_in", "direction": "input", "type": "audio"},
+        {"symbol": "l_out", "direction": "output", "type": "audio"},
+        {"symbol": "r_out", "direction": "output", "type": "audio"},
+        {"symbol": "freeze", "direction": "input", "type": "cv"},
+        {"symbol": "trig", "direction": "input", "type": "cv"},
+        {"symbol": "position", "direction": "input", "type": "cv"},
+        {"symbol": "size", "direction": "input", "type": "cv"},
+        {"symbol": "pitch", "direction": "input", "type": "cv"},
+        {"symbol": "blend", "direction": "input", "type": "cv"},
+        {"symbol": "spread", "direction": "input", "type": "cv"},
+        {"symbol": "Feedback", "direction": "input", "type": "cv"},
+        {"symbol": "reverb", "direction": "input", "type": "cv"},
+        {"symbol": "density", "direction": "input", "type": "cv"},
+        {"symbol": "texture", "direction": "input", "type": "cv"},
+        {"symbol": "reverse", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "position_param", "name": "Position", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "size_param", "name": "Size", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.66, "logarithmic": false, "choices": []},
+        {"symbol": "pitch_param", "name": "Pitch", "unit": "", "kind": "continuous", "minimum": -48, "maximum": 48, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "in_gain_param", "name": "In gain", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "density_param", "name": "Diffusion", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.18, "logarithmic": false, "choices": []},
+        {"symbol": "texture_param", "name": "Filter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.48, "logarithmic": false, "choices": []},
+        {"symbol": "blend_param", "name": "Blend", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "spread_param", "name": "Spread", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.79, "logarithmic": false, "choices": []},
+        {"symbol": "feedback_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.48, "logarithmic": false, "choices": []},
+        {"symbol": "reverb_param", "name": "Reverb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.15, "logarithmic": false, "choices": []},
+        {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polygrids",
+      "name": "Poly Topological Sequencer",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "clock", "direction": "input", "type": "cv"},
+        {"symbol": "reset", "direction": "input", "type": "cv"},
+        {"symbol": "mapx_cv", "direction": "input", "type": "cv"},
+        {"symbol": "mapy_cv", "direction": "input", "type": "cv"},
+        {"symbol": "chaos_cv", "direction": "input", "type": "cv"},
+        {"symbol": "bd_fill_cv", "direction": "input", "type": "cv"},
+        {"symbol": "sn_fill_cv", "direction": "input", "type": "cv"},
+        {"symbol": "hh_fill_cv", "direction": "input", "type": "cv"},
+        {"symbol": "swing_cv", "direction": "input", "type": "cv"},
+        {"symbol": "run_input", "direction": "input", "type": "cv"},
+        {"symbol": "bd_output", "direction": "output", "type": "cv"},
+        {"symbol": "sn_output", "direction": "output", "type": "cv"},
+        {"symbol": "hh_output", "direction": "output", "type": "cv"},
+        {"symbol": "bd_acc_output", "direction": "output", "type": "cv"},
+        {"symbol": "sn_acc_output", "direction": "output", "type": "cv"},
+        {"symbol": "hh_acc_output", "direction": "output", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "reset_button", "name": "Reset button", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "run_button", "name": "Run button", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "tempo", "name": "Tempo", "unit": "", "kind": "continuous", "minimum": 37, "maximum": 240, "default": 120, "logarithmic": false, "choices": []},
+        {"symbol": "mapx", "name": "Map x", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "mapy", "name": "Map y", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "chaos", "name": "Chaos", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "bd_dens", "name": "Bass drum density", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "sn_dens", "name": "Snare density", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "hh_dens", "name": "Hihat density", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "swing", "name": "Swing", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 0.9, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polymarbles",
+      "name": "Poly Random CV Sampler",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "t_bias_input", "direction": "input", "type": "cv"},
+        {"symbol": "x_bias_input", "direction": "input", "type": "cv"},
+        {"symbol": "t_clock_input", "direction": "input", "type": "cv"},
+        {"symbol": "t_rate_input", "direction": "input", "type": "cv"},
+        {"symbol": "t_jitter_input", "direction": "input", "type": "cv"},
+        {"symbol": "deja_vu_input", "direction": "input", "type": "cv"},
+        {"symbol": "x_steps_input", "direction": "input", "type": "cv"},
+        {"symbol": "x_spread_input", "direction": "input", "type": "cv"},
+        {"symbol": "x_clock_input", "direction": "input", "type": "cv"},
+        {"symbol": "t1_output", "direction": "output", "type": "cv"},
+        {"symbol": "t2_output", "direction": "output", "type": "cv"},
+        {"symbol": "t3_output", "direction": "output", "type": "cv"},
+        {"symbol": "y_output", "direction": "output", "type": "cv"},
+        {"symbol": "x1_output", "direction": "output", "type": "cv"},
+        {"symbol": "x2_output", "direction": "output", "type": "cv"},
+        {"symbol": "x3_output", "direction": "output", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "t_deja_vu_param", "name": "T Deja Vu", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "x_deja_vu_param", "name": "X Deja Vu", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "deja_vu_param", "name": "Deja Vu Probablity", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "t_rate_param", "name": "T Clock Tempo", "unit": "", "kind": "continuous", "minimum": 5, "maximum": 840, "default": 120, "logarithmic": false, "choices": []},
+        {"symbol": "x_spread_param", "name": "X Spread", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "t_mode_param", "name": "T Mode", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 2, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "x_mode_param", "name": "X Mode", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 2, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "deja_vu_length_param", "name": "Deja Vu Length", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "t_bias_param", "name": "T Gate Bias", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "x_bias_param", "name": "X Distribution Bias", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "t_range_param", "name": "T Range", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 2, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "x_range_param", "name": "X Range", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 2, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "external_param", "name": "External", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "t_jitter_param", "name": "T Jitter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "x_steps_param", "name": "X Smoothness Steps", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "x_scale", "name": "X Scale", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 5, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "y_divider", "name": "Y Divider", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 12, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "x_clock_source_internal", "name": "X Clock Source Internal", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "y_spread_param", "name": "Y Spread", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "y_bias_param", "name": "Y Distribution Bias", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "y_steps_param", "name": "Y Smoothness", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyplaits",
+      "name": "Poly Macro Osc",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "engine_cv", "direction": "input", "type": "cv"},
+        {"symbol": "timbre_cv", "direction": "input", "type": "cv"},
+        {"symbol": "freq_cv", "direction": "input", "type": "cv"},
+        {"symbol": "morph_cv", "direction": "input", "type": "cv"},
+        {"symbol": "harmonics_cv", "direction": "input", "type": "cv"},
+        {"symbol": "trigger_cv", "direction": "input", "type": "cv"},
+        {"symbol": "level_cv", "direction": "input", "type": "cv"},
+        {"symbol": "note_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "model", "name": "Model", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 16, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "frequency", "name": "Frequency", "unit": "", "kind": "continuous", "minimum": -4, "maximum": 4, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "harmonics", "name": "Harmonics", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "timbre", "name": "Timbre", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "morph", "name": "Morph", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "timbre_mod", "name": "Timbre Mod", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "freq_mod", "name": "Frequency Mod", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "morph_mod", "name": "Morph Mod", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "lpg_color", "name": "LPG Color", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "lpg_decay", "name": "LPG Decay", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polyrings",
+      "name": "Poly Random CV Sampler",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "in_input", "direction": "input", "type": "audio"},
+        {"symbol": "odd_output", "direction": "output", "type": "audio"},
+        {"symbol": "even_output", "direction": "output", "type": "audio"},
+        {"symbol": "brightness_mod_input", "direction": "input", "type": "cv"},
+        {"symbol": "frequency_mod_input", "direction": "input", "type": "cv"},
+        {"symbol": "damping_mod_input", "direction": "input", "type": "cv"},
+        {"symbol": "structure_mod_input", "direction": "input", "type": "cv"},
+        {"symbol": "position_mod_input", "direction": "input", "type": "cv"},
+        {"symbol": "strum_input", "direction": "input", "type": "cv"},
+        {"symbol": "pitch_input", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "polyphony_param", "name": "Polyphony", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 2, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "resonator_param", "name": "Resonator", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 7, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "frequency_param", "name": "Frequency", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 60, "default": 30, "logarithmic": false, "choices": []},
+        {"symbol": "structure_param", "name": "Structure", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "brightness_param", "name": "Brightness", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "damping_param", "name": "Damping", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "position_param", "name": "Position", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "brightness_mod_param", "name": "Brightness Mod", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "frequency_mod_param", "name": "Frequency Mod", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "damping_mod_param", "name": "Damping Mod", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "structure_mod_param", "name": "Structure Mod", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "position_mod_param", "name": "Position Mod", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "internal_exciter_param", "name": "Internal Exciter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polytides",
+      "name": "Poly Looping Envelope Generator",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "slope_input", "direction": "input", "type": "cv"},
+        {"symbol": "frequency_input", "direction": "input", "type": "cv"},
+        {"symbol": "v_oct_input", "direction": "input", "type": "cv"},
+        {"symbol": "smoothness_input", "direction": "input", "type": "cv"},
+        {"symbol": "shape_input", "direction": "input", "type": "cv"},
+        {"symbol": "shift_input", "direction": "input", "type": "cv"},
+        {"symbol": "trig_input", "direction": "input", "type": "cv"},
+        {"symbol": "clock_input", "direction": "input", "type": "cv"},
+        {"symbol": "out1", "direction": "output", "type": "cv"},
+        {"symbol": "out2", "direction": "output", "type": "cv"},
+        {"symbol": "out3", "direction": "output", "type": "cv"},
+        {"symbol": "out4", "direction": "output", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "range_param", "name": "Range", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "mode_param", "name": "Mode", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 4, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "ramp_param", "name": "Ramp", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "frequency_param", "name": "Frequency", "unit": "", "kind": "continuous", "minimum": -48, "maximum": 48, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "shape_param", "name": "Shape", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "smoothness_param", "name": "Smoothness", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "slope_param", "name": "Slope", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "shift_param", "name": "Shift", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "slope_cv_param", "name": "Slope", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "frequency_cv_param", "name": "Frequency", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "smoothness_cv_param", "name": "Smoothness", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "shape_cv_param", "name": "Shape", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "shift_cv_param", "name": "Shift", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#bitcrusher",
+      "name": "Poly Twist Bitmangler",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "input_amp_cv", "direction": "input", "type": "cv"},
+        {"symbol": "input_amp_2_cv", "direction": "input", "type": "cv"},
+        {"symbol": "bit_cv", "direction": "input", "type": "cv"},
+        {"symbol": "xor_vs_and_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "bits", "name": "Bits", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "xor_vs_and", "name": "Xor vs and", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "int_osc", "name": "Int osc", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp", "name": "Amp or freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.04, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp_2", "name": "Input amplitude 2", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.14, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#chebyschev",
+      "name": "Poly Twist Chebyschev",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "input_amp_cv", "direction": "input", "type": "cv"},
+        {"symbol": "input_amp_2_cv", "direction": "input", "type": "cv"},
+        {"symbol": "order_cv", "direction": "input", "type": "cv"},
+        {"symbol": "gain_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "order", "name": "Order", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 8, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "gain", "name": "Gain", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "int_osc", "name": "Int osc", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp", "name": "Amp or freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp_2", "name": "Input amplitude 2", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#comparator",
+      "name": "Poly Twist Comparator",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "input_amp_cv", "direction": "input", "type": "cv"},
+        {"symbol": "input_amp_2_cv", "direction": "input", "type": "cv"},
+        {"symbol": "comparator_cv", "direction": "input", "type": "cv"},
+        {"symbol": "order_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "comparator", "name": "Comparator", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 8, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "order", "name": "Order", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "int_osc", "name": "Int osc", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp", "name": "Amp or freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp_2", "name": "Input amplitude 2", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#delay",
+      "name": "Poly Twist Delay",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "feedback_cv", "direction": "input", "type": "cv"},
+        {"symbol": "dry_wet_cv", "direction": "input", "type": "cv"},
+        {"symbol": "speed_direct_cv", "direction": "input", "type": "cv"},
+        {"symbol": "length_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "speed_direction", "name": "Speed direction", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 8, "default": 2.39, "logarithmic": false, "choices": []},
+        {"symbol": "length", "name": "Length", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.92, "logarithmic": false, "choices": []},
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "feedback", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.75, "logarithmic": false, "choices": []},
+        {"symbol": "dry_wet", "name": "Dry wet", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#doppler",
+      "name": "Poly Twist Binaural Doppler Panner",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "lfo_frequency_cv", "direction": "input", "type": "cv"},
+        {"symbol": "lfo_amplitude_cv", "direction": "input", "type": "cv"},
+        {"symbol": "x_coord_cv", "direction": "input", "type": "cv"},
+        {"symbol": "y_coord_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "x_coord", "name": "X coord", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 8, "default": 4.45, "logarithmic": false, "choices": []},
+        {"symbol": "y_coord", "name": "Y coord", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.04, "logarithmic": false, "choices": []},
+        {"symbol": "space_size", "name": "Space size", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 2, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_frequency", "name": "Lfo frequency", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.11, "logarithmic": false, "choices": []},
+        {"symbol": "lfo_amplitude", "name": "Lfo amplitude", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.22, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#fold",
+      "name": "Poly Twist Wavefolder",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "input_amp_cv", "direction": "input", "type": "cv"},
+        {"symbol": "input_amp_2_cv", "direction": "input", "type": "cv"},
+        {"symbol": "num_fold_cv", "direction": "input", "type": "cv"},
+        {"symbol": "input_bias_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "n_folds", "name": "Number of folds", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 8, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "input_bias", "name": "Input bias", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "int_osc", "name": "Int osc", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp", "name": "Amp or freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp_2", "name": "Input amplitude 2", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#frequency_shifter",
+      "name": "Poly Twist frequency shifter",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "feedback_cv", "direction": "input", "type": "cv"},
+        {"symbol": "dry_wet_cv", "direction": "input", "type": "cv"},
+        {"symbol": "frequency_shift_cv", "direction": "input", "type": "cv"},
+        {"symbol": "crossfade_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "frequency_shift", "name": "Frequency shift", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 8, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "crossfade", "name": "Crossfade", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "mode", "name": "Mode", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "feedback", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "dry_wet", "name": "Dry wet", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#meta",
+      "name": "Poly Twist Meta",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "level1_cv", "direction": "input", "type": "cv"},
+        {"symbol": "level2_cv", "direction": "input", "type": "cv"},
+        {"symbol": "algorthm_cv", "direction": "input", "type": "cv"},
+        {"symbol": "timbre_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "algorithm", "name": "Algorithm", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 8, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "timbre", "name": "Timbre", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "shape", "name": "Shape", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "level1", "name": "Level 1", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "level2", "name": "Level 2", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "http://polyeffects.com/lv2/polywarps#vocoder",
+      "name": "Poly Twist Vocoder",
+      "category": "Utility",
+      "description": "LV2 plugin",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "enable": "enabled",
+      "ports": [
+        {"symbol": "carrier", "direction": "input", "type": "audio"},
+        {"symbol": "modulator", "direction": "input", "type": "audio"},
+        {"symbol": "out", "direction": "output", "type": "audio"},
+        {"symbol": "aux", "direction": "output", "type": "audio"},
+        {"symbol": "input_amp_cv", "direction": "input", "type": "cv"},
+        {"symbol": "input_amp_2_cv", "direction": "input", "type": "cv"},
+        {"symbol": "warping_cv", "direction": "input", "type": "cv"},
+        {"symbol": "release_cv", "direction": "input", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "warping", "name": "Warping", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 8, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "release", "name": "Release time", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "int_osc", "name": "Int osc", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 3, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp", "name": "Amp or freq", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "input_amp_2", "name": "Input amplitude 2", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    }
+  ]
+}

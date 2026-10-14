@@ -9,7 +9,8 @@ include(CTest)
 
 add_library(pedal_core src/core/model.cpp src/core/reference_catalogue.cpp src/engine/simulated_engine.cpp
   src/engine/ingen/turtle.cpp src/engine/ingen/protocol.cpp src/engine/ingen/session.cpp
-  src/engine/ingen/socket_transport.cpp src/engine/ingen/ingen_engine.cpp)
+  src/engine/ingen/socket_transport.cpp src/engine/ingen/ingen_engine.cpp
+  src/catalogue/json.cpp src/catalogue/catalogue.cpp)
 target_include_directories(pedal_core PUBLIC src)
 find_package(Threads REQUIRED)
 target_link_libraries(pedal_core PUBLIC Threads::Threads)
@@ -20,6 +21,21 @@ else()
 endif()
 if(MSVC)
   target_compile_options(pedal_core PRIVATE /W4 /permissive- /utf-8)
+endif()
+
+# The exporter reads installed plugins through Lilv, as the engine does.
+# It is a Linux tool; its output is what other platforms use as a fixture.
+if(NOT WIN32)
+  find_package(PkgConfig)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(LILV IMPORTED_TARGET lilv-0)
+  endif()
+  if(LILV_FOUND)
+    add_executable(pedal_catalogue_export tools/catalogue-export/main.cpp)
+    target_link_libraries(pedal_catalogue_export PRIVATE pedal_core PkgConfig::LILV)
+    target_compile_definitions(pedal_catalogue_export PRIVATE PEDAL_LILV_VERSION="${LILV_VERSION}")
+    target_compile_options(pedal_catalogue_export PRIVATE -Wall -Wextra -Wno-missing-field-initializers)
+  endif()
 endif()
 
 option(PEDAL_BUILD_UI "Build LVGL simulator and visual checks" ON)
@@ -52,7 +68,10 @@ if(PEDAL_BUILD_UI)
       target_compile_options(pedal_pi PRIVATE /utf-8)
     endif()
     add_custom_command(TARGET pedal_pi POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/licenses" "$<TARGET_FILE_DIR:pedal_pi>/licenses")
+      COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/licenses" "$<TARGET_FILE_DIR:pedal_pi>/licenses"
+      # What --engine offers by default: the exported fixture and the project's overlay.
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/catalogue/wsl-debian.json" "$<TARGET_FILE_DIR:pedal_pi>/catalogue.json"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/catalogue/overlay.json" "$<TARGET_FILE_DIR:pedal_pi>/catalogue-overlay.json")
     if(BUILD_TESTING)
       add_test(NAME windows_driver_smoke COMMAND pedal_pi --smoke)
       set_tests_properties(windows_driver_smoke PROPERTIES TIMEOUT 15)
@@ -72,7 +91,12 @@ if(BUILD_TESTING)
   add_executable(pedal_ingen_tests tests/ingen_tests.cpp)
   target_link_libraries(pedal_ingen_tests PRIVATE pedal_core)
   add_test(NAME ingen_adapter COMMAND pedal_ingen_tests)
-  # Needs a running engine, so it is not a CTest: see tools/ingen-spike/07-adapter.sh.
+  add_executable(pedal_catalogue_tests tests/catalogue_tests.cpp)
+  target_link_libraries(pedal_catalogue_tests PRIVATE pedal_core)
+  add_test(NAME catalogue_files COMMAND pedal_catalogue_tests "${CMAKE_CURRENT_SOURCE_DIR}/config/catalogue")
+  # These need a running engine, so they are not CTests: see tools/ingen-spike/07-adapter.sh and 08-catalogue.sh.
   add_executable(pedal_ingen_live tests/ingen_live.cpp)
   target_link_libraries(pedal_ingen_live PRIVATE pedal_core)
+  add_executable(pedal_catalogue_live tests/catalogue_live.cpp)
+  target_link_libraries(pedal_catalogue_live PRIVATE pedal_core)
 endif()

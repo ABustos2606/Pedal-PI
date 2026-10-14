@@ -17,6 +17,8 @@ using namespace pedal::ingen;
 namespace {
 void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
 const std::string amp = "http://lv2plug.in/plugins/eg-amp";
+// Like Poly's Clouds: silent until its own `enabled` control is set.
+const std::string switched = "urn:test:switched";
 const std::string rdf_type(uri::rdf_type);
 std::string full(std::string_view space, std::string_view local) { return std::string(space) + std::string(local); }
 Value iri_value(std::string text) { return {Value::Kind::Uri, 0, false, std::move(text)}; }
@@ -40,7 +42,7 @@ struct FakeTransport final : Transport {
 struct FakeEngine {
     std::map<std::string, Properties> objects{{"ingen:/main", {}}};
     std::vector<std::pair<std::string, std::string>> arcs;
-    std::set<std::string> plugins{amp};
+    std::set<std::string> plugins{amp, switched};
     std::vector<FakeTransport*> clients;
     bool reachable = true;
     int mute = 0, requests = 0, label = 0;
@@ -102,6 +104,10 @@ struct FakeEngine {
         gain->insert(gain->begin(), {full(uri::ingen, "value"), number_value(0)});
         port("in", 1, "AudioPort", "InputPort");
         port("out", 2, "AudioPort", "OutputPort");
+        if (const auto* prototype = find(objects[path], full(uri::lv2, "prototype")); prototype && prototype->text == switched) {
+            auto* enabled = port("enabled", 3, "ControlPort", "InputPort");
+            enabled->insert(enabled->begin(), {full(uri::ingen, "value"), number_value(0)});
+        }
     }
     void erase(const std::string& path) {
         std::erase_if(objects, [&](const auto& entry) { return entry.first == path || entry.first.starts_with(path + "/"); });
@@ -306,7 +312,9 @@ void turtle_and_protocol() {
 }
 
 void adapter() {
-    register_definitions(ingen_development_catalogue());
+    // As the catalogue export describes the LV2 example amplifier.
+    register_definitions({{amp, "Amp", "Utility", "Amplifier", 0x93a4b5, {{"in", Direction::Input}, {"out", Direction::Output}},
+                           {{"gain", "Gain", "dB", ParameterKind::Continuous, -90, 24, 0}}}});
     FakeEngine fake;
     Rig rig(fake);
     auto& engine = *rig.engine;
@@ -404,6 +412,25 @@ void adapter() {
     check(!late.result(SetBypass{foreign.id, true}).accepted && late.result(RemoveModule{foreign.id}).accepted && !fake.objects.contains("ingen:/main/foreign"), "placeholder rules wrong");
     late.engine->disconnect(); rig.settle(); other.settle();
     check(rig.result(SetParameter{3, "gain", 6.5}).accepted, "value could not be corrected");
+
+    // A plugin with its own on/off control: adding it switches it on, bypass
+    // clears that control, and the control never appears as a parameter.
+    {
+        ModuleDefinition own{switched, "Switched", "Utility", "", 0x93a4b5, {{"in", Direction::Input}, {"out", Direction::Output}},
+                             {{"gain", "Gain", "dB", ParameterKind::Continuous, -90, 24, 0}}};
+        own.enable_symbol = "enabled";
+        register_definitions({own});
+        check(rig.result(AddModule{switched, 600, 24}).accepted, "switched module refused");
+        const auto id = rig.graph().modules.back().id;
+        const auto port = "ingen:/main/m" + std::to_string(id) + "/enabled";
+        check(property(fake, port, full(uri::ingen, "value"))->number == 1 && !rig.graph().modules.back().bypassed, "module with its own switch was left off");
+        check(rig.graph().modules.back().parameters.size() == 1, "the on/off control was shown as a parameter");
+        check(rig.result(SetBypass{id, true}).accepted && property(fake, port, full(uri::ingen, "value"))->number == 0 && find_module(rig.graph(), id)->bypassed, "bypass did not clear the plugin's switch");
+        check(!property(fake, "ingen:/main/m" + std::to_string(id), full(uri::ingen, "enabled")), "the engine's own bypass was used as well");
+        check(rig.result(DuplicateModule{id, 600, 144}).accepted && rig.graph().modules.back().bypassed, "copy lost the switch state");
+        check(rig.result(RemoveModule{rig.graph().modules.back().id}).accepted && rig.result(SetBypass{id, false}).accepted && !find_module(rig.graph(), id)->bypassed, "switch could not be set again");
+        check(rig.result(RemoveModule{id}).accepted, "switched module could not be removed");
+    }
 
     // Session snapshot: kept by the interface, restored through the engine.
     events.clear();

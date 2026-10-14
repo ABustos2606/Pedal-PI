@@ -2,7 +2,7 @@
 
 Modular effects instrument for Raspberry Pi 5, with a new touchscreen interface inspired by Poly Effects' Beebo.
 
-**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine, and can now drive a real Ingen engine running under WSL through the project's own adapter. Pi integration, audio hardware and patch storage remain unimplemented.
+**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine, and can now drive a real Ingen engine running under WSL through the project's own adapter, offering the plugins installed there from an exported catalogue (58 modules, the Mutable-derived ones included). Pi integration, audio hardware and patch storage remain unimplemented.
 **Date:** 12 October 2026 — revised 13 October 2026 (LVGL direction, Casette reference, and NAM evaluation)  
 **Project folder:** `C:\Pedal PI`
 
@@ -35,7 +35,7 @@ ctest --preset windows
 
 The first configure fetches LVGL at a pinned commit. After that the cached build and application work offline. See [Windows UI development](docs/11-windows-ui-foundation.md) for interactions, architecture, checks and current limits.
 
-To drive a real engine instead of the simulation, start Ingen under WSL and pass its address: `& '.\build\Debug\pedal_pi.exe' --engine tcp://127.0.0.1:16180`. See [the adapter record](docs/15-ingen-adapter.md) for setup and limits.
+To drive a real engine instead of the simulation, start Ingen under WSL and pass its address: `& '.\build\Debug\pedal_pi.exe' --engine tcp://127.0.0.1:16180`. See [the adapter record](docs/15-ingen-adapter.md) for setup and limits. Without `--engine`, **+ Add** lists the demo modules followed by the exported plugins; in the simulation they can be patched and edited, but nothing is heard.
 
 Drag empty space to pan; **Home** restores the original view. Hold a module for parameters, software bypass, duplication or deletion. Tap a cable to select it, then use **Delete cable** in the footer. These editor features work entirely with the simulated engine.
 
@@ -62,6 +62,7 @@ Global BPM and CPU readouts stay in the bottom-right footer on every page. The s
 | [Windows UI development](docs/11-windows-ui-foundation.md) | Build/run instructions, shared UI and simulated engine, verification and remaining Phase 1–2 work |
 | [Desktop editor review](docs/12-desktop-editor-review.md) | Recorded Phase 2 desktop acceptance, screenshots and interaction/domain checks |
 | [Ingen engine evidence](docs/14-ingen-engine-evidence.md) | Engine built and measured on the PC under WSL2: protocol, routing, summing, reconnect, save/load, six defects and three patches |
+| [Catalogue export](docs/16-catalogue-export.md) | Installed LV2 plugins exported to a catalogue file, every entry loaded in the live engine, sound measured through Clouds, and the overlay the project owns |
 | [Ingen engine adapter](docs/15-ingen-adapter.md) | The interface's real engine backend: mapping, threading, synchronization, reconnection, live results and limits |
 | [Domain and engine contracts](docs/13-domain-and-engine-contracts.md) | Identity, typed metadata, missing modules, mono/stereo routing, lifecycle, save and capability semantics |
 

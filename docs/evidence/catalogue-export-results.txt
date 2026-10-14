@@ -1,0 +1,89 @@
+==== export (LV2_PATH=/usr/lib/lv2:/opt/pedalpi/lib/x86_64-linux-gnu/lv2:/opt/pedalpi/lib/lv2)
+skipped file:///opt/pedalpi/lib/x86_64-linux-gnu/lv2/ingen.lv2/MonoEffect.ttl (machine-local address)
+skipped file:///opt/pedalpi/lib/x86_64-linux-gnu/lv2/ingen.lv2/MonoInstrument.ttl (machine-local address)
+skipped file:///opt/pedalpi/lib/x86_64-linux-gnu/lv2/ingen.lv2/StereoEffect.ttl (machine-local address)
+skipped file:///opt/pedalpi/lib/x86_64-linux-gnu/lv2/ingen.lv2/StereoInstrument.ttl (machine-local address)
+withheld http://drobilla.net/plugins/mda/DX10: Played by MIDI notes, which cannot be routed yet.
+withheld http://drobilla.net/plugins/mda/EPiano: Played by MIDI notes, which cannot be routed yet.
+withheld http://drobilla.net/plugins/mda/JX10: Played by MIDI notes, which cannot be routed yet.
+withheld http://drobilla.net/plugins/mda/Piano: Played by MIDI notes, which cannot be routed yet.
+withheld http://lv2plug.in/plugins/eg-fifths: This module has no audio or control connectors to patch.
+withheld http://lv2plug.in/plugins/eg-params: This module has no audio or control connectors to patch.
+64 modules exported, 58 available, 6 withheld; 17 controls left to the plugin, 4 plugins skipped
+Catalogue files: JSON reading, round trip, refusals, overlay rules and the exported fixture passed.
+==== every available entry, loaded in the engine
+PASS  Ambience <http://drobilla.net/plugins/mda/Ambience> -- 4 connectors, 4 controls
+PASS  Bandisto <http://drobilla.net/plugins/mda/Bandisto> -- 4 connectors, 10 controls
+PASS  BeatBox <http://drobilla.net/plugins/mda/BeatBox> -- 4 connectors, 12 controls
+PASS  Combo <http://drobilla.net/plugins/mda/Combo> -- 4 connectors, 7 controls
+SKIP  DX10 <http://drobilla.net/plugins/mda/DX10> -- Played by MIDI notes, which cannot be routed yet.
+PASS  De-ess <http://drobilla.net/plugins/mda/DeEss> -- 4 connectors, 3 controls
+PASS  Degrade <http://drobilla.net/plugins/mda/Degrade> -- 4 connectors, 6 controls
+PASS  Delay <http://drobilla.net/plugins/mda/Delay> -- 4 connectors, 6 controls
+PASS  Detune <http://drobilla.net/plugins/mda/Detune> -- 4 connectors, 4 controls
+PASS  Dither <http://drobilla.net/plugins/mda/Dither> -- 4 connectors, 5 controls
+PASS  DubDelay <http://drobilla.net/plugins/mda/DubDelay> -- 4 connectors, 7 controls
+PASS  Dynamics <http://drobilla.net/plugins/mda/Dynamics> -- 4 connectors, 10 controls
+SKIP  ePiano <http://drobilla.net/plugins/mda/EPiano> -- Played by MIDI notes, which cannot be routed yet.
+PASS  Image <http://drobilla.net/plugins/mda/Image> -- 4 connectors, 6 controls
+SKIP  JX10 <http://drobilla.net/plugins/mda/JX10> -- Played by MIDI notes, which cannot be routed yet.
+PASS  Leslie <http://drobilla.net/plugins/mda/Leslie> -- 4 connectors, 9 controls
+PASS  Limiter <http://drobilla.net/plugins/mda/Limiter> -- 4 connectors, 5 controls
+PASS  Loudness <http://drobilla.net/plugins/mda/Loudness> -- 4 connectors, 3 controls
+PASS  MultiBand <http://drobilla.net/plugins/mda/MultiBand> -- 4 connectors, 13 controls
+PASS  Overdrive <http://drobilla.net/plugins/mda/Overdrive> -- 4 connectors, 3 controls
+SKIP  Piano <http://drobilla.net/plugins/mda/Piano> -- Played by MIDI notes, which cannot be routed yet.
+PASS  RePsycho! <http://drobilla.net/plugins/mda/RePsycho> -- 4 connectors, 7 controls
+PASS  RezFilter <http://drobilla.net/plugins/mda/RezFilter> -- 4 connectors, 10 controls
+PASS  RingMod <http://drobilla.net/plugins/mda/RingMod> -- 4 connectors, 3 controls
+PASS  RoundPan <http://drobilla.net/plugins/mda/RoundPan> -- 4 connectors, 2 controls
+PASS  Shepard <http://drobilla.net/plugins/mda/Shepard> -- 4 connectors, 3 controls
+PASS  Splitter <http://drobilla.net/plugins/mda/Splitter> -- 4 connectors, 7 controls
+PASS  Stereo <http://drobilla.net/plugins/mda/Stereo> -- 4 connectors, 5 controls
+PASS  SubSynth <http://drobilla.net/plugins/mda/SubSynth> -- 4 connectors, 6 controls
+PASS  TalkBox <http://drobilla.net/plugins/mda/TalkBox> -- 4 connectors, 4 controls
+PASS  TestTone <http://drobilla.net/plugins/mda/TestTone> -- 4 connectors, 8 controls
+PASS  ThruZero <http://drobilla.net/plugins/mda/ThruZero> -- 4 connectors, 5 controls
+PASS  Tracker <http://drobilla.net/plugins/mda/Tracker> -- 4 connectors, 8 controls
+PASS  Transient <http://drobilla.net/plugins/mda/Transient> -- 4 connectors, 6 controls
+PASS  VocInput <http://drobilla.net/plugins/mda/VocInput> -- 4 connectors, 5 controls
+PASS  Vocoder <http://drobilla.net/plugins/mda/Vocoder> -- 4 connectors, 8 controls
+PASS  Amp <http://lv2plug.in/plugins/eg-amp> -- 2 connectors, 1 controls
+SKIP  Fifths <http://lv2plug.in/plugins/eg-fifths> -- This module has no audio or control connectors to patch.
+PASS  Metronome <http://lv2plug.in/plugins/eg-metro> -- 2 connectors, 0 controls
+PASS  MIDI Gate <http://lv2plug.in/plugins/eg-midigate> -- 3 connectors, 0 controls
+SKIP  Parameters <http://lv2plug.in/plugins/eg-params> -- This module has no audio or control connectors to patch.
+PASS  Scope (Mono) <http://lv2plug.in/plugins/eg-scope#Mono> -- 4 connectors, 0 controls
+PASS  Scope (Stereo) <http://lv2plug.in/plugins/eg-scope#Stereo> -- 6 connectors, 0 controls
+PASS  Beat Repeat <http://polyeffects.com/lv2/polyclouds#beat_repeat> -- 16 connectors, 12 controls; switched on through its own control
+PASS  Mist Granular <http://polyeffects.com/lv2/polyclouds#granular> -- 16 connectors, 12 controls; switched on through its own control
+PASS  Mist Looping Delay <http://polyeffects.com/lv2/polyclouds#looping_delay> -- 16 connectors, 12 controls; switched on through its own control
+PASS  Mist Oliverb <http://polyeffects.com/lv2/polyclouds#oliverb> -- 16 connectors, 12 controls; switched on through its own control
+PASS  Mist Resonestor <http://polyeffects.com/lv2/polyclouds#resonestor> -- 16 connectors, 12 controls; switched on through its own control
+PASS  Mist Spectral <http://polyeffects.com/lv2/polyclouds#spectral> -- 16 connectors, 12 controls; switched on through its own control
+PASS  Mist Stretch <http://polyeffects.com/lv2/polyclouds#stretch> -- 16 connectors, 12 controls; switched on through its own control
+PASS  Topological Sequencer <http://polyeffects.com/lv2/polygrids> -- 16 connectors, 10 controls
+PASS  Random CV Sampler <http://polyeffects.com/lv2/polymarbles> -- 16 connectors, 21 controls
+PASS  Macro Osc <http://polyeffects.com/lv2/polyplaits> -- 10 connectors, 10 controls
+PASS  Resonator <http://polyeffects.com/lv2/polyrings> -- 10 connectors, 13 controls; switched on through its own control
+PASS  Looping Envelope Generator <http://polyeffects.com/lv2/polytides> -- 12 connectors, 13 controls
+PASS  Twist Bitmangler <http://polyeffects.com/lv2/polywarps#bitcrusher> -- 8 connectors, 5 controls; switched on through its own control
+PASS  Twist Chebyschev <http://polyeffects.com/lv2/polywarps#chebyschev> -- 8 connectors, 5 controls; switched on through its own control
+PASS  Twist Comparator <http://polyeffects.com/lv2/polywarps#comparator> -- 8 connectors, 5 controls; switched on through its own control
+PASS  Twist Delay <http://polyeffects.com/lv2/polywarps#delay> -- 8 connectors, 5 controls; switched on through its own control
+PASS  Twist Binaural Doppler Panner <http://polyeffects.com/lv2/polywarps#doppler> -- 8 connectors, 5 controls; switched on through its own control
+PASS  Twist Wavefolder <http://polyeffects.com/lv2/polywarps#fold> -- 8 connectors, 5 controls; switched on through its own control
+PASS  Twist frequency shifter <http://polyeffects.com/lv2/polywarps#frequency_shifter> -- 8 connectors, 5 controls; switched on through its own control
+PASS  Twist Meta <http://polyeffects.com/lv2/polywarps#meta> -- 8 connectors, 5 controls; switched on through its own control
+PASS  Twist Vocoder <http://polyeffects.com/lv2/polywarps#vocoder> -- 8 connectors, 5 controls; switched on through its own control
+PASS  left for measurement: IN -> Mist Granular -> OUT on the left side
+SUMMARY 58 modules load and match, 0 do not, 6 withheld by the catalogue
+==== sound
+PASS  Mist Granular, added and cabled by the adapter, is heard -- 0.0351 RMS out for 0.1768 in
+PASS  the measurement itself -- direct cable 0.1768 RMS (expected 0.1768), no cable 0.000000
+PASS  polyclouds#granular processes sound -- 0.0310 RMS out for 0.1768 in
+PASS  polyclouds#oliverb processes sound -- 0.0634 RMS out for 0.1768 in
+PASS  polywarps#fold processes sound -- 0.5162 RMS out for 0.1768 in
+PASS  Overdrive processes sound -- 0.1768 RMS out for 0.1768 in
+PASS  Delay processes sound -- 0.2163 RMS out for 0.1768 in
+PASS  the engine is still running after loading every entry

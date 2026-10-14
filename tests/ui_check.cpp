@@ -50,6 +50,27 @@ lv_obj_t* widget(lv_obj_t* root, const lv_obj_class_t* type) {
         if (auto* found = widget(lv_obj_get_child(root, i), type)) return found;
     return nullptr;
 }
+// The last label whose text contains the given text, in tree order.
+lv_obj_t* text_label(lv_obj_t* root, const std::string& text) {
+    lv_obj_t* found = nullptr;
+    if (lv_obj_check_type(root, &lv_label_class) && std::string(lv_label_get_text(root)).find(text) != std::string::npos) found = root;
+    for (unsigned i = 0; i < lv_obj_get_child_count(root); ++i)
+        if (auto* deeper = text_label(lv_obj_get_child(root, i), text)) found = deeper;
+    return found;
+}
+// Scroll a browser entry into view and tap it. A module named like its
+// category comes after the category header, so the last match is the row.
+void tap(pedal::Application& app, const std::string& text) {
+    auto* l = text_label(app.screen(), text); check(l != nullptr, "browser entry missing");
+    lv_obj_scroll_to_view_recursive(l, LV_ANIM_OFF); lv_obj_update_layout(app.screen());
+    lv_area_t area; lv_obj_get_coords(l, &area);
+    check(area.y1 >= 72 && area.y2 < 480, "browser entry could not be scrolled into view");
+    click(app, (area.x1 + area.x2) / 2, (area.y1 + area.y2) / 2);
+}
+void add_module(pedal::Application& app, const std::string& category, const std::string& name) {
+    click(app, 490, 36); check(app.page() == pedal::Page::Browser, "browser navigation failed");
+    tap(app, category); tap(app, name);
+}
 void keyboard_key(pedal::Application& app, const std::string& key) {
     auto* kb = widget(app.screen(), &lv_keyboard_class); check(kb != nullptr, "keyboard missing");
     auto* matrix = reinterpret_cast<lv_buttonmatrix_t*>(kb);
@@ -143,8 +164,12 @@ int main(int argc, char** argv) {
             check(pedal::find_module(app.graph(), 3)->y == 24, "module drag failed to snap");
             check(app.page() == pedal::Page::Patch, "drag accidentally opened parameters");
             click(app, 490, 36); check(app.page() == pedal::Page::Browser, "browser navigation failed");
+            check(text_label(app.screen(), "Room, hall") == nullptr, "browser did not open with its categories closed");
+            check(text_label(app.screen(), "BPM") == nullptr, "browser kept the status bar");
             capture(app, output / "03-browser.bmp");
-            click(app, 705, 369); check(app.graph().modules.size() == 6, "add module failed");
+            tap(app, "Reverb"); check(text_label(app.screen(), "Room, hall") != nullptr, "category did not expand");
+            capture(app, output / "03-browser-group.bmp");
+            tap(app, "Reverb"); check(app.graph().modules.size() == 6, "add module failed");
             check(app.page() == pedal::Page::Patch, "add did not return to patch");
             // Drop a cable from IN onto the added Reverb's input hit area.
             const auto* reverb = pedal::find_module(app.graph(), 6); check(reverb != nullptr, "new instance missing");
@@ -228,7 +253,7 @@ int main(int argc, char** argv) {
             engine.submit(pedal::LoadGraph{dense}); step(app, 256);
             check(app.graph().name == "Dense patch" && app.graph().modules.size() == 15, "backend graph replacement was not displayed");
             capture(app, output / "15-dense-canvas.bmp");
-            click(app, 490, 36); click(app, 705, 141);
+            add_module(app, "Texture", "Clouds");
             check(app.graph().modules.size() == 16 && app.graph().modules.back().x > 672, "full viewport prevented adding beyond it");
             capture(app, output / "13-larger-canvas.bmp");
             click(app, 72, 144);
@@ -245,13 +270,15 @@ int main(int argc, char** argv) {
             click(app, 68, 36); hold(app, 396, 244); click(app, 170, 252);
             check(app.graph().modules.size() == 5 && !app.pending(), "disabled missing-module duplication submitted an edit");
             click(app, 600, 252); check(app.graph().modules.size() == 4 && app.graph().connections.size() == 4, "missing placeholder deletion failed");
-            click(app, 490, 36); click(app, 656, 96);
+            click(app, 490, 36); tap(app, "Amp");
             capture(app, output / "18-catalogue-status.bmp");
-            click(app, 100, 220); check(app.message().find("compatibility") != std::string::npos, "untested entry reason missing");
-            click(app, 705, 217); check(app.graph().modules.size() == 4 && !app.pending(), "untested catalogue entry could be added");
-            click(app, 100, 298); check(app.message().find("asset") != std::string::npos, "unavailable entry reason missing");
-            click(app, 705, 293); check(app.graph().modules.size() == 4, "unavailable catalogue entry could be added");
-            click(app, 705, 141); check(app.graph().modules.back().uri == "urn:pedalpi:demo:mono", "available mono fixture could not be added");
+            check(text_label(app.screen(), "compatibility") != nullptr, "untested entry reason missing");
+            tap(app, "NAM fixture"); check(app.page() == pedal::Page::Browser && app.graph().modules.size() == 4 && !app.pending(), "untested catalogue entry could be added");
+            tap(app, "Cabinet"); check(text_label(app.screen(), "asset") != nullptr, "unavailable entry reason missing");
+            check(text_label(app.screen(), "compatibility") == nullptr, "opening a category left another open");
+            tap(app, "Cabinet fixture"); check(app.page() == pedal::Page::Browser && app.graph().modules.size() == 4, "unavailable catalogue entry could be added");
+            tap(app, "Utility"); tap(app, "Mono utility");
+            check(app.graph().modules.back().uri == "urn:pedalpi:demo:mono", "available mono fixture could not be added");
 
             // Create, cancel and rename through actual on-screen keyboard presses.
             click(app, 600, 36); click(app, 320, 364);
@@ -415,9 +442,9 @@ int main(int argc, char** argv) {
             click(app, 68, 36);
 
             // Add the real granular module from the browser and open its generic pages.
-            click(app, 490, 36); click(app, 656, 96); // The browser was left on its second page above.
+            click(app, 490, 36); tap(app, "Texture");
             capture(app, output / "29-reference-catalogue.bmp");
-            click(app, 705, 141);
+            tap(app, "Mist Granular");
             const auto mist = app.graph().modules.back();
             check(mist.uri == "http://polyeffects.com/lv2/polyclouds#granular" && app.page() == pedal::Page::Patch, "reference module could not be added from the browser");
             click(app, mist.x + 48, mist.y + 120);

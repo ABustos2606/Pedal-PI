@@ -21,7 +21,7 @@ public:
 private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
-                        NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserPage, AvailabilityInfo, MissingFixture,
+                        NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserGroup, MissingFixture,
                         ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage };
     struct Binding {
         Application* app;
@@ -71,7 +71,12 @@ private:
     std::string message_ = "Drag space to pan. Hold a module for actions. Drag output to input.";
     enum class PendingKind { Edit, Rename, Replace };
     std::map<RequestId, PendingKind> pending_;
-    std::size_t parameter_page_ = 0, browser_page_ = 0;
+    std::size_t parameter_page_ = 0;
+    // The module browser: the one open category, and where the list was scrolled.
+    std::string browser_group_;
+    int browser_scroll_ = 0;
+    bool browser_reveal_ = false;
+    lv_obj_t* browser_list_ = nullptr;
     bool generic_parameters_ = false;
     bool renaming_ = false;
     std::string draft_name_;

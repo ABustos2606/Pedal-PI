@@ -316,6 +316,9 @@ void Session::rebuild() {
             m.x = std::min(module_max_x, 184 + 144 * unplaced++); m.y = 276;
         }
         if (const auto* enabled = find(properties, enabled_key); enabled && enabled->kind == Value::Kind::Boolean) m.bypassed = !enabled->boolean;
+        // A plugin with its own on/off control is as bypassed as that control says.
+        if (known && !known->enable_symbol.empty())
+            if (const auto own = objects_.find(child(path, known->enable_symbol)); own != objects_.end()) m.bypassed = finite(find(own->second, value_key)).value_or(0) < 0.5;
 
         struct Child { double index; std::string symbol; const Properties* properties; };
         std::vector<Child> children;
@@ -337,6 +340,10 @@ void Session::rebuild() {
                 Parameter parameter{port.symbol, port.symbol, "", ParameterKind::Continuous, 0, 1, 0, false, {}};
                 bool described = false;
                 if (known) for (const auto& candidate : known->parameters) if (candidate.symbol == port.symbol) { parameter = candidate; described = true; }
+                // A catalogue entry lists the controls worth showing. What it
+                // leaves out (an enable switch, a control marked as not for
+                // interfaces) stays out; only an unknown plugin shows them all.
+                if (known && !described) continue;
                 auto value = finite(find(*port.properties, value_key)).value_or(parameter.value);
                 if (!described) { parameter.minimum = std::min(0.0, value); parameter.maximum = std::max(1.0, value); }
                 if (parameter.kind != ParameterKind::Continuous) value = std::round(value);
@@ -423,7 +430,10 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
         if (m.fixed) continue;
         const auto path = child(main_path, "m" + std::to_string(m.id));
         const auto number = sequence();
-        send(to, put(number, path, block(m.uri, m.name, m.x, m.y, m.bypassed)), number);
+        const auto* known = definition(m.uri);
+        const bool own_switch = known && !known->enable_symbol.empty();
+        send(to, put(number, path, block(m.uri, m.name, m.x, m.y, m.bypassed && !own_switch)), number);
+        if (own_switch) set_local(child(path, known->enable_symbol), "ingen:value", value_key, float_literal(m.bypassed ? 0 : 1), ingen::number(m.bypassed ? 0 : 1));
         for (const auto& parameter : m.parameters)
             set_local(child(path, parameter.symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
         next_instance_ = std::max(next_instance_, m.id + 1);
@@ -452,7 +462,10 @@ std::string Session::plan(const Command& command, Transaction& to) {
             if (!safe_iri(c.uri) || !plugins_.contains(c.uri)) return status_text(22);
             if (next_instance_ == std::numeric_limits<InstanceId>::max()) return "Instance ID space exhausted";
             const auto number = sequence();
-            send(to, put(number, child(main_path, "m" + std::to_string(next_instance_++)), block(c.uri, known->name, c.x, c.y, false)), number);
+            const auto path = child(main_path, "m" + std::to_string(next_instance_++));
+            send(to, put(number, path, block(c.uri, known->name, c.x, c.y, false)), number);
+            // Some plugins start switched off and stay silent until told otherwise.
+            if (!known->enable_symbol.empty()) set_local(child(path, known->enable_symbol), "ingen:value", value_key, float_literal(1), ingen::number(1));
         } else if constexpr (std::is_same_v<T, Connect>) {
             if (auto issue = validate_connection(graph_, c.connection); !issue.empty()) return issue;
             const auto tail = address(c.connection.from, c.connection.output, Direction::Output, true);
@@ -514,7 +527,9 @@ std::string Session::plan(const Command& command, Transaction& to) {
             } else if constexpr (std::is_same_v<T, SetBypass>) {
                 if (m->fixed) return "Endpoints cannot be bypassed";
                 if (!module_available(*m)) return "Module is unavailable";
-                set_local(found->second, "ingen:enabled", enabled_key, c.value ? "false" : "true", {Value::Kind::Boolean, 0, !c.value, {}});
+                if (const auto* known = definition(m->uri); known && !known->enable_symbol.empty())
+                    set_local(child(found->second, known->enable_symbol), "ingen:value", value_key, float_literal(c.value ? 0 : 1), ingen::number(c.value ? 0 : 1));
+                else set_local(found->second, "ingen:enabled", enabled_key, c.value ? "false" : "true", {Value::Kind::Boolean, 0, !c.value, {}});
             } else if constexpr (std::is_same_v<T, SetParameter>) {
                 if (m->fixed || !module_available(*m)) return "Module is unavailable";
                 const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == c.symbol; });

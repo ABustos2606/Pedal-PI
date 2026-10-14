@@ -2,7 +2,7 @@
 
 **Project:** Pedal PI  
 **Prepared:** 13 October 2026 (America/Buenos_Aires)  
-**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter (P4.1–P4.3) is implemented and verified on the PC against Ingen under WSL2. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
+**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter and catalogue export (P4.1–P4.4) are implemented and verified on the PC against Ingen under WSL2. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
@@ -166,7 +166,9 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 - [x] **P4.1 — Ingen adapter:** implement the verified protocol using suitable RDF/Atom serialization/parsing, complete-message handling and bounded input. Do not parse Turtle by splitting arbitrary periods or assuming each socket read is a full message.
 - [x] **P4.2 — Communication threading:** isolate socket I/O from LVGL drawing, queue normalized events to the UI thread, bound queues and coalesce redundant continuous-parameter updates. Preserve discrete switch actions and graph operations.
 - [x] **P4.3 — State synchronization:** load a complete engine snapshot, apply subsequent updates and correlate pending edits with results. Define snapshot completion and update ordering so reconnect cannot lose edits or duplicate modules.
-- [ ] **P4.4 — Metadata discovery:** export installed LV2 metadata on Linux using the selected host/Lilv facilities. Generate a versioned catalogue consumed by the UI; use an exported fixture on Windows so PC work does not need native LV2 binaries.
+**Execution record - 13 October 2026 (PC only):** P4.4 is implemented: `pedal_catalogue_export` reads installed plugins through Lilv and writes a versioned catalogue file, which the interface loads with a project-owned overlay. On the WSL engine it exported 64 plugins and offers 58; all 58 load in Ingen and match their exported metadata, including Poly's 21 Mutable-derived modules built for x86-64. This is also first evidence for P6.2 and P9.3: Clouds loads, is switched on through its own `enabled` control, and passes a measured signal. See [the catalogue record](16-catalogue-export.md). Not done: the ARM builds and the export on the Pi.
+
+- [x] **P4.4 — Metadata discovery:** export installed LV2 metadata on Linux using the selected host/Lilv facilities. Generate a versioned catalogue consumed by the UI; use an exported fixture on Windows so PC work does not need native LV2 binaries.
 - [ ] **P4.5 — Pi platform backend:** build the same views/domain code for Linux with a validated DRM/KMS or framebuffer driver and evdev/libinput touch. Configure stable device selection, 800 × 480 output and rotation/calibration where needed.
 - [ ] **P4.6 — Error and reconnect states:** show starting/disconnected/reconnecting/plugin-failed status, reject unavailable operations, and recover the current graph after UI-only restart. A transient communication error must not launch a competing audio engine.
 - [ ] **P4.7 — Initial live workflows:** add/connect/edit/remove the simple effect on the physical screen; verify actual audio against the displayed graph. Test source/output endpoints, invalid cables and merge policy from Phase 3.
