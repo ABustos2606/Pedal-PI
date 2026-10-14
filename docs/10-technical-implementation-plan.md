@@ -6,7 +6,7 @@
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
-This plan turns the [requirements](01-requirements.md), [architecture](02-architecture.md), [interaction design](03-interface-and-controls.md), and [validation rules](06-validation.md) into executable phases. It preserves the new LVGL interface, Poly Ingen audio engine, Mutable Instruments-derived modules, and initial audio-only routing. Layout and control assignments are stored as engine properties inside the patch bundle; the earlier companion JSON was dropped on 13 October 2026 (D13). Casette is an unchanged technical reference. Independent Windows UI implementation was authorized on 13 October 2026; see [its development record](11-windows-ui-foundation.md). The Pi installation has not been changed.
+This plan turns the [requirements](01-requirements.md), [architecture](02-architecture.md), [interaction design](03-interface-and-controls.md), and [validation rules](06-validation.md) into executable phases. It preserves the new LVGL interface, Poly Ingen audio engine, Mutable Instruments-derived modules, and audio plus control (CV) routing (D16, revised 13 October 2026). Layout and control assignments are stored as engine properties inside the patch bundle; the earlier companion JSON was dropped on 13 October 2026 (D13). Casette is an unchanged technical reference. Independent Windows UI implementation was authorized on 13 October 2026; see [its development record](11-windows-ui-foundation.md). The Pi installation has not been changed.
 
 Every phase has numbered tasks, a deliverable, and an exit check. A phase is complete only when its evidence exists; a desktop prototype does not establish Pi audio performance or finger usability. Technical choices marked proposed are defaults to evaluate, not new agreed product requirements.
 
@@ -131,6 +131,8 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 - [x] **P2.11 - Reference metadata, multi-port jacks and live controls (13 October 2026):** catalogue fixture generated from the unchanged Mutable-derived `.ttl` files (the Windows part of P4.4), several audio jacks per side with port-aware cables, and continuous parameters streamed during the gesture with newest-value coalescing (the UI half of P4.2). Domain and pointer checks cover real stereo symbols, a two-input module, CV-only refusal and mid-gesture engine updates. Host behaviour is still unverified.
 
+- [x] **P2.12 - Free patching and control cables (user-requested, 13 October 2026):** every audio port is its own connector with one cable per channel; control (CV) outputs and inputs are patched from a square connector above and below each module, with the ports chosen from a list. Domain and pointer checks cover left and right through different effects, control to control, and refusal of audio joined to control. Engine behaviour for control cables is read from source only, not yet run.
+
 **Deliverable:** interactive desktop editor using actual shared LVGL code and a recorded review checklist.
 
 **Exit check:** complete add → drag → connect → edit → disconnect → delete without invalid graph state or clipped essential controls. Backend rejection must revert/resolve pending UI state. Finger usability remains unverified until Phase 4.
@@ -244,7 +246,7 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 - [ ] **P9.1 — Inventory:** reconcile the agreed Mutable families and essential MODEP-compatible effects with the actual installed/source inventory. Classify every entry as supported, needs adaptation, unavailable or not tested.
 - [ ] **P9.2 — Reproducible builds:** build candidate families incrementally with captured revisions, architecture flags and dependency fixes. Separate platform changes from unrelated upstream modifications.
-- [ ] **P9.3 — Compatibility records:** verify each URI's required features, audio/control/CV/event ports, save/restore, external assets and representative behaviour through Ingen. The first-version canvas remains audio-only; mark modules that need deferred CV/MIDI routing clearly.
+- [ ] **P9.3 — Compatibility records:** verify each URI's required features, audio/control/CV/event ports, save/restore, external assets and representative behaviour through Ingen. The canvas routes audio and control (CV); mark modules that need deferred MIDI routing clearly.
 - [ ] **P9.4 — Presentation overlays:** add project-owned categories, names, parameter grouping and suitable value editors. Use generic pages first; add custom editors only when they materially improve musical operation.
 - [ ] **P9.5 — Complete screens:** finish browser filtering, patch management, assignment management, diagnostics/settings, shutdown navigation and repair states for missing plugins/assets.
 - [ ] **P9.6 — Usability and load:** exercise sparse/dense graphs, long names, touch keyboard and navigation on the physical screen. Record module costs and tested combination budgets rather than one universal module count.

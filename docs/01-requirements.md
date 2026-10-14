@@ -10,14 +10,14 @@ The software direction is a **new touchscreen interface designed for this instru
 
 | Component | Known state | Required follow-up |
 | --- | --- | --- |
-| Computer | Raspberry Pi 5, 2 GB RAM | Confirm cooling, power supply, and storage |
+| Computer | Raspberry Pi 5, 2 GB RAM, official 27 W supply (user-confirmed) | Confirm cooling and storage |
 | Operating system | Patchbox OS | Identify release, kernel, userland architecture, and audio configuration |
-| Display | 5-inch HDMI touchscreen, advertised 800 × 480 | Confirm actual mode, touch connection, calibration, and single/multitouch support |
+| Display | 5-inch HDMI touchscreen, advertised 800 × 480; capacitive with five touch points, touch and power over USB, video over HDMI (user-confirmed 13 October 2026) | Confirm actual mode, controller identity and calibration |
 | Audio interface | Flexible; not yet selected; inexpensive USB is acceptable | Select input/output channels, guitar input impedance, Linux support, and usable latency |
 | Knobs | User owns knobs; details unspecified | Identify encoders/potentiometers, quantity, and connection |
 | Stomp switches | Desired; hardware unspecified | Decide quantity, momentary/latching behaviour, and connection |
 
-The display description comes from the user's purchase link. The user confirms that it has touch capability. The listing could not be independently retrieved during inspection. Multitouch, controller identity, and calibration remain unverified.
+The display description comes from the user's purchase link, which could not be independently retrieved. The user confirms that the panel is capacitive and that touch and power use USB while video uses HDMI; the GPIO header is therefore free for controls. It reports five touch points and already works with Zynthian and with Patchbox OS running MODEP. Controller identity and calibration remain unverified.
 
 ## Functional requirements
 

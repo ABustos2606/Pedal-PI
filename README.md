@@ -92,7 +92,7 @@ Initialize the top-level references first, then the three repositories with decl
 
 - Raspberry Pi 5 with 2 GB RAM.
 - Existing Patchbox OS installation from an experiment last year; release and architecture are unknown.
-- 5-inch HDMI touchscreen advertised as 800 × 480. The user confirms touch capability; the touch controller, calibration, and multitouch support still need identifying.
+- 5-inch HDMI touchscreen advertised as 800 × 480. The user confirms (13 October 2026) that it is capacitive with five touch points, touch and power over USB, video over HDMI, so it leaves the GPIO header free. The Pi and screen already run Zynthian and Patchbox OS with MODEP, on the official 27 W supply. The controller identity and any calibration still need checking on the Pi.
 - The user has knobs; their type, number, and connection are not yet identified. Stomp-switch hardware remains unspecified.
 - The audio interface is flexible and still to be selected; an inexpensive USB interface is acceptable to the user. Its suitability for guitar input and low-latency Linux audio must be checked when selecting it.
 - Public Beebo-related source repositories are stored under `reference/` in the project. Their source code has not been compiled, installed, or tested on the Pi.

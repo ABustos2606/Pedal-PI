@@ -6,7 +6,7 @@
 
 `InstanceId` identifies a module instance; plugin URI identifies its definition; the display name is independent of both. IDs are nonzero, unique in a graph, and not reused by ordinary add/duplicate operations. Duplicate copies parameters and software bypass into a new instance, leaving cables and control assignments with the original. Only the input/output endpoint definitions may be fixed; they cannot be deleted, moved, bypassed or duplicated.
 
-Ports have logical symbols, input/output direction, explicit `PortType`, channel count and optional per-channel engine symbols. Each module can retain a port snapshot. This preserves a missing module's saved graph topology even when its definition cannot be resolved. Only mono/stereo audio is routed in this version; Control, Midi and Cv are represented in metadata but refused as cable endpoints. A module may have several audio ports per direction; each is a separate jack and a `Connection` names both port symbols. Entries generated from upstream LV2 metadata are flagged `reference` and supply explicit channel symbols.
+Ports have logical symbols, input/output direction, explicit `PortType`, channel count and optional per-channel engine symbols. Each module can retain a port snapshot. This preserves a missing module's saved graph topology even when its definition cannot be resolved. Audio and Cv ports are cable endpoints; Control and Midi are represented in metadata but refused. A module may have several audio ports per direction; each is a separate jack and a `Connection` names both port symbols. Entries generated from upstream LV2 metadata are flagged `reference` and supply explicit channel symbols.
 
 Parameters are tagged Continuous, Integer, Toggle or Enumeration. The canonical numeric payload is a `double`; discrete tags require exact integral values, bounded to integers representable exactly by that payload. Toggles have range 0–1; enumeration values are zero-based indices into their choices. Ranges, values and logarithmic minima must be finite and valid. Symbols are unique per module. Domain validation runs before an externally loaded graph replaces the active graph; rejected commands retain the previous state.
 
@@ -17,6 +17,8 @@ Catalogue availability is explicit: Available, Untested or Unavailable, with a r
 Revised 13 October 2026 at the user's request: free patching, connector by connector, as on Beebo.
 
 `Connection` is one cable between one output port and one input port, named by module ID and port symbol. Every audio port in the catalogue is a single channel, so a cable is exactly one engine connection; a stereo module simply has two input ports and two output ports. Demo fixtures name them `in` / `in_r` and `out` / `out_r`; entries generated from LV2 metadata keep the plugin's own symbols (for example `l_in`, `r_in`). Moving or panning never alters routing.
+
+Control (CV) ports are cabled the same way, one `Connection` per cable. A cable joins two ports of the same type: audio to audio or control to control; anything else is refused, as are MIDI and scalar-control ports. Ingen's own rule (`ArcImpl::can_connect`) is looser and accepts audio, CV and control into each other.
 
 Any audio output may feed any audio input, several cables may leave one output, and several may enter one input (the engine sums them at unity; see [engine evidence](14-ingen-engine-evidence.md)). The older multi-channel port fields and `expand_connection` remain in the model and its tests but no catalogue entry uses more than one channel per port.
 

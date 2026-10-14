@@ -31,7 +31,7 @@ FAMILIES = [
     ("polyplaits", "Sound source", 0x7BBAED),
 ]
 FALLBACK = ("Utility", 0x93A4B5)
-NO_AUDIO = "No audio ports: this module needs CV cables, which are deferred in this version (D16)."
+NO_CONNECTORS = "This module has no audio or control connectors to patch."
 
 
 def cstr(value):
@@ -97,9 +97,9 @@ def export_plugin(g, plugin):
             ports.append(f'{{{cstr(symbol)}, Direction::{direction}, 1, PortType::Audio, {{}}}}')
     for symbol, direction, kind in others:
         ports.append(f'{{{cstr(symbol)}, Direction::{direction}, 1, PortType::{kind}, {{}}}}')
-    has_audio = audio["Input"] or audio["Output"]
-    availability = "Available" if has_audio else "Unavailable"
-    reason = "" if has_audio else NO_AUDIO
+    patchable = audio["Input"] or audio["Output"] or any(kind == "Cv" for _, _, kind in others)
+    availability = "Available" if patchable else "Unavailable"
+    reason = "" if patchable else NO_CONNECTORS
     fragment = uri.rsplit("/", 1)[-1]
     lines = [f'        {{{cstr(uri)}, {cstr(name)}, {cstr(category)}, {cstr(fragment + " / reference metadata, not host-verified")}, {color:#08x},']
     lines.append("         {" + ",\n          ".join(ports) + "},")

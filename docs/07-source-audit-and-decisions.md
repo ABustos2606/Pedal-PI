@@ -92,7 +92,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D13 | Storage of UI data (positions, assignments) | Agreed, revised 13 October 2026: stored as properties on blocks, ports and the graph inside the engine and its saved bundle. The earlier companion JSON file is dropped |
 | D14 | Visual interaction and identity | Agreed interaction: drag-and-drop square modules, tap to enter parameter page, series/parallel audio routing; visual styling and name open |
 | D15 | Keep Poly's Ingen fork as the engine | Current direction; the engine client layer keeps substitution possible |
-| D16 | Routing cable types in initial version | Agreed: Audio-only cables (series and parallel); modulation/CV cables deferred |
+| D16 | Routing cable types | Agreed, revised 13 October 2026: audio cables and control (CV) cables, each patched connector by connector. Audio and control are not joined to each other in the interface. MIDI cables remain deferred |
 | D17 | Retain Casette as another unchanged technical reference and update project documentation | Agreed 13 October 2026; downloaded and recorded in the reference manifest |
 | D18 | Evaluate a current NeuralAudio-based NAM LV2 plugin against the older Poly fork | Proposed; exact runtime/build and Ingen compatibility unverified |
 | D19 | Automatic NAM quality reduction under load | Open; no automatic reduction policy agreed |
@@ -105,9 +105,9 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 
 1. Intended guitar/output connections and requirements for selecting a suitable USB audio interface.
 2. Patchbox OS release, 32/64-bit architecture, kernel, current JACK settings, and active services.
-3. Screen controller, actual pixel mode, and multitouch capabilities; basic touch capability is confirmed by the user.
+3. Screen controller and actual pixel mode. The user confirms a capacitive panel with five touch points, touch and power over USB and video over HDMI, working under Zynthian and Patchbox/MODEP.
 4. Type, count, and connection of the user's existing knobs; stomp-switch availability and preferred enclosure arrangement.
-5. Power supply, cooling, storage, and whether a spare card is available for development.
+5. Cooling, storage, and whether a spare card is available for development. The power supply is the official 27 W unit.
 6. Which conventional effects are essential in the first usable patch, alongside Clouds.
 7. Whether later work will have direct access to the Pi or use user-provided diagnostic results.
 8. Look-and-feel preferences, colour theme, or branding references for the instrument's visual styling (when ready).

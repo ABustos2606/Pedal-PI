@@ -41,7 +41,7 @@ Use [the main README's retrieval procedure](../README.md#retrieve-the-project-an
 
 ## Hardware clarification
 
-- The user confirms touchscreen capability; multitouch and the controller remain unverified.
+- The user confirms a capacitive touchscreen with five touch points, touch and power over USB and video over HDMI; the controller identity remains unverified.
 - The user owns knobs; type, quantity, and connection remain to be identified.
 - Audio hardware is flexible. An inexpensive USB interface is acceptable, but selection still needs an appropriate guitar input and verified Linux audio performance.
 

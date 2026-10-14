@@ -424,6 +424,30 @@ int main(int argc, char** argv) {
             check(app.page() == pedal::Page::Parameters && widget(app.screen(), &lv_slider_class) != nullptr, "reference module has no usable generic editor");
             capture(app, output / "30-reference-parameters.bmp");
             click(app, 68, 36);
+
+            // Control cable: drag from the top connector of an envelope to the
+            // underside of the granular module, then choose the ports.
+            const auto* tides = pedal::definition("http://polyeffects.com/lv2/polytides");
+            const auto* granular = pedal::definition("http://polyeffects.com/lv2/polyclouds#granular");
+            check(tides && granular, "reference control modules missing");
+            auto modulated = pedal::empty_graph("Control cables");
+            modulated.modules.push_back({6, tides->uri, tides->name, 184, 240, false, false, tides->parameters, tides->ports});
+            modulated.modules.push_back({7, granular->uri, granular->name, 352, 24, false, false, granular->parameters, granular->ports});
+            engine.submit(pedal::LoadGraph{modulated}); step(app, 256); click(app, 276, 36);
+            drag(app, 232, 312, 400, 192);
+            check(app.page() == pedal::Page::CvConnect && !app.pending(), "control cable drop did not ask for ports");
+            capture(app, output / "31-control-ports.bmp");
+            click(app, 200, 160);
+            check(app.page() == pedal::Page::CvConnect, "choosing the output closed the port list");
+            click(app, 200, 160);
+            check(app.page() == pedal::Page::Patch && has({6, 7, "out1", "freeze"}), "control cable was not created between the chosen ports");
+            capture(app, output / "32-control-cable.bmp");
+            drag(app, 232, 312, 80, 300);
+            check(app.page() == pedal::Page::Patch && app.graph().connections.size() == 3, "control cable dropped on nothing changed the graph");
+            click(app, 316, 252);
+            check(app.message().find("freeze") != std::string::npos, "selected control cable was not named");
+            click(app, 500, 456);
+            check(!has({6, 7, "out1", "freeze"}), "control cable could not be deleted");
         }
         // Release the headless devices before the global runtime.
         lv_indev_delete(indev);

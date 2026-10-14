@@ -146,7 +146,10 @@ std::string validate_connection(const Graph& g, const Connection& c, bool retain
     };
     const auto* a = port(*from, c.output, Direction::Output); const auto* b = port(*to, c.input, Direction::Input);
     if (!a || !b) return "Connect an output to an input";
-    if (a->type != PortType::Audio || b->type != PortType::Audio) return "Only audio ports are supported";
+    // Audio joins audio and control joins control. The engine would also mix
+    // the two; the interface keeps them apart until that is a deliberate feature.
+    if (a->type != b->type) return "Audio and control connectors cannot be joined";
+    if (a->type != PortType::Audio && a->type != PortType::Cv) return "Only audio and control cables are supported";
     if (a->channels < 1 || a->channels > 2 || b->channels < 1 || b->channels > 2) return "Only mono and stereo ports are supported";
     for (const auto* p : {a, b}) if (!p->channel_symbols.empty()) {
         if (p->channel_symbols.size() != p->channels) return "Channel symbols do not match channel count";

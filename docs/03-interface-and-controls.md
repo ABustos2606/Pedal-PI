@@ -53,7 +53,7 @@ The basic form is agreed: named squares and cables. Colour palette, typography, 
 
 ### Gestures — proposed
 
-All gestures work with a single finger. Multitouch is not required.
+All gestures work with a single finger. The panel reports five touch points, so two-finger gestures such as pinch zoom are possible later; none is required.
 
 | Gesture | Action |
 | --- | --- |
@@ -88,7 +88,17 @@ The desktop simulator's **Patches → Parallel demo** starts with IN → Drive, 
 
 Feedback loops (a cable that leads back to an earlier module) are refused in the first version.
 
-The first version routes **audio only**. Modulation, CV, and MIDI connections between modules are deferred (decision D16). A visual cable must always correspond to a valid engine connection; a refused connection shows a short reason.
+### Control (CV) cables
+
+Agreed 13 October 2026 (D16 revised). Modulation sources such as envelopes, LFOs, random and rhythm generators have control outputs; most Poly modules have a control input beside each knob (the granular module has twelve).
+
+- A module with control outputs has one **square connector on its top edge**; a module with control inputs has one **on its bottom edge**. Control connectors and cables are amber, audio ones green.
+- Drag from a top connector to another module's bottom connector. A list then asks which output and which input; a module with one control output skips the first question.
+- Tapping a cable names it in the footer (module / port > module / port) and offers Delete. Several control cables between the same two modules lie on top of each other and are picked one at a time.
+- Audio connects to audio and control to control. The engine itself would accept either into the other; the interface does not offer it.
+- Feedback loops are refused for control cables too.
+
+MIDI connections between modules remain deferred. A visual cable must always correspond to a valid engine connection; a refused connection shows a short reason.
 
 ## Module page
 

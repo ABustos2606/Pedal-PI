@@ -7,7 +7,7 @@
 #include <map>
 
 namespace pedal {
-enum class Page { Patch, Browser, Parameters, Patches, Settings, ModuleActions, NamePatch, ConfirmReplace };
+enum class Page { Patch, Browser, Parameters, Patches, Settings, ModuleActions, NamePatch, ConfirmReplace, CvConnect };
 class Application {
 public:
     explicit Application(Engine&);
@@ -22,7 +22,7 @@ private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
                         NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserPage, AvailabilityInfo, MissingFixture,
-                        ParameterLayout, ParameterChoice, ParallelDemo };
+                        ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage };
     struct Binding {
         Application* app;
         Action action;
@@ -49,6 +49,7 @@ private:
     void module_actions(lv_obj_t*);
     void name_patch(lv_obj_t*);
     void confirm_replace(lv_obj_t*);
+    void cv_connect(lv_obj_t*);
     void commit_name();
     void replace_patch(Command, Page origin);
     void update_viewport();
@@ -86,7 +87,7 @@ private:
     std::vector<lv_obj_t*> dots_;
     std::optional<Connection> selected_cable_;
     // One drawn line per channel of a logical cable.
-    struct Cable { lv_obj_t* line; Connection connection; lv_point_precise_t points[4]; RoutingPlan routing; unsigned out_channel = 0, in_channel = 0; };
+    struct Cable { lv_obj_t* line; Connection connection; lv_point_precise_t points[4]; RoutingPlan routing; unsigned out_channel = 0, in_channel = 0; bool cv = false; };
     std::deque<Cable> cables_;
     lv_obj_t* preview_ = nullptr;
     lv_point_precise_t preview_points_[2]{};
@@ -99,5 +100,11 @@ private:
     int start_x_ = 0, start_y_ = 0;
     int pan_x_ = 0, pan_y_ = 0;
     bool dragging_ = false, panning_ = false, long_pressed_ = false;
+    // Control (CV) cables: one connector per module side, the port is chosen from a list.
+    bool cable_cv_ = false;
+    InstanceId cv_from_ = 0, cv_to_ = 0;
+    std::string cv_output_;
+    std::size_t cv_page_ = 0;
+    std::map<InstanceId, lv_obj_t*> cv_inputs_;
 };
 }

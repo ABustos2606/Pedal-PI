@@ -59,6 +59,12 @@ ModuleLayout module_layout(const Module& m) {
 // channel has its own connector, so a stereo port shows two (left above
 // right). A single connector stays centred; several share the edge in equal
 // touch bands.
+constexpr std::uint32_t control_ink = 0xe8c56a;
+std::vector<const Port*> cv_ports(const Module& m, Direction direction) {
+    std::vector<const Port*> found;
+    for (const auto& p : module_ports(m)) if (p.type == PortType::Cv && p.direction == direction) found.push_back(&p);
+    return found;
+}
 struct Jack { int centre, height; };
 std::optional<Jack> jack(const Module& m, const std::string& symbol, Direction direction, unsigned channel = 0) {
     int count = 0, index = -1;
@@ -235,12 +241,14 @@ void Application::handle(Binding& b, lv_event_t* e) {
         if (code == LV_EVENT_PRESSED) {
             press_ = point; start_x_ = m->x; start_y_ = m->y; dragging_ = false; long_pressed_ = false;
             if (b.action == Action::Port && (b.number & 1)) {
-                cable_source_ = b.id; cable_port_ = b.symbol;
-                const auto from = jack(*m, b.symbol, Direction::Output, static_cast<unsigned>(b.number >> 1));
-                message("Cable from " + m->name + " / " + b.symbol + ". Drop it on an input jack.");
+                cable_source_ = b.id; cable_port_ = b.symbol; cable_cv_ = (b.number & 4) != 0;
+                const auto from = jack(*m, b.symbol, Direction::Output, static_cast<unsigned>(b.number >> 3));
+                message(cable_cv_ ? "Control cable from " + m->name + ". Drop it on the square connector under another module."
+                                  : "Cable from " + m->name + " / " + b.symbol + ". Drop it on an input jack.");
                 preview_ = lv_line_create(canvas_); lv_obj_remove_flag(preview_, LV_OBJ_FLAG_CLICKABLE);
-                lv_obj_set_style_line_color(preview_, color(accent), 0); lv_obj_set_style_line_width(preview_, 3, 0);
-                preview_points_[0] = {static_cast<lv_value_precise_t>(m->x + 96 - pan_x_), static_cast<lv_value_precise_t>(m->y + (from ? from->centre : 48) - pan_y_)};
+                lv_obj_set_style_line_color(preview_, color(cable_cv_ ? control_ink : accent), 0); lv_obj_set_style_line_width(preview_, 3, 0);
+                if (cable_cv_) preview_points_[0] = {static_cast<lv_value_precise_t>(m->x + 48 - pan_x_), static_cast<lv_value_precise_t>(m->y - pan_y_)};
+                else preview_points_[0] = {static_cast<lv_value_precise_t>(m->x + 96 - pan_x_), static_cast<lv_value_precise_t>(m->y + (from ? from->centre : 48) - pan_y_)};
                 indicate_targets(true);
             }
         } else if (code == LV_EVENT_LONG_PRESSED && b.action == Action::Module && !m->fixed && !dragging_) {
@@ -259,7 +267,23 @@ void Application::handle(Binding& b, lv_event_t* e) {
                 lv_line_set_points(preview_, preview_points_, 2);
             }
         } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
-            if (cable_source_) {
+            if (cable_source_ && cable_cv_) {
+                // A module can have a dozen control inputs, far too many for its edge.
+                // Drop on its control connector, then choose the ports from a list.
+                InstanceId destination = 0;
+                if (point.x >= 0 && point.x < 800 && point.y >= 72 && point.y < 432)
+                    for (const auto& item : graph_.modules)
+                        if (item.id != cable_source_ && !cv_ports(item, Direction::Input).empty() &&
+                            std::abs(point.x + pan_x_ - item.x - 48) <= 24 && std::abs(point.y - 72 + pan_y_ - item.y - 96) <= 24) destination = item.id;
+                if (destination && code == LV_EVENT_RELEASED) {
+                    const auto outputs = cv_ports(*m, Direction::Output);
+                    cv_from_ = cable_source_; cv_to_ = destination; cv_page_ = 0;
+                    cv_output_ = outputs.size() == 1 ? outputs.front()->symbol : std::string();
+                    navigate(Page::CvConnect);
+                } else message("Drop the control cable on the square connector under a module.");
+                if (preview_) lv_obj_delete(preview_);
+                preview_ = nullptr; cable_source_ = 0; indicate_targets(false);
+            } else if (cable_source_) {
                 // The nearest input jack under the finger wins; a module can have several.
                 InstanceId destination = 0; std::string input; int nearest = 0;
                 if (point.x >= 0 && point.x < 800 && point.y >= 72 && point.y < 432)
@@ -323,7 +347,8 @@ void Application::handle(Binding& b, lv_event_t* e) {
     case Action::SelectCable:
         if (b.number >= 0 && static_cast<std::size_t>(b.number) < cables_.size()) {
             selected_cable_ = cables_[b.number].connection; rebuild_ = true;
-            message("Cable selected. Use Delete cable to remove it.");
+            const auto* from = find_module(graph_, selected_cable_->from); const auto* to = find_module(graph_, selected_cable_->to);
+            message(from && to ? from->name + " / " + selected_cable_->output + " > " + to->name + " / " + selected_cable_->input : "Cable selected.");
         }
         break;
     case Action::DeleteCable: if (selected_cable_) submit(Disconnect{*selected_cable_}); break;
@@ -369,6 +394,11 @@ void Application::handle(Binding& b, lv_event_t* e) {
     case Action::CancelReplace: replacement_.reset(); navigate(confirm_origin_); break;
     case Action::ParameterPage: parameter_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
     case Action::BrowserPage: browser_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
+    case Action::CvPage: cv_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
+    case Action::CvChoice:
+        if (cv_output_.empty()) { cv_output_ = b.symbol; cv_page_ = 0; rebuild_ = true; }
+        else { submit(Connect{{cv_from_, cv_to_, cv_output_, b.symbol}}); navigate(Page::Patch); }
+        break;
     case Action::AvailabilityInfo:
         if (const auto* d = definition(b.symbol)) message(d->availability_reason);
         break;
@@ -397,7 +427,7 @@ void Application::rebuild() {
         lv_obj_set_style_bg_color(screen_, color(background), 0); lv_obj_set_style_bg_opa(screen_, LV_OPA_COVER, 0);
         lv_screen_load(screen_);
     } else lv_obj_clean(screen_);
-    bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
+    bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); cv_inputs_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
     tempo_value_ = cpu_value_ = nullptr;
     auto* header = panel(screen_, 0, 0, 800, 72, background);
     lv_obj_set_style_radius(header, 0, 0);
@@ -419,6 +449,7 @@ void Application::rebuild() {
         std::string title = page_ == Page::Browser ? "Add a module" : page_ == Page::Patches ? "Session patches" : page_ == Page::Settings ? "Simulator settings" : "Parameters";
         if (page_ == Page::NamePatch) title = renaming_ ? "Rename patch" : "New patch";
         if (page_ == Page::ConfirmReplace) title = "Replace current patch?";
+        if (page_ == Page::CvConnect) title = "Control cable";
         if (page_ == Page::Parameters || page_ == Page::ModuleActions)
             if (const auto* m = find_module(graph_, selected_)) title = m->name + (page_ == Page::ModuleActions ? " actions" : "");
         auto* heading = label(header, title, 144, 23, 480, text, &lv_font_montserrat_24);
@@ -438,6 +469,7 @@ void Application::rebuild() {
     case Page::ModuleActions: module_actions(content); break;
     case Page::NamePatch: name_patch(content); break;
     case Page::ConfirmReplace: confirm_replace(content); break;
+    case Page::CvConnect: cv_connect(content); break;
     }
     auto* foot = panel(screen_, 0, 432, 800, 48, background); lv_obj_set_style_radius(foot, 0, 0);
     footer_ = label(foot, message_, 24, 7, patch && selected_cable_ ? 240 : 568, muted, &lv_font_montserrat_14);
@@ -472,21 +504,21 @@ void Application::patch_view(lv_obj_t* parent) {
         const auto routing = expand_connection(graph_, edge);
         // Draw every channel: stereo to stereo is two lines, mono to stereo
         // fans out to both connectors, stereo to mono lands on one.
-        unsigned out_channels = 1, in_channels = 1;
+        unsigned out_channels = 1, in_channels = 1; bool cv = false;
         if (const auto* source = find_module(graph_, edge.from)) for (const auto& p : module_ports(*source))
-            if (p.symbol == edge.output && p.direction == Direction::Output) out_channels = p.channels;
+            if (p.symbol == edge.output && p.direction == Direction::Output) { out_channels = p.channels; cv = p.type == PortType::Cv; }
         if (const auto* sink = find_module(graph_, edge.to)) for (const auto& p : module_ports(*sink))
             if (p.symbol == edge.input && p.direction == Direction::Input) in_channels = p.channels;
         for (unsigned channel = 0; channel < std::max(out_channels, in_channels); ++channel) {
         auto* line = lv_line_create(parent);
-        lv_obj_set_style_line_color(line, color(selected || !routing.error.empty() ? 0xf0aa72 : accent), 0);
-        lv_obj_set_style_line_width(line, selected ? 6 : 4, 0);
+        lv_obj_set_style_line_color(line, color(selected || !routing.error.empty() ? 0xf0aa72 : cv ? control_ink : accent), 0);
+        lv_obj_set_style_line_width(line, cv ? (selected ? 5 : 3) : (selected ? 6 : 4), 0);
         lv_obj_set_style_line_rounded(line, true, 0);
         lv_obj_add_flag(line, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_flag(line, LV_OBJ_FLAG_ADV_HITTEST);
         lv_obj_set_ext_click_area(line, 12);
         bind(line, Action::SelectCable, 0, {}, static_cast<int>(cables_.size()));
-        cables_.push_back({line, edge, {}, routing, out_channels == 1 ? 0 : channel, in_channels == 1 ? 0 : channel});
+        cables_.push_back({line, edge, {}, routing, out_channels == 1 ? 0 : channel, in_channels == 1 ? 0 : channel, cv});
         }
     }
     for (const auto& m : graph_.modules) {
@@ -522,9 +554,24 @@ void Application::patch_view(lv_obj_t* parent) {
             lv_obj_set_style_border_width(dot, 3, 0); lv_obj_set_style_border_color(dot, color(ink), 0);
             lv_obj_remove_flag(dot, LV_OBJ_FLAG_CLICKABLE);
             // The connector's channel rides above the direction bit.
-            bind(hit, Action::Port, m.id, port.symbol, (output ? 1 : 0) | static_cast<int>(channel << 1));
+            bind(hit, Action::Port, m.id, port.symbol, (output ? 1 : 0) | static_cast<int>(channel << 3));
             if (!output) input_jacks_.emplace(std::pair{m.id, port.symbol}, dot);
             }
+        }
+        // Control connectors: one square socket for all control outputs on top,
+        // one for all control inputs underneath.
+        for (const bool output : {false, true}) {
+            if (cv_ports(m, output ? Direction::Output : Direction::Input).empty()) continue;
+            auto* hit = lv_obj_create(card); lv_obj_remove_style_all(hit);
+            lv_obj_set_size(hit, 44, 44); lv_obj_set_pos(hit, 26, output ? -22 : 74);
+            lv_obj_remove_flag(hit, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_add_flag(hit, LV_OBJ_FLAG_PRESS_LOCK);
+            auto* dot = panel(hit, 15, 15, 14, 14, background);
+            lv_obj_set_style_radius(dot, 3, 0);
+            lv_obj_set_style_border_width(dot, 3, 0); lv_obj_set_style_border_color(dot, color(control_ink), 0);
+            lv_obj_remove_flag(dot, LV_OBJ_FLAG_CLICKABLE);
+            bind(hit, Action::Port, m.id, {}, (output ? 1 : 0) | 4);
+            if (!output) cv_inputs_[m.id] = dot;
         }
     }
     update_viewport();
@@ -540,11 +587,16 @@ void Application::update_viewport() {
     update_cables();
 }
 void Application::indicate_targets(bool active) {
+    for (const auto& [id, dot] : cv_inputs_) {
+        lv_obj_set_style_outline_color(dot, color(control_ink), 0);
+        lv_obj_set_style_outline_width(dot, active && cable_cv_ && id != cable_source_ ? 4 : 0, 0);
+        lv_obj_set_style_outline_opa(dot, LV_OPA_COVER, 0);
+    }
     for (const auto& [key, jack] : input_jacks_) {
         const auto& [id, symbol] = key;
         const auto* m = find_module(graph_, id); if (!m) continue;
         const auto* d = definition(m->uri);
-        const bool valid = active && validate_connection(graph_, {cable_source_, id, cable_port_, symbol}).empty();
+        const bool valid = active && !cable_cv_ && validate_connection(graph_, {cable_source_, id, cable_port_, symbol}).empty();
         lv_obj_set_style_border_color(jack, color(active ? (valid ? accent : border) : module_available(*m) && d ? d->color : 0xf0aa72), 0);
         lv_obj_set_style_outline_color(jack, color(accent), 0);
         lv_obj_set_style_outline_width(jack, valid ? 4 : 0, 0);
@@ -574,6 +626,14 @@ void Application::update_cables() {
     for (auto& c : cables_) {
         auto a = module_widgets_.find(c.connection.from), b = module_widgets_.find(c.connection.to);
         if (a == module_widgets_.end() || b == module_widgets_.end()) continue;
+        if (c.cv) {
+            // Top of the source to the underside of the destination.
+            const auto sx = static_cast<lv_value_precise_t>(lv_obj_get_x(a->second) + 48), sy = static_cast<lv_value_precise_t>(lv_obj_get_y(a->second));
+            const auto tx = static_cast<lv_value_precise_t>(lv_obj_get_x(b->second) + 48), ty = static_cast<lv_value_precise_t>(lv_obj_get_y(b->second) + 96);
+            c.points[0] = {sx, sy}; c.points[1] = {sx, sy - 14}; c.points[2] = {tx, ty + 14}; c.points[3] = {tx, ty};
+            lv_line_set_points(c.line, c.points, 4);
+            continue;
+        }
         const auto* source = find_module(graph_, c.connection.from); const auto* sink = find_module(graph_, c.connection.to);
         const auto out = source ? jack(*source, c.connection.output, Direction::Output, c.out_channel) : std::nullopt;
         const auto in = sink ? jack(*sink, c.connection.input, Direction::Input, c.in_channel) : std::nullopt;
@@ -777,6 +837,29 @@ void Application::name_patch(lv_obj_t* parent) {
     bind(keyboard, Action::Keyboard);
     lv_obj_add_state(input, LV_STATE_FOCUSED);
     if (auto* group = lv_obj_get_group(input)) { lv_group_focus_obj(input); lv_group_set_editing(group, true); }
+}
+void Application::cv_connect(lv_obj_t* parent) {
+    const auto* from = find_module(graph_, cv_from_); const auto* to = find_module(graph_, cv_to_);
+    if (!from || !to) { label(parent, "Module no longer exists", 24, 24); return; }
+    const bool choosing_output = cv_output_.empty();
+    const auto ports = cv_ports(choosing_output ? *from : *to, choosing_output ? Direction::Output : Direction::Input);
+    auto* prompt = label(parent, choosing_output ? "Which output of " + from->name + "?"
+                                                 : from->name + " / " + cv_output_ + "  >  which input of " + to->name + "?", 24, 14, 560, text, &lv_font_montserrat_20);
+    lv_label_set_long_mode(prompt, LV_LABEL_LONG_DOT); lv_obj_set_height(prompt, 26);
+    const auto count = std::max<std::size_t>(1, (ports.size() + 7) / 8);
+    cv_page_ = std::min(cv_page_, count - 1);
+    if (count > 1) {
+        auto* previous = button(parent, "<", 600, 4, 48, Action::CvPage, 0, {}, static_cast<int>(cv_page_ ? cv_page_ - 1 : 0));
+        if (!cv_page_) lv_obj_add_state(previous, LV_STATE_DISABLED);
+        label(parent, std::to_string(cv_page_ + 1) + " / " + std::to_string(count), 664, 18, 56, muted, &lv_font_montserrat_14);
+        auto* next = button(parent, ">", 728, 4, 48, Action::CvPage, 0, {}, static_cast<int>(std::min(cv_page_ + 1, count - 1)));
+        if (cv_page_ + 1 >= count) lv_obj_add_state(next, LV_STATE_DISABLED);
+    }
+    for (std::size_t i = cv_page_ * 8; i < std::min(ports.size(), cv_page_ * 8 + 8); ++i) {
+        const auto slot = i - cv_page_ * 8;
+        auto* choice = button(parent, ports[i]->symbol, 24 + static_cast<int>(slot % 2) * 384, 64 + static_cast<int>(slot / 2) * 68, 368, Action::CvChoice, 0, ports[i]->symbol);
+        lv_obj_set_style_border_color(choice, color(control_ink), 0);
+    }
 }
 void Application::confirm_replace(lv_obj_t* parent) {
     label(parent, "Current edits have not been saved", 24, 44, 752, text, &lv_font_montserrat_24);

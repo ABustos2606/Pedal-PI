@@ -62,7 +62,7 @@ NeuralAudio's [ModelTest utility](https://github.com/mikeoliphant/NeuralAudio/bl
 ## Decisions and remaining uncertainty
 
 - **Agreed:** retain Casette unchanged as another reference and update project documentation.
-- **Current direction retained:** our new LVGL interface, Poly Ingen modular engine, and audio-only cables for the initial version.
+- **Current direction retained:** our new LVGL interface, the Ingen modular engine, and freely patched audio and control cables.
 - **Proposed:** evaluate a current NeuralAudio-based NAM LV2 module and one mono NAM plus IR baseline.
 - **Open:** final runtime/build, desired captures, model count, quality policy, memory/DSP margins, and any automatic reduction policy.
 - **Unverified:** all builds, host compatibility, Pi performance, touchscreen operation, and startup results.

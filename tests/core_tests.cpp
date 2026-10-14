@@ -145,7 +145,7 @@ int main() {
         const auto* grids = definition("http://polyeffects.com/lv2/polygrids");
         check(mist && fold && grids, "reference catalogue entries missing");
         check(mist->reference && mist->availability == Availability::Available && mist->parameters.size() == 12, "reference Clouds metadata incomplete");
-        check(grids->availability == Availability::Unavailable && !grids->availability_reason.empty(), "CV-only module offered for audio patching");
+        check(grids->availability == Availability::Available, "control-only module is not offered");
         check(format_value(mist->parameters[0]) == "0.24", "narrow-range value lost its decimals");
         auto real = demo_graph(); real.connections.clear();
         real.modules.push_back({6, mist->uri, mist->name, 24, 264, false, false, mist->parameters, mist->ports});
@@ -160,7 +160,16 @@ int main() {
         check(!validate_connection(real, {6, 7}).empty(), "cable matched a port the module does not have");
         check(!validate_connection(real, {7, 6, "out", "position"}).empty(), "CV input accepted an audio cable");
         check(!validate_connection(real, {3, 6, "out", "in"}).empty(), "cable matched a merged stereo port that should no longer exist");
-        engine.submit(AddModule{grids->uri, 24, 24}); check(!engine.advance(100)[0].accepted, "CV-only module added to an audio patch");
+        engine.submit(AddModule{grids->uri, 24, 24}); check(engine.advance(100)[0].accepted, "control-only module could not be added");
+        // Control cables join control connectors, and never an audio one.
+        const auto* tides = definition("http://polyeffects.com/lv2/polytides");
+        check(tides != nullptr, "reference Tides metadata missing");
+        real.modules.push_back({8, tides->uri, tides->name, 312, 264, false, false, tides->parameters, tides->ports});
+        check(validate_graph(real).empty() && validate_connection(real, {8, 6, "out1", "position"}).empty(), "control output could not modulate a control input");
+        check(!validate_connection(real, {8, 6, "out1", "l_in"}).empty(), "control output accepted by an audio input");
+        check(!validate_connection(real, {6, 8, "l_out", "trig_input"}).empty(), "audio output accepted by a control input");
+        real.connections.push_back({8, 6, "out1", "position"});
+        check(validate_graph(real).empty() && expand_connection(real, {8, 6, "out1", "position"}).connections.size() == 1, "control cable is not one engine connection");
         engine.submit(AddModule{fold->uri, 24, 24}); check(engine.advance(100)[0].accepted, "reference module could not be added");
         std::cout << "Domain validation, typed ranges, delayed acknowledgment, rejection, reconnect and restore passed.\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
