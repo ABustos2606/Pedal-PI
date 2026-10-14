@@ -26,8 +26,10 @@ std::string write_catalogue(const CatalogueDocument&);
 std::string read_catalogue(std::string_view text, CatalogueDocument& out);
 // Rules apply in order to the modules they select; later rules win. A rule
 // selects by "uri" (exact) or "match" (part of the URI) and may set "name",
-// "strip_prefix", "category", "color", "description", and a stricter
-// "availability" with its "reason".
+// "strip_prefix", "category", "color", "description", a stricter
+// "availability" with its "reason", and "parameters": per-control "name",
+// "unit", "kind" (continuous, integer or toggle), "default" and "hidden",
+// listed controls first.
 std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDefinition>& modules);
 // Reads `path` and, when given, `overlay_path` (both UTF-8).
 std::string load_catalogue(const std::string& path, const std::string& overlay_path, std::vector<ModuleDefinition>& out);

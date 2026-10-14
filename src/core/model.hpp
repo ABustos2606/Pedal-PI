@@ -43,6 +43,9 @@ struct ModuleDefinition {
     // The plugin's own on/off control, when it has one. Such a module is
     // silent until that control is set, and bypass means clearing it.
     std::string enable_symbol;
+    // Controls whose default the project chose over the plugin's own. The
+    // plugin starts at its own value, so adding the module sets these.
+    std::vector<std::string> project_defaults;
 };
 struct Module {
     InstanceId id;

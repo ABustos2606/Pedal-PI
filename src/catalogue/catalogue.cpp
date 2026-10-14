@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Pedal PI contributors
 #include "catalogue/catalogue.hpp"
 #include "catalogue/json.hpp"
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -85,6 +86,46 @@ std::string header(const Value& root, std::string_view format) {
     if (version->number > catalogue_version) return "file was written by a newer version of the project";
     return {};
 }
+// Per-control presentation. Each entry names a control the module must have:
+// it may rename it, give it a unit, show it as whole numbers or as an on/off
+// switch, choose another default inside the plugin's range, or hide it.
+// Listed controls come first, in the order listed; the rest keep theirs.
+// Ranges stay the plugin's: the engine neither reports nor checks them.
+std::string apply_parameter_rules(const Value& entries, const std::string& where, ModuleDefinition& d) {
+    std::vector<Parameter> listed;
+    std::set<std::string> hidden, seen;
+    for (const auto& item : entries.items) {
+        if (item.kind != Value::Kind::Object) return where + ": a parameter rule is not an object";
+        Fields entry{item, where + " parameter", {}};
+        const auto symbol = entry.text("symbol");
+        entry.where += " " + symbol;
+        if (!entry.issue.empty()) return entry.issue;
+        if (!seen.insert(symbol).second) return entry.where + ": listed twice";
+        const auto found = std::find_if(d.parameters.begin(), d.parameters.end(), [&](const Parameter& p) { return p.symbol == symbol; });
+        if (found == d.parameters.end()) return entry.where + ": " + d.uri + " has no such control";
+        if (entry.flag("hidden")) { hidden.insert(symbol); continue; }
+        auto p = *found;
+        if (const auto name = entry.text("name", false, 96); !name.empty()) p.name = name;
+        if (item.get("unit")) p.unit = entry.text("unit", false, 16);
+        if (item.get("kind")) {
+            const auto kind = static_cast<ParameterKind>(entry.choice("kind", kinds));
+            if (kind == ParameterKind::Enumeration) return entry.where + ": choices come from the plugin, not the overlay";
+            p.kind = kind;
+        }
+        const bool has_default = item.get("default") != nullptr;
+        if (has_default) p.value = entry.number("default");
+        if (!entry.issue.empty()) return entry.issue;
+        if (auto issue = validate_parameter(p); !issue.empty()) return entry.where + ": " + issue;
+        if (has_default && std::find(d.project_defaults.begin(), d.project_defaults.end(), symbol) == d.project_defaults.end()) d.project_defaults.push_back(symbol);
+        listed.push_back(std::move(p));
+    }
+    std::vector<Parameter> ordered = listed;
+    for (const auto& p : d.parameters)
+        if (!seen.contains(p.symbol)) ordered.push_back(p);
+    std::erase_if(d.project_defaults, [&](const std::string& symbol) { return hidden.contains(symbol); });
+    d.parameters = std::move(ordered);
+    return {};
+}
 std::string read_file(const std::string& path, std::string& out) {
     // The path is UTF-8; a narrow open would misread it on Windows.
     std::ifstream file(std::filesystem::path(std::u8string(path.begin(), path.end())), std::ios::binary);
@@ -99,9 +140,9 @@ std::string read_file(const std::string& path, std::string& out) {
 }
 std::uint32_t category_color(std::string_view category) {
     static const std::pair<std::string_view, std::uint32_t> colors[] = {
-        {"Drive", 0xf0aa72}, {"Amp", 0xf0aa72}, {"Modulation", 0xf0aa72}, {"Texture", 0xbfa1ed}, {"Pitch", 0xbfa1ed},
+        {"Drive", 0xf0aa72}, {"Amp", 0xf0aa72}, {"Cabinet", 0xf0aa72}, {"Modulation", 0xf0aa72}, {"Texture", 0xbfa1ed}, {"Pitch", 0xbfa1ed},
         {"Delay", 0x7bbaed}, {"Sound source", 0x7bbaed}, {"Reverb", 0x81c9b8}, {"Resonator", 0x81c9b8},
-        {"Filter", 0xa6c8ec}, {"Dynamics", 0xa6c8ec}, {"Utility", 0x93a4b5}};
+        {"Filter", 0xa6c8ec}, {"Dynamics", 0xa6c8ec}, {"Control", 0xe3c770}, {"Utility", 0x93a4b5}};
     for (const auto& [name, color] : colors) if (name == category) return color;
     return 0x93a4b5;
 }
@@ -240,8 +281,11 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
         // A rule may not hand out what the export withheld: only the engine's
         // own metadata can say a plugin is loadable.
         if (has_availability && availability == Availability::Available) return rule.where + ": an overlay can restrict availability, not grant it";
+        const auto* parameters = rule.find("parameters", Value::Kind::Array, false);
+        if (!rule.issue.empty()) return rule.issue;
         for (auto& d : changed) {
             if (uri.empty() ? d.uri.find(match) == std::string::npos : d.uri != uri) continue;
+            if (parameters) if (auto issue = apply_parameter_rules(*parameters, rule.where, d); !issue.empty()) return issue;
             // A maker's name in front of every module says nothing on a small square.
             if (!prefix.empty() && d.name.size() > prefix.size() && d.name.starts_with(prefix)) d.name.erase(0, prefix.size());
             if (!name.empty()) d.name = name;

@@ -1,0 +1,457 @@
+# Pi bring-up evidence, recorded 2026-10-14T19:34Z over SSH from the PC
+# Serial and MAC address omitted.
+
+=== board ===
+Raspberry Pi 5 Model B Rev 1.0
+Revision	: b04170
+Serial: (omitted)
+
+=== memory ===
+               total        used        free      shared  buff/cache   available
+Mem:           2.0Gi       473Mi       190Mi       109Mi       1.5Gi       1.5Gi
+Swap:          199Mi          0B       199Mi
+
+=== os ===
+PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"
+NAME="Debian GNU/Linux"
+VERSION_ID="12"
+VERSION="12 (bookworm)"
+VERSION_CODENAME=bookworm
+ID=debian
+HOME_URL="https://www.debian.org/"
+SUPPORT_URL="https://www.debian.org/support"
+BUG_REPORT_URL="https://bugs.debian.org/"
+mec-blokas.json
+
+=== arch ===
+Linux patchbox 6.6.74+rpt-rpi-2712 #1 SMP PREEMPT Debian 1:6.6.74-1+rpt1 (2025-01-27) aarch64 GNU/Linux
+arm64
+64
+/bin/bash: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, BuildID[sha1]=e25dd173d9a058cd90ef74ce621abd6271673b26, for GNU/Linux 3.7.0, stripped
+
+=== glibc ===
+ldd (Debian GLIBC 2.36-9+rpt2+deb12u9) 2.36
+
+=== storage ===
+Filesystem      Size  Used Avail Use% Mounted on
+udev            960M     0  960M   0% /dev
+tmpfs           201M  6.3M  195M   4% /run
+/dev/mmcblk0p2   29G  6.7G   21G  25% /
+tmpfs          1003M  104M  900M  11% /dev/shm
+tmpfs           5.0M   64K  5.0M   2% /run/lock
+/dev/mmcblk0p1  510M   76M  435M  15% /boot/firmware
+tmpfs           201M  208K  201M   1% /run/user/1000
+NAME         SIZE TYPE FSTYPE MOUNTPOINT     MODEL
+mmcblk0     29.7G disk                       
+├─mmcblk0p1  512M part vfat   /boot/firmware 
+└─mmcblk0p2 29.2G part ext4   /              
+
+=== uptime ===
+ 20:38:59 up  2:02,  1 user,  load average: 0.11, 0.11, 0.07
+
+=== thermal_power ===
+temp=49.9'C
+throttled=0x50000
+     EXT5V_V volt(24)=4.84008000V
+frequency(0)=1700024448
+
+=== governor ===
+      4 ondemand
+2400000
+
+=== cooling ===
+cooling_device0
+thermal_zone0
+pwm-fan
+0
+
+=== network ===
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+eth0             DOWN           
+wlan0            UP             192.168.10.157/24 fe80::f1de:bc33:6e03:8303/64 
+
+=== boot_config ===
+# For more options and information see
+# http://rptl.io/configtxt
+# Some settings may impact device functionality. See link above for details
+
+# Uncomment some or all of these to enable the optional hardware interfaces
+#dtparam=i2c_arm=on
+#dtparam=i2s=on
+#dtparam=spi=on
+
+# Enable audio (loads snd_bcm2835)
+dtparam=audio=on
+
+# Additional overlays and parameters are documented
+# /boot/firmware/overlays/README
+
+# Automatically load overlays for detected cameras
+camera_auto_detect=1
+
+# Automatically load overlays for detected DSI displays
+display_auto_detect=1
+
+# Automatically load initramfs files, if found
+auto_initramfs=1
+
+# Enable DRM VC4 V3D driver
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+
+# Don't have the firmware create an initial video= setting in cmdline.txt.
+# Use the kernel's default instead.
+disable_fw_kms_setup=1
+
+# Run in 64-bit mode
+arm_64bit=1
+
+# Disable compensation for displays with overscan
+disable_overscan=1
+
+# Run as fast as firmware / board allows
+arm_boost=1
+
+[cm4]
+# Enable host mode on the 2711 built-in XHCI USB controller.
+# This line should be removed if the legacy DWC2 controller is required
+# (e.g. for USB device mode) or if USB support is not required.
+otg_mode=1
+
+[all]
+
+
+console=serial0,115200 console=tty1 root=PARTUUID=54239d29-02 rootfstype=ext4 fsck.repair=yes rootwait cfg80211.ieee80211_regdom=AR
+
+=== kernel_rt ===
+#1 SMP PREEMPT Debian 1:6.6.74-1+rpt1 (2025-01-27)
+bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== pedalpi services ==="; systemctl is-active pedalpi-jack pedalpi-engine pedalpi-route pedalpi-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/pedalpi/pedalpi.conf; echo; echo "=== jack connections ==="; sudo -u pedalpi jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u pedalpi-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u pedalpi-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C pedal_pi,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
+bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== pedalpi services ==="; systemctl is-active pedalpi-jack pedalpi-engine pedalpi-route pedalpi-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/pedalpi/pedalpi.conf; echo; echo "=== jack connections ==="; sudo -u pedalpi jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u pedalpi-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u pedalpi-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C pedal_pi,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
+
+
+=== jack_conf ===
+=== jack_conf ===
+#!/bin/sh
+#!/bin/sh
+# exec is used to 'morph' the shell interpreter process into jackd process, saving some system resources.
+# exec is used to 'morph' the shell interpreter process into jackd process, saving some system resources.
+exec /usr/bin/jackd -t 2000 -R -P 95 -d alsa -d hw:CODEC -r 44100 -p 128 -n 2 -X seq -s -S 
+exec /usr/bin/jackd -t 2000 -R -P 95 -d alsa -d hw:CODEC -r 44100 -p 128 -n 2 -X seq -s -S 
+# /lib/systemd/system/jack.service
+# /lib/systemd/system/jack.service
+[Unit]
+[Unit]
+Description=JACK Server
+Description=JACK Server
+After=sound.target
+After=sound.target
+
+
+[Service]
+[Service]
+LimitRTPRIO=95
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+LimitMEMLOCK=infinity
+Environment=JACK_NO_AUDIO_RESERVATION=1
+Environment=JACK_NO_AUDIO_RESERVATION=1
+Environment=JACK_PROMISCUOUS_SERVER=jack
+Environment=JACK_PROMISCUOUS_SERVER=jack
+ExecStart=/etc/jackdrc
+ExecStart=/etc/jackdrc
+User=jack
+User=jack
+Group=jack
+Group=jack
+Restart=always
+Restart=always
+RestartSec=1
+RestartSec=1
+
+
+[Install]
+[Install]
+WantedBy=multi-user.target
+WantedBy=multi-user.target
+
+
+=== patchbox_cli ===
+=== patchbox_cli ===
+/usr/bin/patchbox
+/usr/bin/patchbox
+amidiminder 0.71.0-1
+amidiminder 0.71.0-1
+blokas-jack 1.0.4-1
+blokas-jack 1.0.4-1
+blokas-puredata-patches 1.02-1
+blokas-puredata-patches 1.02-1
+blokas-telemetry 1.0.3-1
+blokas-telemetry 1.0.3-1
+blokas-theme-overrides 1.0.0-1
+blokas-theme-overrides 1.0.0-1
+mec-blokas 0.1.1-3
+mec-blokas 0.1.1-3
+modep 1.13.0-3
+modep 1.13.0-3
+modep-browsepy 0.5.7-4
+modep-browsepy 0.5.7-4
+modep-btn-scripts 1.2.1-1
+modep-btn-scripts 1.2.1-1
+modep-common 1.1.0-2
+modep-common 1.1.0-2
+modep-ctl-scripts 1.8.0-2
+modep-ctl-scripts 1.8.0-2
+modep-mod-host 1.13.0-2
+modep-mod-host 1.13.0-2
+modep-mod-midi-merger 0.1.0-5
+modep-mod-midi-merger 0.1.0-5
+modep-mod-ui 1.13.0-3
+modep-mod-ui 1.13.0-3
+modep-touchosc2midi 1.0.0-4
+modep-touchosc2midi 1.0.0-4
+patchbox 1.1.2-3
+patchbox 1.1.2-3
+patchbox-cli 1.4.0-5
+patchbox-cli 1.4.0-5
+patchbox-rpi-compat 1.0.0-2
+patchbox-rpi-compat 1.0.0-2
+patchbox-wifi 1.3.1-2
+patchbox-wifi 1.3.1-2
+pd-blokas 0.1.1-4
+pd-blokas 0.1.1-4
+pisound-btn 1.16-1
+pisound-btn 1.16-1
+pisound-ctl 1.03-12
+pisound-ctl 1.03-12
+pisound-ctl-scripts-common 1.03-7
+pisound-ctl-scripts-common 1.03-7
+pisound-ctl-scripts-puredata 1.03-7
+pisound-ctl-scripts-puredata 1.03-7
+pisound-ctl-scripts-system 1.03-7
+pisound-ctl-scripts-system 1.03-7
+
+
+=== modules ===
+=== modules ===
+ 0 [vc4hdmi0       ]: vc4-hdmi - vc4-hdmi-0
+ 0 [vc4hdmi0       ]: vc4-hdmi - vc4-hdmi-0
+                      vc4-hdmi-0
+                      vc4-hdmi-0
+ 1 [vc4hdmi1       ]: vc4-hdmi - vc4-hdmi-1
+ 1 [vc4hdmi1       ]: vc4-hdmi - vc4-hdmi-1
+                      vc4-hdmi-1
+                      vc4-hdmi-1
+ 2 [CODEC          ]: USB-Audio - USB Audio CODEC
+ 2 [CODEC          ]: USB-Audio - USB Audio CODEC
+                      Burr-Brown from TI USB Audio CODEC at usb-xhci-hcd.0-1, full speed
+                      Burr-Brown from TI USB Audio CODEC at usb-xhci-hcd.0-1, full speed
+**** List of PLAYBACK Hardware Devices ****
+**** List of PLAYBACK Hardware Devices ****
+card 0: vc4hdmi0 [vc4-hdmi-0], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+card 0: vc4hdmi0 [vc4-hdmi-0], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+  Subdevices: 1/1
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+  Subdevice #0: subdevice #0
+card 1: vc4hdmi1 [vc4-hdmi-1], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+card 1: vc4hdmi1 [vc4-hdmi-1], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+  Subdevices: 1/1
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+  Subdevice #0: subdevice #0
+card 2: CODEC [USB Audio CODEC], device 0: USB Audio [USB Audio]
+card 2: CODEC [USB Audio CODEC], device 0: USB Audio [USB Audio]
+  Subdevices: 0/1
+  Subdevices: 0/1
+  Subdevice #0: subdevice #0
+  Subdevice #0: subdevice #0
+**** List of CAPTURE Hardware Devices ****
+**** List of CAPTURE Hardware Devices ****
+card 2: CODEC [USB Audio CODEC], device 0: USB Audio [USB Audio]
+card 2: CODEC [USB Audio CODEC], device 0: USB Audio [USB Audio]
+  Subdevices: 0/1
+  Subdevices: 0/1
+  Subdevice #0: subdevice #0
+  Subdevice #0: subdevice #0
+
+
+=== usb ===
+=== usb ===
+Bus 004 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 004 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 003 Device 002: ID 0484:5750 Specialix MPI5001
+Bus 003 Device 002: ID 0484:5750 Specialix MPI5001
+Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 001 Device 004: ID 2a7a:9587  CASUE USB KB
+Bus 001 Device 004: ID 2a7a:9587  CASUE USB KB
+Bus 001 Device 003: ID 08bb:29b0 Texas Instruments PCM2900B Audio CODEC
+Bus 001 Device 003: ID 08bb:29b0 Texas Instruments PCM2900B Audio CODEC
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+
+
+=== lv2 ===
+=== lv2 ===
+
+/usr/lib/lv2: 8 bundles
+/var/modep/lv2: 48 bundles
+modep
+
+=== display ===
+by-path
+card0
+card1
+renderD128
+/sys/class/drm/card1-HDMI-A-1 connected 800x480
+/sys/class/drm/card1-HDMI-A-2 disconnected 
+/sys/class/drm/card1-Writeback-1 unknown 
+/sys/class/drm/card1-Writeback-2 unknown 
+/dev/fb0
+800,480
+
+=== display_user ===
+SESSION  UID USER  SEAT  TTY
+     25 1000 patch       
+      3 1000 patch seat0 tty1
+
+2 sessions listed.
+patch    tty1         2025-02-26 23:10
+tty
+bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== pedalpi services ==="; systemctl is-active pedalpi-jack pedalpi-engine pedalpi-route pedalpi-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/pedalpi/pedalpi.conf; echo; echo "=== jack connections ==="; sudo -u pedalpi jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u pedalpi-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u pedalpi-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C pedal_pi,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
+bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== pedalpi services ==="; systemctl is-active pedalpi-jack pedalpi-engine pedalpi-route pedalpi-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/pedalpi/pedalpi.conf; echo; echo "=== jack connections ==="; sudo -u pedalpi jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u pedalpi-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u pedalpi-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C pedal_pi,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
+
+=== input ===
+N: Name="pwr_button"
+P: Phys=gpio-keys/input0
+H: Handlers=kbd event0 
+N: Name="vc4-hdmi-0"
+P: Phys=vc4-hdmi-0/input0
+H: Handlers=kbd event1 
+N: Name="QDtech MPI5001"
+P: Phys=usb-xhci-hcd.1-1/input0
+H: Handlers=mouse0 event2 
+N: Name="vc4-hdmi-0 HDMI Jack"
+P: Phys=ALSA
+H: Handlers=event3 
+N: Name="vc4-hdmi-1"
+P: Phys=vc4-hdmi-1/input0
+H: Handlers=kbd event4 
+N: Name="vc4-hdmi-1 HDMI Jack"
+P: Phys=ALSA
+H: Handlers=event5 
+N: Name="Burr-Brown from TI               USB Audio CODEC "
+P: Phys=usb-xhci-hcd.0-1/input3
+H: Handlers=kbd event9 
+N: Name="CASUE USB KB"
+P: Phys=usb-xhci-hcd.0-2/input0
+H: Handlers=sysrq kbd leds event6 
+N: Name="CASUE USB KB Consumer Control"
+P: Phys=usb-xhci-hcd.0-2/input1
+H: Handlers=kbd event7 
+N: Name="CASUE USB KB System Control"
+P: Phys=usb-xhci-hcd.0-2/input1
+H: Handlers=kbd event8 
+
+=== touch_udev ===
+/dev/input/event0: 
+/dev/input/event1: 
+/dev/input/event2: ID_INPUT_TOUCHSCREEN=1 ID_MODEL_ID=5750 ID_VENDOR_ID=0484 
+/dev/input/event3: 
+/dev/input/event4: 
+/dev/input/event5: 
+/dev/input/event6: ID_INPUT_KEYBOARD=1 ID_MODEL_ID=9587 ID_VENDOR_ID=2a7a 
+/dev/input/event7: ID_MODEL_ID=9587 ID_VENDOR_ID=2a7a 
+/dev/input/event8: ID_MODEL_ID=9587 ID_VENDOR_ID=2a7a 
+/dev/input/event9: ID_MODEL_ID=29b0 ID_VENDOR_ID=08bb 
+
+=== groups ===
+uid=1000(patch) gid=1000(patch) groups=1000(patch),4(adm),20(dialout),24(cdrom),27(sudo),29(audio),44(video),46(plugdev),60(games),100(users),102(input),105(render),106(netdev),114(jack),116(lpadmin),123(modep),993(gpio),994(i2c),995(spi)
+
+=== rt_limits ===
+95
+unlimited
+
+@pipewire   - rtprio  95
+@pipewire   - nice    -19
+@pipewire   - memlock 4194304
+
+@audio   -  rtprio     95
+@audio   -  memlock    unlimited
+
+=== cpu_isolation ===
+reboot=w coherent_pool=1M 8250.nr_uarts=1 pci=pcie_bus_safe cgroup_disable=memory numa_policy=interleave  smsc95xx.macaddr=(omitted) vc_mem.mem_base=0x3fc00000 vc_mem.mem_size=0x40000000  console=ttyAMA10,115200 console=tty1 root=PARTUUID=54239d29-02 rootfstype=ext4 fsck.repair=yes rootwait
+
+=== tascam stream ===
+Burr-Brown from TI USB Audio CODEC at usb-xhci-hcd.0-1, full speed : USB Audio
+
+Playback:
+  Status: Running
+    Interface = 1
+    Altset = 1
+    Packet Size = 192
+    Momentary freq = 48000 Hz (0x30.0000)
+  Interface 1
+    Altset 1
+    Format: S16_LE
+    Channels: 2
+    Endpoint: 0x02 (2 OUT) (ADAPTIVE)
+    Rates: 32000, 44100, 48000
+
+=== pedalpi services ===
+active
+active
+active
+active
+inactive
+failed
+JACK_DRIVER_OPTIONS=-d hw:CODEC -r 48000 -p 128 -n 3
+
+=== jack connections ===
+system:capture_1
+   ingen:in_l
+system:capture_2
+   ingen:in_r
+system:playback_1
+   ingen:out_l
+system:playback_2
+   ingen:out_r
+ingen:control
+ingen:notify
+ingen:in_l
+   system:capture_1
+ingen:in_r
+   system:capture_2
+ingen:out_l
+   system:playback_1
+ingen:out_r
+   system:playback_2
+
+=== jack log ===
+patchbox jackd[5326]: configuring for 48000Hz, period = 128 frames (2.7 ms), buffer = 3 periods
+patchbox jackd[5326]: ALSA: final selected sample format for capture: 16bit little-endian
+patchbox jackd[5326]: ALSA: final selected sample format for playback: 16bit little-endian
+patchbox jackd[5326]: JackEngine::XRun: client = ingen was not finished, state = Running
+patchbox jackd[5326]: JackEngine::XRun: client = ingen was not finished, state = Triggered
+
+=== engine log ===
+patchbox pedalpi-engine[5341]: Listening on unix:///run/pedalpi/ingen.sock
+patchbox pedalpi-engine[5341]: TCP socket disabled
+patchbox pedalpi-engine[5341]: Activated Jack client `ingen'
+patchbox pedalpi-engine[5341]: Loaded 72 plugins
+
+=== load ===
+%CPU   RSS COMMAND
+ 2.6 133632 jackd
+ 0.6 115200 ingen
+ 0.8  9216 pedal_pi
+               total        used        free      shared  buff/cache   available
+Mem:            2005         479         184         109        1515        1525
+temp=51.6'C
+throttled=0x50000
+[ 6182.727131] hwmon hwmon3: Undervoltage detected!
+[ 6184.743146] hwmon hwmon3: Voltage normalised
+[ 6628.361872] hwmon hwmon3: Undervoltage detected!
+[ 6630.377877] hwmon hwmon3: Voltage normalised

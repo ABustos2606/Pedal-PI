@@ -3,6 +3,9 @@
 [Unit]
 Description=Pedal PI audio server (JACK)
 PartOf=pedalpi.target
+Wants=pedalpi-engine.service
+# Keep retrying if the USB interface is absent or arrives after boot.
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple

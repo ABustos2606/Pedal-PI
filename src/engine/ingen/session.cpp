@@ -565,6 +565,9 @@ std::string Session::plan(const Command& command, Transaction& to) {
             send(to, put(number, path, block(c.uri, known->name, c.x, c.y, false)), number);
             // Some plugins start switched off and stay silent until told otherwise.
             if (!known->enable_symbol.empty()) set_local(child(path, known->enable_symbol), "ingen:value", value_key, float_literal(1), ingen::number(1));
+            for (const auto& symbol : known->project_defaults)
+                for (const auto& parameter : known->parameters)
+                    if (parameter.symbol == symbol) set_local(child(path, symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
         } else if constexpr (std::is_same_v<T, Connect>) {
             if (auto issue = validate_connection(graph_, c.connection); !issue.empty()) return issue;
             const auto tail = address(c.connection.from, c.connection.output, Direction::Output, true);

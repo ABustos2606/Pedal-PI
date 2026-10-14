@@ -26,6 +26,10 @@ if [ $skip_engine = 0 ]; then
     bash "$REPO/tools/ingen-spike/01-build.sh"
     step "plugins"
     bash "$REPO/tools/ingen-spike/02-plugins.sh"
+    step "NAM"
+    bash "$REPO/tools/ingen-spike/12-nam.sh"
+    step "full catalogue plugins"
+    bash "$REPO/tools/ingen-spike/14-more-plugins.sh"
 fi
 
 step "interface"
@@ -34,7 +38,7 @@ export PKG_CONFIG_PATH="$(find "$PREFIX" -name pkgconfig -type d 2>/dev/null | p
 # DRM/KMS and the framebuffer for the Pi's screen; no desktop window.
 apt-get install -y -qq --no-install-recommends cmake ninja-build g++ git pkg-config libdrm-dev liblilv-dev ca-certificates >/dev/null
 cmake -S "$REPO" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$PREFIX" -DPEDAL_WITH_SDL=OFF -DBUILD_TESTING=ON >/dev/null
-cmake --build "$BUILD" 2>&1 | grep -E "error|warning:|FAILED" || true
+cmake --build "$BUILD"
 [ -x "$BUILD/pedal_pi" ] || { echo "the interface did not build"; exit 1; }
 cmake --install "$BUILD" >/dev/null
 
@@ -47,9 +51,9 @@ fi
 step "catalogue"
 # The modules this build of the engine can load, exported here so the Pi
 # offers exactly these; the project's overlay goes beside it.
-. "$REPO/tools/ingen-spike/env.sh"
 mkdir -p "$PREFIX/share/pedalpi"
-"$PREFIX/bin/pedal_catalogue_export" -o "$PREFIX/share/pedalpi/catalogue.json" >/dev/null
+cp "$REPO/config/catalogue/inventory.txt" "$PREFIX/share/pedalpi/catalogue-inventory.txt"
+bash "$REPO/tools/pi/export-catalogue.sh"
 cp "$REPO/config/catalogue/overlay.json" "$PREFIX/share/pedalpi/catalogue-overlay.json"
 echo "$(grep -c '"uri"' "$PREFIX/share/pedalpi/catalogue.json") plugins exported"
 
@@ -63,7 +67,8 @@ rm -rf "$STAGE"; mkdir -p "$STAGE/pedalpi/root/opt"
 # The prefix without its sources and build trees, and what installs it.
 tar -C /opt --exclude=pedalpi/src --exclude=pedalpi/build -cf - pedalpi | tar -C "$STAGE/pedalpi/root/opt" -xf -
 cp -r "$REPO/config/pi" "$STAGE/pedalpi/config"
-cp "$REPO/tools/pi/install.sh" "$REPO/tools/pi/check-services.sh" "$STAGE/pedalpi/"
+cp "$REPO/tools/pi/install.sh" "$REPO/tools/pi/instrument-boot.sh" "$REPO/tools/pi/check-services.sh" "$REPO/tools/pi/export-catalogue.sh" \
+    "$REPO/tools/pi/check-ui-restart.sh" "$REPO/tools/pi/monitor-ui-restart.py" "$STAGE/pedalpi/"
 cp -r "$REPO/licenses" "$REPO/LICENSE" "$REPO/THIRD_PARTY_NOTICES.md" "$STAGE/pedalpi/"
 echo "$VERSION $ARCH $(date -u +%Y-%m-%dT%H:%MZ)" > "$STAGE/pedalpi/VERSION"
 OUT="$REPO/build/pi"

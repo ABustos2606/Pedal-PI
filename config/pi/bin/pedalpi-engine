@@ -5,6 +5,6 @@
 # on the instrument's UNIX socket (port 0: no TCP, see patch 0004).
 PREFIX=/opt/pedalpi
 LD_LIBRARY_PATH="$(find "$PREFIX/lib" -maxdepth 2 -name 'libingen*' -printf '%h\n' | sort -u | paste -sd:)"
-LV2_PATH="$(find "$PREFIX/lib" -maxdepth 2 -name lv2 -type d | paste -sd:):/usr/lib/lv2"
+LV2_PATH="$(find "$PREFIX/lib" -maxdepth 2 -name lv2 -type d | paste -sd:):$PREFIX/nam/current:/usr/lib/lv2"
 export LD_LIBRARY_PATH LV2_PATH
 exec "$PREFIX/bin/ingen" -e -f -E 0 -S "${PEDALPI_SOCKET:-/run/pedalpi/ingen.sock}" "$@"

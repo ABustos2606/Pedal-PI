@@ -913,7 +913,7 @@ void Application::update_cables() {
 void Application::browser(lv_obj_t* parent) {
     // Categories in signal-chain order; any the catalogue invents follow alphabetically.
     static const std::vector<std::string> order = {"Drive", "Amp", "Cabinet", "Dynamics", "Filter", "Modulation", "Pitch",
-        "Delay", "Reverb", "Texture", "Resonator", "Sound source", "Utility"};
+        "Delay", "Reverb", "Texture", "Resonator", "Sound source", "Control", "Utility"};
     const auto rank = [](const std::string& category) {
         return static_cast<std::size_t>(std::find(order.begin(), order.end(), category) - order.begin());
     };

@@ -2,11 +2,18 @@
 
 **Project:** Pedal PI  
 **Prepared:** 13 October 2026 (America/Buenos_Aires)  
-**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter and catalogue export (P4.1–P4.4) and its error and reconnect states (P4.6) are implemented and verified on the PC against Ingen under WSL2, as is Phase 5's patch storage (P5.1–P5.8) apart from power-loss tests. Phase 7's simulated controls, mapping rules and assignment screen (P7.2, P7.4, P7.5) are implemented without the hardware. The Linux build, an arm64 package with installer and services, and the restart-only-the-interface loop (P1.3, P4.8) are verified on the PC under WSL2 and emulation. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
+**Reconciled with implementation evidence:** 14 October 2026
+
+**Current state:** the instrument runs on the Pi with its native touchscreen interface and Tascam US-100. The user has heard guitar through Clouds, saved and reloaded that patch, and confirmed no interruption during an interface-only restart. It now boots directly into Pedal PI and the saved Clouds patch, with desktop/MODEP disabled; a software reboot and physical display/touch confirmation passed. These are completed implementation-plan results. The full controlled milestone still needs its conventional-effect acceptance and physical knob/stomp assignments; offline/repeated cold-boot, wider recovery and release validation remain unfinished. [Direct boot evidence](24-instrument-boot.md).
+
+The deployed arm64 package includes Clouds, the selected NAM implementation and the buildable selected plugin inventory. The catalogue was generated on the Pi itself: 226 entries. All eight arm64 build tests passed. Six offered Clouds modes passed native load/control checks; NAM passed a native check without a model. During guitar playing, 8,251 monitored blocks over 22 seconds had no gaps, xruns or silent outputs while only the UI restarted. The saved graph and controls survived unchanged, and the user reported "No interruption". [Deployment evidence](evidence/pi-update-results.txt), [persistence/restart evidence](evidence/pi-persistence-results.txt), [hardware record](23-pi-bring-up.md).
+
+**Task-status rules:** a checked task has evidence for its stated implementation scope, with the platform identified in its phase record. PC implementation checks do not certify all plugins or workflows on the Pi. Partially completed tasks remain unchecked with completed and remaining subchecks below. The card-backup requirement has an explicit user waiver under P0.6. Historical execution records preserve what was known at their date; the reconciled status and current task notes supersede their old "not done" statements.
+
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
-This plan turns the [requirements](01-requirements.md), [architecture](02-architecture.md), [interaction design](03-interface-and-controls.md), and [validation rules](06-validation.md) into executable phases. It preserves the new LVGL interface, Poly Ingen audio engine, Mutable Instruments-derived modules, and audio plus control (CV) routing (D16, revised 13 October 2026). Layout and control assignments are stored as engine properties inside the patch bundle; the earlier companion JSON was dropped on 13 October 2026 (D13). Casette is an unchanged technical reference. Independent Windows UI implementation was authorized on 13 October 2026; see [its development record](11-windows-ui-foundation.md). The Pi installation has not been changed.
+This plan turns the [requirements](01-requirements.md), [architecture](02-architecture.md), [interaction design](03-interface-and-controls.md), and [validation rules](06-validation.md) into executable phases. It preserves the new LVGL interface, Poly Ingen audio engine, Mutable Instruments-derived modules, and audio plus control (CV) routing (D16, revised 13 October 2026). Layout and control assignments are stored as engine properties inside the patch bundle; the earlier companion JSON was dropped on 13 October 2026 (D13). Casette is an unchanged technical reference. Independent Windows UI implementation was authorized on 13 October 2026; see [its development record](11-windows-ui-foundation.md). The current package is installed in the isolated Pi prefix; system settings and the patch store are preserved.
 
 Every phase has numbered tasks, a deliverable, and an exit check. A phase is complete only when its evidence exists; a desktop prototype does not establish Pi audio performance or finger usability. Technical choices marked proposed are defaults to evaluate, not new agreed product requirements.
 
@@ -29,15 +36,35 @@ Every phase has numbered tasks, a deliverable, and an exit check. A phase is com
 
 Phases 1–2 do not wait for the Pi. Phase 3 must pass before building the full interface around assumed engine behaviour. NAM and catalogue expansion do not block the first Clouds instrument milestone. Work can proceed on independent tasks without completing every phase strictly in numeric order.
 
-**Checkpoint A — desktop editor:** end of Phase 2.  
-**Checkpoint B — real audio controlled through our UI:** end of Phase 4.  
-**Checkpoint C — first complete musical milestone:** end of Phase 7, including saved Clouds patch, one conventional effect, one knob and one stomp switch.  
-**Checkpoint D — candidate dedicated instrument:** end of Phase 10 with the selected tested module set.  
-**Checkpoint E — validated release:** end of Phase 11.
+- **Checkpoint A — desktop editor:** passed on the PC.
+- **First audible musical milestone:** achieved on the Pi: guitar through Clouds, saved/reloaded, with uninterrupted audio during UI restart.
+- **Checkpoint B — real audio controlled through our UI:** its audio/native-screen/reconnect core is verified; the complete Phase 4 touch-workflow checklist remains P4.7.
+- **Checkpoint C — first complete controlled musical milestone:** still open: add one conventional effect and validate one physical knob and one stomp, alongside the saved Clouds patch.
+- **Checkpoint D — candidate dedicated instrument:** basic direct boot and JACK/engine recovery verified; full offline/cold-boot/storage/recovery acceptance remains open.
+- **Checkpoint E — validated release:** open; release acceptance is not complete.
 
-## Technical structure to establish
+## Current phase status and next work
 
-Proposed language/build baseline: C++20 and CMake, subject to compatibility checks against the selected compiler and pinned LVGL release in Phase 1. Use one pinned LVGL revision for Windows and Pi builds. Do not choose moving upstream defaults as a reproducible dependency specification.
+| Phase | Current result | Remaining before phase completion |
+| --- | --- | --- |
+| 0 | System/services/display profiled; controls identified; backup waived explicitly | Complete audio/gain/buffer profile and baseline measurements (P0.3, P0.7) |
+| 1 | Shared Windows/Linux application, pinned LVGL and arm64 builds complete | Recorded debugger breakpoint session (P1.1) |
+| 2 | Desktop editor acceptance complete | Pi-specific acceptance belongs to Phases 4 and 9 |
+| 3 | Compatible engine/dependency build, isolated Pi run and reconnect while audio continues | Conventional-effect gain/latency, full host-feature and routing checks on Pi (P3.4–P3.7) |
+| 4 | Native 800 x 480 display/touch, Pi catalogue, real adapter, UI-only restart and deployment loop working | Complete physical-screen add/edit/remove/invalid-cable/merge workflow (P4.7) |
+| 5 | Storage implemented; actual Clouds patch and two revisions saved/reloaded on Pi | Native file-based state/assets, physical assignments and full patch-manager acceptance; power loss stays in P10.5 |
+| 6 | First audible Clouds milestone achieved; patch saved/reloaded; UI restart preserves guitar audio | Full mode/control listening sweep, Clouds plus conventional effect, combined-load measurements (P6.4–P6.6) |
+| 7 | Controls identified; simulation, mappings and assignment UI implemented | Select/verify wiring, connect hardware and validate actions/resilience (P7.1, P7.3, P7.6, P7.7) |
+| 8 | NAM candidates pinned and built for arm64; selected plugin loads on Pi | Native model/worker/state tests, selectors, IRs and performance budgets (P8.2–P8.7) |
+| 9 | All buildable selected families packaged; catalogue exported on Pi; PC compatibility matrix exists | Native per-entry compatibility, remaining presentation/screens and physical usability/load (P9.3–P9.6) |
+| 10 | Direct boot into saved Clouds verified by reboot and user touch confirmation; independent services and automatic JACK/engine recovery verified | Full readiness/error cases, offline/five cold boots, missing assets/plugins, shutdown/storage and wider recovery (P10.2–P10.7) |
+| 11 | Development package installed; current evidence linked to requirements below | Complete acceptance matrix, endurance/lifecycle, release provenance/source package and operation guide |
+
+**User-directed execution, 14 October 2026:** direct instrument boot was prioritized and completed: enable Pedal PI at boot, mask the desktop/MODEP/automatic-console competitors, select saved Clouds, preserve the newer unsaved wendy patch, reboot, verify restoration/routing and confirm display/touch. Automatic JACK/engine recovery also passed. [Record](24-instrument-boot.md). Phase 10's full acceptance remains open. The remaining conventional-effect and touch workflow checks (P3.4, P4.7), Clouds-plus-conventional-effect persistence (P6.5), P6.4 listening and physical controls remain the subsequent work. The observed power/throttling issue must be resolved and rechecked before latency or sustained load budgets are accepted (P0.3, P0.7, P6.6). NAM and catalogue expansion remain separate work.
+
+## Technical structure
+
+Selected language/build baseline: C++20, CMake and pinned LVGL v9.5.0, built for Windows and Debian bookworm arm64 and running on the Pi. Use one pinned LVGL revision for Windows and Pi builds. Do not choose moving upstream defaults as a reproducible dependency specification.
 
 | Component | Responsibility | Key boundary |
 | --- | --- | --- |
@@ -58,13 +85,23 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** establish the actual system before choosing build dependencies or touching the existing installation.
 
-- [ ] **P0.1 — System profile:** record board/RAM, OS release, userland architecture, kernel, storage/free space, power supply, cooling, CPU governor, network and available remote access.
-- [ ] **P0.2 — Service inventory:** record active JACK/MODEP/PipeWire/PulseAudio services where present, current audio ownership, startup configuration and installed LV2 paths. Identify potential conflicts without changing them during inventory.
+**Reconciled status — 14 October 2026:** P0.1, P0.2 and P0.4 are complete on the Pi. P0.5 has the owned control types/counts and the unresolved connection recorded; wiring and bench validation belong to Phase 7. P0.6 is complete with the user-approved card-backup waiver, isolated prefix and documented recovery. P0.3 and P0.7 remain partial/open for the measurements below. [Evidence](23-pi-bring-up.md).
+
+**Historical execution record — 14 October 2026:** P0.1, P0.2 and P0.4 are recorded, and P0.3 has identified the interface (Tascam US-100, ALSA `CODEC`) but not yet measured it. P0.6: the user waived a backup because the card holds only earlier experiments; the isolated prefix is `/opt/pedalpi`, and MODEP is left installed. The control inventory is now complete under P0.5; wiring remains Phase 7 and the unmeasured baseline remains P0.7. The Pi runs Debian 12 bookworm arm64, matching the build root, so D06's working baseline stands. See [Pi bring-up](23-pi-bring-up.md).
+
+- [x] **P0.1 — System profile:** record board/RAM, OS release, userland architecture, kernel, storage/free space, power supply, cooling, CPU governor, network and available remote access.
+- [x] **P0.2 — Service inventory:** record active JACK/MODEP/PipeWire/PulseAudio services where present, current audio ownership, startup configuration and installed LV2 paths. Identify potential conflicts without changing them during inventory.
 - [ ] **P0.3 — Audio profile:** identify the selected interface, channels, guitar input suitability, device identity, gain controls, sample rates and usable period/buffer configurations. If the interface is not selected, record selection criteria and leave audio tests blocked by that specific dependency.
-- [ ] **P0.4 — Display/input profile:** confirm actual 800 × 480 output, DRM/framebuffer availability, touchscreen USB/input identity, calibration, orientation and single-touch operation.
-- [ ] **P0.5 — Controls profile:** identify the owned knobs as encoders or potentiometers, their count and connection; identify stomp-switch hardware and transport options. Record unresolved wiring rather than assigning arbitrary GPIO pins.
-- [ ] **P0.6 — Preservation:** make a recoverable backup or development SD card, record restoration steps, and choose an isolated development prefix/plugin path. Preserve the working MODEP installation until replacement passes validation.
+  - [x] Tascam US-100 / CODEC, stereo channels and working 48 kHz / 128 x 3 guitar path identified.
+  - [ ] Complete gain/headroom/noise and alternative usable buffer/round-trip latency checks.
+- [x] **P0.4 — Display/input profile:** confirm actual 800 × 480 output, DRM/framebuffer availability, touchscreen USB/input identity, calibration, orientation and single-touch operation.
+- [x] **P0.5 — Controls profile:** identify the owned knobs as encoders or potentiometers, their count and connection; identify stomp-switch hardware and transport options. Record unresolved wiring rather than assigning arbitrary GPIO pins.
+- [x] **P0.6 — Preservation:** make a recoverable backup or development SD card, record restoration steps, and choose an isolated development prefix/plugin path. Preserve the working MODEP installation until replacement passes validation.
+  - [x] User explicitly waived a full-card backup because the card held earlier experiments.
+  - [x] Isolated prefix, previous-program rollback and the route back to MODEP are recorded.
 - [ ] **P0.7 — Baseline:** measure current power-on-to-audio and power-on-to-screen separately; record latency, xruns, memory and temperature for an available representative patch.
+  - [x] Initial idle/service observations and the short guitar/UI-restart continuity run are recorded.
+  - [ ] Measure power-on-to-audio/screen and representative latency/load/thermal baseline with adequate power.
 
 **Deliverable:** hardware/OS profile, existing service/plugin inventory, baseline measurement record and recovery procedure.
 
@@ -74,22 +111,26 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** make everyday UI work possible on the PC without the Pi.
 
-**Execution record — 14 October 2026:** P1.3 is complete. The same shared code now builds for Linux, with DRM/KMS, framebuffer, SDL and offscreen displays. All its tests pass natively under WSL2 and on arm64 under emulation. See [Linux and Pi](19-linux-and-pi.md). P1.1's debugger validation remains.
+**Reconciled status — 14 October 2026:** P1.3 includes the working native Pi DRM/touch application and the Linux/arm64 test results. The Linux build route is established. Only the debugger-session evidence remains under P1.1; this phase is not the project starting point any longer.
 
-**Execution record — 13 October 2026:** P1.2 and P1.4–P1.8 are complete. The Windows Debug build and all three CTest checks passed. Domain and engine contracts, missing-module scenarios, and build/run/debug instructions are documented. VS Code launch/task configuration is prepared; its C/C++ debugger extension is not installed on this PC, so an actual breakpoint session remains part of P1.1. Linux UI platform work remains P1.3. See [UI development](11-windows-ui-foundation.md) and [domain/engine contracts](13-domain-and-engine-contracts.md).
+**Historical execution record — 14 October 2026:** P1.3 is complete. The same shared code now builds for Linux, with DRM/KMS, framebuffer, SDL and offscreen displays. All its tests pass natively under WSL2 and on arm64 under emulation. See [Linux and Pi](19-linux-and-pi.md). P1.1's debugger validation remains.
+
+**Historical execution record — 13 October 2026:** P1.2 and P1.4–P1.8 are complete. The Windows Debug build and all three CTest checks passed. Domain and engine contracts, missing-module scenarios, and build/run/debug instructions are documented. VS Code launch/task configuration is prepared; its C/C++ debugger extension is not installed on this PC, so an actual breakpoint session remains part of P1.1. Linux UI platform work was subsequently completed under P1.3. See [UI development](11-windows-ui-foundation.md) and [domain/engine contracts](13-domain-and-engine-contracts.md).
 
 **P1.4 correction:** a user-reported blank native window exposed a startup refresh race missed by the original launch-only check. The initial redraw now waits for the Windows buffer, and the native test verifies rendered pixels and a completed flush without requiring a click. See the [startup fix and regression evidence](11-windows-ui-foundation.md#verification).
 
 | Task | Implemented | Remaining before completion |
 | --- | --- | --- |
-| P1.1 | Windows MSVC/CMake/SDK inventory, selected build preset and prepared VS Code launch/task configuration | C/C++ debugger extension and actual breakpoint validation; Linux build route |
-| P1.3 | C++20/CMake core, engine, shared LVGL views and Windows platform; source/license notices | Linux UI build target and platform setup |
+| P1.1 | Windows toolchain/preset, VS Code setup and compatible Linux/arm64 route | Actual debugger breakpoint validation |
+| P1.3 | Complete: shared C++20/CMake core/views, Windows and working native Pi/Linux platforms; notices retained | None for the application skeleton; later acceptance stays in its owning phase |
 | P1.5 | Complete: stable identity/display-name separation, explicit port types/channel symbols, tagged numeric values, validated ranges/graphs and retained missing-module metadata | Real plugin discovery/adaptation belongs to Phases 3–4 |
 | P1.6 | Complete: abstract Engine, connection lifecycle, correlated results/snapshots, create/rename/load/session-save and capability failures | Actual protocol and persistent plugin state belong to Phases 4–5 |
 | P1.7 | Complete: deterministic catalogue, delayed/rejected edits/save, missing-module graph fixture and disconnect/reconnect | No audio processing is claimed |
 | P1.8 | Complete: build/run/test/debug instructions, VS Code configurations, pinned dependency and reviewed captures | Debugger installation/runtime validation remains P1.1 |
 
 - [ ] **P1.1 — Toolchain inventory:** identify available Windows C++ compiler, CMake, debugger and dependency tooling. Select a supported combination and document setup; choose a Linux build route for later Pi deployment separately.
+  - [x] Windows toolchain and reproducible Debian bookworm arm64 Linux route selected.
+  - [ ] Record an actual debugger breakpoint session.
 - [x] **P1.2 — Pin graphics dependencies:** select a stable LVGL revision and compatible Windows display/input backend. Prefer the official Win32 simulator when it fits the available compiler; SDL is a documented alternative. Record revisions, licenses and required fonts/assets; preserve supplied notices.
 - [x] **P1.3 — Application skeleton:** create the proposed shared/platform separation and build targets for a Windows simulator and later Linux UI. Keep simulator drivers out of the shared application logic. Add GPL-3.0-or-later SPDX and accurate copyright notices to original project source files; keep adapted upstream files under their applicable terms.
 - [x] **P1.4 — Display baseline:** run a real LVGL application with an 800 × 480 logical drawing area, mouse pointer input and keyboard input. Account for Windows DPI scaling; optional zoom changes presentation, not logical coordinates.
@@ -108,7 +149,7 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** validate the core interaction before audio integration expands its scope.
 
-**Execution record — 13 October 2026:** P2.1–P2.8 and the desktop exit check are complete. Actual LVGL pointer/keypad checks cover creation/naming/rename, cancellation and unsaved-replacement guards, pagination, catalogue availability, missing-module repair, all core editor workflows and rejected/pending operations. Sparse, panned, dense, long-name, keyboard and error views are reviewed at 800 × 480; domain tests cover all mono/stereo expansion rules. Logical cables retain physical routing plans using demo or supplied channel symbols; actual Ingen ports and merge levels remain unverified. See the [desktop review checklist](12-desktop-editor-review.md). Physical switch assignment remains Phase 7; Pi touch acceptance remains Phase 4.
+**Historical execution record — 13 October 2026:** P2.1–P2.8 and the desktop exit check are complete. Actual LVGL pointer/keypad checks cover creation/naming/rename, cancellation and unsaved-replacement guards, pagination, catalogue availability, missing-module repair, all core editor workflows and rejected/pending operations. Sparse, panned, dense, long-name, keyboard and error views are reviewed at 800 × 480; domain tests cover all mono/stereo expansion rules. Logical cables retain physical routing plans using demo or supplied channel symbols; actual Ingen ports and merge levels remain unverified. See the [desktop review checklist](12-desktop-editor-review.md). Physical switch assignment remains Phase 7; Pi touch acceptance remains Phase 4.
 
 | Task | Implemented | Remaining before completion |
 | --- | --- | --- |
@@ -143,25 +184,35 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** verify the engine assumptions while the desktop editor is still small.
 
-**Execution record - 14 October 2026 (PC only):** the build route of P3.2 is established and the dependency baseline of P3.1 is chosen for Debian 12 (bookworm), the base of Raspberry Pi OS bookworm.
+**Reconciled status — 14 October 2026:** P3.1–P3.3 are complete: the Pi is Debian 12 bookworm arm64, matching the emulated build root; the rebuilt binaries and libraries run in the isolated prefix with the real Tascam at 48 kHz, 128 frames x 3 periods. P3.8 is verified by client/UI reconnection during guitar playing without an audio gap. Ingen remains the selected host (P3.9), with known module limitations recorded. P3.4–P3.7 retain the specific native checks below. The current package includes project patches 0001–0005. [Build/deployment](evidence/pi-update-results.txt), [reconnection/audio evidence](evidence/pi-persistence-results.txt).
+
+**Historical execution record - 14 October 2026 (PC only):** the build route of P3.2 is established and the dependency baseline of P3.1 is chosen for Debian 12 (bookworm), the base of Raspberry Pi OS bookworm.
 
 - **Build route.** One script builds the engine, plugins and interface, runs the tests and packs them. It runs natively on the Pi, or on the PC in a Debian arm64 root under qemu, where the engine, plugins and interface were built and tested.
 - **Baseline.** Debian 12's lilv is too old for this Ingen, so lilv 0.24.24 and zix 0.4.2 are built into the prefix.
 - **Plugins.** The Mutable-derived plugins are built with Cortex-A76 flags instead of SSE.
 
-Both items stay open until the Pi's release is known and the build is repeated against it. See [Linux and Pi](19-linux-and-pi.md).
+Both items are now complete: the Pi is confirmed as Debian 12 arm64, and the matching bookworm package runs there. See the reconciled record above and [Linux and Pi](19-linux-and-pi.md).
 
-**Execution record - 13 October 2026 (PC only):** the hardware-independent parts of P3.1 and P3.5-P3.8, and the bundle format of P5.2, were verified on x86-64 Debian under WSL2 with JACK's dummy backend; see [Ingen engine evidence](14-ingen-engine-evidence.md). Poly's published `main` does not compile (it needs an unpublished serd), so the engine is upstream Ingen plus Poly's MIDI-learn fix and three project patches. The tasks below stay open until repeated on the Pi with the real interface and plugins.
+**Historical execution record - 13 October 2026 (PC only):** the hardware-independent parts of P3.1 and P3.5-P3.8, and the bundle format of P5.2, were verified on x86-64 Debian under WSL2 with JACK's dummy backend; see [Ingen engine evidence](14-ingen-engine-evidence.md). Poly's published `main` does not compile (it needs an unpublished serd), so the engine is upstream Ingen plus Poly's MIDI-learn fix and three project patches. The reconciled checklist below identifies which tasks now have native Pi evidence and which checks still need repeating there.
 
-- [ ] **P3.1 — Build baseline:** select Poly Ingen and dependency revisions compatible with the Phase 0 OS. Check the inspected Serd/Sord/Sratom/Suil/LV2/Lilv/Raul requirements; choose build dependencies or an alternative supported development image from evidence.
-- [ ] **P3.2 — Linux builds:** establish a native Pi or reproducible Linux cross-build route with correct architecture and sysroot. Do not transplant Casette's Windows paths, Cortex-A72 target or unpinned dependency folder.
-- [ ] **P3.3 — Isolated engine run:** launch JACK and Ingen with explicit device/plugin paths in the development setup. Avoid competing MODEP graph ownership and record every configuration change and its rollback.
+- [x] **P3.1 — Build baseline:** select Poly Ingen and dependency revisions compatible with the Phase 0 OS. Check the inspected Serd/Sord/Sratom/Suil/LV2/Lilv/Raul requirements; choose build dependencies or an alternative supported development image from evidence.
+- [x] **P3.2 — Linux builds:** establish a native Pi or reproducible Linux cross-build route with correct architecture and sysroot. Do not transplant Casette's Windows paths, Cortex-A72 target or unpinned dependency folder.
+- [x] **P3.3 — Isolated engine run:** launch JACK and Ingen with explicit device/plugin paths in the development setup. Avoid competing MODEP graph ownership and record every configuration change and its rollback.
 - [ ] **P3.4 — Simple effect:** build/load one compatible low-cost LV2 effect and confirm guitar input → effect → output, gain behaviour and explicit JACK port routing. Record audio settings and observed xruns/latency.
+  - [x] Real guitar input/output and stereo Clouds processing work with explicit JACK routes.
+  - [ ] Verify a low-cost conventional effect's gain behaviour and the outstanding latency/buffer checks on Pi.
 - [ ] **P3.5 — Protocol proof:** verify socket address, connection lifecycle, Turtle/Atom message structure, framing, request/status correlation, subscriptions and full graph retrieval. Capture sanitized examples for add/remove/connect/disconnect/set/read operations.
+  - [x] Protocol and sanitized operation traces verified on PC; native discovery/control/save/load and UI reconnect work.
+  - [ ] Complete the full operation/subscription protocol acceptance record on the Pi.
 - [ ] **P3.6 — Host features:** confirm selected LV2 feature support, worker scheduling, state save/restore, path messages and optional bypass semantics. Inspect source as a guide, then verify runtime behaviour; source presence alone is not a pass.
+  - [x] Worker/state/path/model cases tested on PC; native Clouds bypass and NAM load/control checks pass.
+  - [ ] Repeat file-path, worker and stateful/model asset cases on Pi.
 - [ ] **P3.7 — Routing semantics:** test mono/stereo connections, fan-out, multiple connections into one input, summed levels and needed compensation/mixer behaviour. Record a valid first-version policy before enabling merges in the real UI.
-- [ ] **P3.8 — Reconnection spike:** connect a minimal client, disconnect it, reconnect and retrieve the active graph without disturbing audio. Investigate any failure in Poly's fork before implementing a full UI around it.
-- [ ] **P3.9 — Host suitability decision:** document passing features and any adaptations. Keep Ingen as the direction; propose a host substitution only if a reproducible blocker prevents core requirements, with the concrete impact recorded.
+  - [x] Stereo IN -> Clouds -> OUT is read back and heard on Pi; routing policy and summing have PC evidence.
+  - [ ] Repeat fan-out, multi-input sum/gain, mono/stereo expansion and compensation checks on Pi.
+- [x] **P3.8 — Reconnection spike:** connect a minimal client, disconnect it, reconnect and retrieve the active graph without disturbing audio. Investigate any failure in Poly's fork before implementing a full UI around it.
+- [x] **P3.9 — Host suitability decision:** document passing features and any adaptations. Keep Ingen as the direction; propose a host substitution only if a reproducible blocker prevents core requirements, with the concrete impact recorded.
 
 **Deliverable:** reproducible engine/plugin build record, working saved example graph, protocol examples and host-capability/routing results.
 
@@ -171,7 +222,9 @@ Both items stay open until the Pi's release is known and the build is repeated a
 
 **Purpose:** turn the desktop editor into an instrument controller without coupling audio to the UI process.
 
-**Execution record - 14 October 2026 (PC only):** the code side of P4.5 is in place: DRM/KMS (preferring an 800 × 480 mode) or framebuffer, evdev touch found by capability, and rotation. It is built and tested for arm64, but not yet run on the Pi's screen.
+**Reconciled status — 14 October 2026:** P4.4 now includes catalogue generation on the Pi: 226 inventory entries. P4.5 is complete on the physical 800 x 480 HDMI screen with QDtech USB touch and correct orientation/positioning. P4.6/P4.8 include the native interface-only restart: JACK and Ingen kept their PIDs, the new interface recovered the same saved graph, and the user heard no interruption. P4.7 remains partial for the full physical touch-workflow checklist. [Native evidence](23-pi-bring-up.md#patch-saveload-and-interface-restart-with-guitar).
+
+**Historical execution record - 14 October 2026 (PC only):** the code side of P4.5 is in place: DRM/KMS (preferring an 800 × 480 mode) or framebuffer, evdev touch found by capability, and rotation. The build was initially tested under emulation; native screen/touch acceptance has since passed, as recorded above.
 
 P4.8 is complete and verified under WSL2:
 
@@ -181,19 +234,21 @@ P4.8 is complete and verified under WSL2:
 
 See [Linux and Pi](19-linux-and-pi.md).
 
-**Execution record - 13 October 2026 (PC only):** P4.1–P4.3 are implemented in `src/engine/ingen/` and pass 39 live checks against the patched Ingen under WSL2, including a measured audio level through a patch the adapter built, a second client, an interface restart and an engine restart; the command checks were repeated over TCP. The Windows interface runs against that engine with `--engine`. The reconnecting half of P4.6 is included. See [the adapter record](15-ingen-adapter.md). Not done: an ARM build, the Pi, real plugins beyond the LV2 example amplifier, P4.4's Linux metadata export, P4.5, P4.7 and P4.8.
+**Historical execution record - 13 October 2026 (PC only):** P4.1–P4.3 are implemented in `src/engine/ingen/` and pass 39 live checks against the patched Ingen under WSL2, including a measured audio level through a patch the adapter built, a second client, an interface restart and an engine restart; the command checks were repeated over TCP. The Windows interface runs against that engine with `--engine`. The reconnecting half of P4.6 is included. See [the adapter record](15-ingen-adapter.md). The ARM build, Pi deployment, catalogue export and native backend have since passed; the remaining physical workflow checks are tracked under P4.7.
 
 - [x] **P4.1 — Ingen adapter:** implement the verified protocol using suitable RDF/Atom serialization/parsing, complete-message handling and bounded input. Do not parse Turtle by splitting arbitrary periods or assuming each socket read is a full message.
 - [x] **P4.2 — Communication threading:** isolate socket I/O from LVGL drawing, queue normalized events to the UI thread, bound queues and coalesce redundant continuous-parameter updates. Preserve discrete switch actions and graph operations.
 - [x] **P4.3 — State synchronization:** load a complete engine snapshot, apply subsequent updates and correlate pending edits with results. Define snapshot completion and update ordering so reconnect cannot lose edits or duplicate modules.
-**Execution record - 13 October 2026 (PC only):** P4.4 is implemented: `pedal_catalogue_export` reads installed plugins through Lilv and writes a versioned catalogue file, which the interface loads with a project-owned overlay. On the WSL engine it exported 64 plugins and offers 58; all 58 load in Ingen and match their exported metadata, including Poly's 21 Mutable-derived modules built for x86-64. This is also first evidence for P6.2 and P9.3: Clouds loads, is switched on through its own `enabled` control, and passes a measured signal. See [the catalogue record](16-catalogue-export.md). Not done: the ARM builds and the export on the Pi.
+**Historical execution record - 13 October 2026 (PC only):** P4.4 is implemented: `pedal_catalogue_export` reads installed plugins through Lilv and writes a versioned catalogue file, which the interface loads with a project-owned overlay. On the WSL engine it exported 64 plugins and offers 58; all 58 load in Ingen and match their exported metadata, including Poly's 21 Mutable-derived modules built for x86-64. This is also first evidence for P6.2 and P9.3: Clouds loads, is switched on through its own `enabled` control, and passes a measured signal. See [the catalogue record](16-catalogue-export.md). The ARM builds and export on the Pi have since completed; see the reconciled record above.
 
 - [x] **P4.4 — Metadata discovery:** export installed LV2 metadata on Linux using the selected host/Lilv facilities. Generate a versioned catalogue consumed by the UI; use an exported fixture on Windows so PC work does not need native LV2 binaries.
-- [ ] **P4.5 — Pi platform backend:** build the same views/domain code for Linux with a validated DRM/KMS or framebuffer driver and evdev/libinput touch. Configure stable device selection, 800 × 480 output and rotation/calibration where needed.
-**Execution record - 14 October 2026 (PC only):** P4.6 is complete. The interface shows starting, ready, reconnecting, offline and engine-error states with the reason, keeps the last graph while edits are paused, disables adding, and names the module when a plugin fails to load. A restarted interface recovers the graph, the stored identity and the unsaved-changes marker, which now live in the engine. Nothing in the interface starts or stops an engine. Verified with LVGL pointer checks and against the WSL engine stopped and restarted under a running interface; see [patch storage](17-patch-storage.md).
+- [x] **P4.5 — Pi platform backend:** build the same views/domain code for Linux with a validated DRM/KMS or framebuffer driver and evdev/libinput touch. Configure stable device selection, 800 × 480 output and rotation/calibration where needed.
+**Historical execution record - 14 October 2026 (PC only):** P4.6 is complete. The interface shows starting, ready, reconnecting, offline and engine-error states with the reason, keeps the last graph while edits are paused, disables adding, and names the module when a plugin fails to load. A restarted interface recovers the graph, the stored identity and the unsaved-changes marker, which now live in the engine. Nothing in the interface starts or stops an engine. Verified with LVGL pointer checks and against the WSL engine stopped and restarted under a running interface; see [patch storage](17-patch-storage.md).
 
 - [x] **P4.6 — Error and reconnect states:** show starting/disconnected/reconnecting/plugin-failed status, reject unavailable operations, and recover the current graph after UI-only restart. A transient communication error must not launch a competing audio engine.
 - [ ] **P4.7 — Initial live workflows:** add/connect/edit/remove the simple effect on the physical screen; verify actual audio against the displayed graph. Test source/output endpoints, invalid cables and merge policy from Phase 3.
+  - [x] Physical touch positioning, IN/OUT patching, Clouds control use and actual guitar sound confirmed.
+  - [ ] Complete physical-screen add/remove, conventional-effect editing, invalid-cable and merge-policy checks.
 - [x] **P4.8 — Deployment loop:** document copying/installing the UI to an isolated Pi prefix and starting/restarting only the UI over configured remote access. Keep Windows simulation independent; direct Windows-to-Pi Ingen control is optional and requires an explicitly verified transport.
 
 **Deliverable:** real Ingen adapter, exported catalogue, native Pi LVGL build and working touch-controlled simple patch.
@@ -204,7 +259,9 @@ See [Linux and Pi](19-linux-and-pi.md).
 
 **Purpose:** preserve the entire musical patch, not merely its screen positions and numeric values.
 
-**Execution record - 14 October 2026 (PC only):** P5.1–P5.8 are implemented in `src/storage/`, the adapter and the interface, and verified against the patched Ingen under WSL2 and from the Windows build through `/mnt/c`. The engine writes each revision with plugin state into staging; the interface publishes it with an atomic rename and keeps two revisions. The live checks reload a patch with a Mutable-derived module and measure the reloaded patch's level; the probe saves and reloads a stateful plugin's state, also after moving the bundle. They also load a bundle stripped of every project property, and refuse missing plugins and unreadable bundles. See [patch storage](17-patch-storage.md) and [the results](evidence/patch-storage-results.txt). Not done: power-loss tests and `fsync` (deferred to P10.5, as P5.8 allows), real model, impulse-response and sample assets (Phase 8), and control-assignment mappings (Phase 7).
+**Reconciled status — 14 October 2026:** The implemented storage contract is now exercised on the Pi with the actual Clouds guitar patch. Revision 1 preserves the user's Freeze-on controls; revision 2 is the current saved/loaded live-input version with Freeze off. Name, stored identity, module, four cables, layout and eleven controls restore (numeric tolerance 1e-6); both revisions remain. These checks used the application's adapter and PatchStore. Clouds has no persistent captured-buffer state. File-based assets/state, physical assignments, the full touchscreen patch-manager interaction sweep and abrupt power loss were not established by this run. [Native evidence](evidence/pi-persistence-results.txt).
+
+**Historical execution record - 14 October 2026 (PC only):** P5.1–P5.8 are implemented in `src/storage/`, the adapter and the interface, and verified against the patched Ingen under WSL2 and from the Windows build through `/mnt/c`. The engine writes each revision with plugin state into staging; the interface publishes it with an atomic rename and keeps two revisions. The live checks reload a patch with a Mutable-derived module and measure the reloaded patch's level; the probe saves and reloads a stateful plugin's state, also after moving the bundle. They also load a bundle stripped of every project property, and refuse missing plugins and unreadable bundles. See [patch storage](17-patch-storage.md) and [the results](evidence/patch-storage-results.txt). Not done: power-loss tests and `fsync` (deferred to P10.5, as P5.8 allows), real model, impulse-response and sample assets (Phase 8), and control-assignment mappings (Phase 7).
 
 - [x] **P5.1 — Storage contract:** assign stable patch identities, schema versions and display names. Use one Ingen graph/state bundle per patch, with positions, view state and control assignments stored as `urn:pedalpi:ns#` properties on blocks, ports and the graph.
 - [x] **P5.2 — Confirm bundle format:** verify actual host output and load behaviour. The inspected Ingen serializer supports `.ingen` directory bundles containing `main.ttl`, `manifest.ttl` and related state; do not assume the `.ingen` path always names one flat file.
@@ -225,12 +282,32 @@ See [Linux and Pi](19-linux-and-pi.md).
 
 **Purpose:** validate the distinctive granular module before broad catalogue expansion.
 
-- [ ] **P6.1 — Build dependency record:** select the Clouds-derived target, capture its Eurorack/Parasites revisions and required ARM build changes, and keep changes outside the unchanged reference snapshot.
-- [ ] **P6.2 — Binary/host check:** verify architecture, dynamic dependencies, URI, required features, ports and intended operating mode through Ingen.
-- [ ] **P6.3 — Editor integration:** generate the generic parameter page and project-owned overlay for key granular controls, ranges, units and freeze. A custom Clouds editor is optional after the generic page is usable.
+**Reconciled status — 14 October 2026:** P6.1–P6.3 have native build/library/load/control evidence for the six offered modes, plus guitar listening and a saved/reloaded granular patch. The user confirmed the first audible musical milestone. P6.4 is partial: the complete per-mode musical sweep remains. P6.5 is partial: saving/reloading Clouds is done, but no conventional effect is in this patch yet. P6.6 retains the combined-load/latency/thermal budget work; the 22-second restart test is functional continuity evidence. [Clouds](20-clouds.md), [native results](23-pi-bring-up.md).
+
+**Historical execution record - 14 October 2026 (PC only):** P6.1–P6.3 are done on the PC.
+
+- The build is recorded for x86-64 and arm64; the arm64 binary needs only the C and C++ runtimes.
+- All seven modes load in Ingen and process sound.
+- Pitch tracks whole semitones exactly, and freeze holds the buffer after the input stops.
+- Blend 0 is the dry signal, 9 dB down.
+- Values come back from a bundle; the captured audio does not (Clouds has no LV2 state).
+- In gain does nothing, and beat repeat ignores most of its controls, because the port never sets the firmware's beat-repeat parameters.
+- The overlay can now present individual controls. Clouds shows per-mode names, switches for freeze and reverse, and whole-semitone pitch.
+
+See [Clouds](20-clouds.md). Pi guitar listening, native mode/control checks, Clouds patch save/reload and interface-only restart are now recorded above. A full listening sweep (the rest of P6.4), the Clouds-plus-conventional-effect patch (P6.5), and combined-load budgets (P6.6) remain open.
+
+- [x] **P6.1 — Build dependency record:** select the Clouds-derived target, capture its Eurorack/Parasites revisions and required ARM build changes, and keep changes outside the unchanged reference snapshot.
+- [x] **P6.2 — Binary/host check:** verify architecture, dynamic dependencies, URI, required features, ports and intended operating mode through Ingen.
+- [x] **P6.3 — Editor integration:** generate the generic parameter page and project-owned overlay for key granular controls, ranges, units and freeze. A custom Clouds editor is optional after the generic page is usable.
 - [ ] **P6.4 — Musical validation:** exercise live input, wet/dry, pitch/grain controls, freeze and supported modes; check levels, unintended silence and state restoration.
+  - [x] Live guitar listening, granular control changes, saved-control restore and UI-restart continuity confirmed.
+  - [ ] Finish the per-mode wet/dry, pitch/grain/freeze, level and unintended-silence listening checklist.
 - [ ] **P6.5 — Milestone patch:** build input → Clouds plus one conventional effect → output, using series or validated parallel routing as musically appropriate. Save it through Phase 5 workflows and reload it on the instrument.
+  - [x] Clouds guitar patch is saved and reloaded on the instrument with two retained revisions.
+  - [ ] Add one conventional effect, validate its routing/sound, then save and reload the combined patch.
 - [ ] **P6.6 — Combined load:** record DSP, memory, xruns, latency and thermal behaviour while changing parameters and navigating. Document limitations before adding more expensive modules.
+  - [x] Short restart continuity run: 22 seconds, 8,251 blocks, no observed gaps/xruns/silent outputs.
+  - [ ] Measure sustained DSP/memory/latency/thermal behaviour while editing representative combined patches.
 
 **Deliverable:** supported Clouds catalogue entry, saved representative patch and resource/behaviour record.
 
@@ -240,7 +317,9 @@ See [Linux and Pi](19-linux-and-pi.md).
 
 **Purpose:** make the saved patch usable with owned knobs and selected switches.
 
-**Execution record - 14 October 2026 (PC only), P7.3:**
+**Reconciled status — 14 October 2026:** The control inventory is known (four 20-pulse push encoders, three momentary SPST footswitches). No controls are connected. GPIO/kernel-input transport and wiring are proposed; the working audio/UI restart test does not close physical-event, assignment or controller-recovery acceptance.
+
+**Historical execution record - 14 October 2026 (PC only), P7.3:**
 
 - The adapter reads the kernel's input devices without blocking: each encoder on its own relative axis, each push or footswitch on its own key.
 - It finds devices again after they go, and ignores the kernel's autorepeat.
@@ -250,7 +329,7 @@ See [Linux and Pi](19-linux-and-pi.md).
 
 It stays open until it runs on the real encoders and footswitches. See [Linux and Pi](19-linux-and-pi.md).
 
-**Execution record - 14 October 2026 (PC only):** the hardware is known: four 20-pulse push encoders and three momentary SPST footswitches. P7.2, P7.4 and P7.5 are complete. Keys stand in for the controls and produce the same events the GPIO adapter will. Encoders follow the parameter page in view or are pinned to a parameter. Stomps toggle, hold or bypass, or change patch for every patch. Assignments are saved with the patch as engine graph properties and orphans are never applied. A direct-GPIO wiring and the kernel drivers are proposed for P7.1. P7.6 is done apart from tap tempo, which needs a tempo the engine does not yet have. See [physical controls](18-physical-controls.md). Not done: the GPIO adapter and bench checks (P7.3), tap tempo, and the resilience checks on the Pi (P7.7).
+**Historical execution record - 14 October 2026 (PC only):** the hardware is known: four 20-pulse push encoders and three momentary SPST footswitches. P7.2, P7.4 and P7.5 are complete. Keys stand in for the controls and produce the same events the GPIO adapter will. Encoders follow the parameter page in view or are pinned to a parameter. Stomps toggle, hold or bypass, or change patch for every patch. Assignments are saved with the patch as engine graph properties and orphans are never applied. A direct-GPIO wiring and the kernel drivers are proposed for P7.1. P7.6 is done apart from tap tempo, which needs a tempo the engine does not yet have. See [physical controls](18-physical-controls.md). Still open: real GPIO/device bench checks (P7.3), tap tempo, and physical-controller resilience on the Pi (P7.7).
 
 - [ ] **P7.1 — Select transport:** choose USB MIDI, Linux input or an appropriate GPIO/ADC adapter from the hardware profile. Document wiring and device identification only after the actual components are known.
 - [x] **P7.2 — Simulated controls:** map desktop keys/wheel or explicit simulator controls to the same normalized events as the hardware adapter. Use this to develop assignment workflows without the Pi.
@@ -268,8 +347,26 @@ It stays open until it runs on the real encoders and footswitches. See [Linux an
 
 **Purpose:** establish what NAM can run without assuming unlimited capacity from Casette's feature list.
 
-- [ ] **P8.1 — Candidate versions:** pin a compatible current NeuralAudio-based LV2 plugin and dependencies for comparison with the downloaded Poly NAM fork. Record compiler/target optimizations and actual model implementation selected.
+**Reconciled status — 14 October 2026:** Both candidate plugins now build for arm64; only the selected NeuralAudio-based plugin is on the engine's path. Its native load, ports, three controls and bypass check passed without a model. P8.1 is complete; P8.2 is partial on Pi because the model/worker/state/error tests are still PC evidence. Model selection and the remaining evaluation tasks stay open. [NAM record](21-nam.md), [native load check](evidence/pi-update-results.txt).
+
+**Historical execution record - 14 October 2026 (PC only):** P8.1 and P8.2 are done on the PC. The current NeuralAudio-based plugin is selected over the Poly fork.
+
+| | Current | Poly fork |
+| --- | --- | --- |
+| A1 models | load and run | load and run |
+| A2 models | load and run | do not load |
+| Quality control | yes, and switching is safe | none |
+| Maximum block size | takes the host's | does not; allocates in `run()` when the block size changes |
+| Model saved with the patch | yes: Ingen copies the file into the bundle, and a fresh engine restores it | the same |
+
+Both take the model as a `patch:Set` through Ingen, either as Beebo's file URI or as an `atom:Path`. A failed load leaves the engine running, but makes the current plugin drop its model. The plugin reports its model only to a client that subscribes to broadcasts.
+
+See [NAM in Ingen](21-nam.md). The arm64 build and native plugin load are complete. Native model/worker/state acceptance (P8.2), selectors (P8.3) and cost evaluation (P8.4 onwards) remain.
+
+- [x] **P8.1 — Candidate versions:** pin a compatible current NeuralAudio-based LV2 plugin and dependencies for comparison with the downloaded Poly NAM fork. Record compiler/target optimizations and actual model implementation selected.
 - [ ] **P8.2 — Host integration:** verify model-path messages, worker/state handling, maximum block size, error recovery and model lifetime in Ingen. No loading, allocation or unsafe first-use quality initialization belongs on the real-time callback.
+  - [x] Full model/worker/state integration checks on PC; native plugin load/ports/controls without a model.
+  - [ ] Verify those model-path, worker, state, maximum-block, error and model-lifetime cases on Pi.
 - [ ] **P8.3 — NAM/cabinet pages:** add local selectors, active file names, calibrated input/output controls and supported quality settings. Confirm whether each capture is amp-only or already includes a cabinet.
 - [ ] **P8.4 — Single-model baseline:** benchmark one mono NAM, then NAM plus IR, at the capture's sample rate. Compare representative A1 categories and supported A2 quality levels at 64/128 frames where supported; record exact model/IR hashes and quality.
 - [ ] **P8.5 — Combined patches:** add conventional effects and Clouds incrementally, then evaluate additional models only if the complete chain retains headroom. Parallel cables alone do not imply multicore processing.
@@ -284,10 +381,25 @@ It stays open until it runs on the real encoders and footswitches. See [Linux an
 
 **Purpose:** expand coverage without advertising installed plugins as automatically supported.
 
-- [ ] **P9.1 — Inventory:** reconcile the agreed Mutable families and essential MODEP-compatible effects with the actual installed/source inventory. Classify every entry as supported, needs adaptation, unavailable or not tested.
-- [ ] **P9.2 — Reproducible builds:** build candidate families incrementally with captured revisions, architecture flags and dependency fixes. Separate platform changes from unrelated upstream modifications.
+**Reconciled status — 14 October 2026:** P9.2 now includes the arm64 build and actual Pi installation of all buildable selected components, including the repaired chorus build. The Pi exporter found 226 entries from the 249-entry inventory; 186 were available and 40 withheld before presentation overlays. The latest PC matrix records 91 supported-pc, 110 needs-adaptation, 25 not-tested and 23 unavailable. P9.3 remains partial for native per-entry acceptance: the six offered Clouds modes and NAM received the focused native checks, not the full inventory. [Latest matrix](evidence/compatibility-matrix.md), [deployment](evidence/pi-update-results.txt).
+
+**Historical execution record - 14 October 2026 (PC only):** P9.1–P9.3 are done on the PC, and P9.4 is under way.
+
+- **Inventory.** The selected inventory is every identity in Beebo's module map and Poly's plugin sources (207), plus the MDA and LV2 example plugins used for development (42). The catalogue now offers only what that list names.
+- **Builds.** Poly's remaining repositories, Beebo's third-party sources and Debian packages are built for x86-64, at recorded commits. Upstream defects are worked around on the command line.
+- **Records.** Every selected entry has a PC compatibility record. The current machine-readable record and matrix contain 91 supported-pc, 110 needs-adaptation, 25 not-tested and 23 unavailable. These remain PC classifications; installation and a catalogue entry do not establish native musical support for every plugin.
+- **Presentation.** The overlay gives every offered module a category and a readable name, adds a Control category, and withholds the file-based and faulty entries with a reason.
+
+See [the plugin catalogue](22-plugin-catalogue.md) and [the compatibility matrix](evidence/compatibility-matrix.md). Arm64 builds and Pi catalogue generation are complete. Native per-entry acceptance (P9.3), remaining presentation work (P9.4), P9.5 and P9.6 remain.
+
+- [x] **P9.1 — Inventory:** reconcile the agreed Mutable families and essential MODEP-compatible effects with the actual installed/source inventory. Classify every entry as supported, needs adaptation, unavailable or not tested.
+- [x] **P9.2 — Reproducible builds:** build candidate families incrementally with captured revisions, architecture flags and dependency fixes. Separate platform changes from unrelated upstream modifications.
 - [ ] **P9.3 — Compatibility records:** verify each URI's required features, audio/control/CV/event ports, save/restore, external assets and representative behaviour through Ingen. The canvas routes audio and control (CV); mark modules that need deferred MIDI routing clearly.
+  - [x] Every selected identity has a PC compatibility result; focused native checks cover six Clouds modes and NAM.
+  - [ ] Run and record required native behaviour/state/assets checks for each entry advertised as supported.
 - [ ] **P9.4 — Presentation overlays:** add project-owned categories, names, parameter grouping and suitable value editors. Use generic pages first; add custom editors only when they materially improve musical operation.
+  - [x] Categories/readable names for exported modules, generic editors and Clouds per-mode overlays are implemented.
+  - [ ] Finish required per-module parameter grouping/value-editor adaptations and physical-screen review.
 - [ ] **P9.5 — Complete screens:** finish browser filtering, patch management, assignment management, diagnostics/settings, shutdown navigation and repair states for missing plugins/assets.
 - [ ] **P9.6 — Usability and load:** exercise sparse/dense graphs, long names, touch keyboard and navigation on the physical screen. Record module costs and tested combination budgets rather than one universal module count.
 
@@ -299,15 +411,29 @@ It stays open until it runs on the real encoders and footswitches. See [Linux an
 
 **Purpose:** turn the tested application into an unattended instrument.
 
-**Execution record - 14 October 2026 (PC only), P10.1:** JACK, the engine, the audio routing and the interface are separate systemd services under a `pedalpi` account, grouped by `pedalpi.target`. With JACK's dummy driver under WSL2, killing the interface during playback left all 750 measured periods at the expected level and restarted only the interface. An engine restart left the interface running, reconnected and rewired. It stays open until the device permissions and real-time limits are checked on the Pi. See [Linux and Pi](19-linux-and-pi.md).
+**Reconciled status — 14 October 2026:** P10.1 is complete for the configured service boundaries and real device permissions. The target is now enabled, with multi-user boot and desktop/MODEP/automatic-console competitors masked. One software reboot restored the selected Clouds guitar revision and all four Tascam connections; the user confirmed direct display and working touch. A deliberate JACK crash recovered JACK and Ingen and restored Clouds while the UI kept its PID. The earlier UI-only restart during guitar playing preserved audio over 8,251 blocks. Automatic UI-crash recovery was checked under emulation; native UI crash, physical late hardware, offline/five cold boots and the other cases below remain open. [Direct boot](24-instrument-boot.md), [UI continuity evidence](evidence/pi-persistence-results.txt).
 
-- [ ] **P10.1 — Service boundaries:** configure JACK, Ingen and UI startup separately with correct user/device permissions and a deliberate restart policy. Normal UI failure must not restart Ingen or JACK.
+**Historical execution record - 14 October 2026 (PC only), P10.1:** JACK, the engine, the audio routing and the interface are separate systemd services under a `pedalpi` account, grouped by `pedalpi.target`. With JACK's dummy driver under WSL2, killing the interface during playback left all 750 measured periods at the expected level and restarted only the interface. An engine restart left the interface running, reconnected and rewired. It is now closed by the native device/real-time service run and UI-only restart recorded above; broader native crash recovery remains P10.7. See [Linux and Pi](19-linux-and-pi.md).
+
+- [x] **P10.1 — Service boundaries:** configure JACK, Ingen and UI startup separately with correct user/device permissions and a deliberate restart policy. Normal UI failure must not restart Ingen or JACK.
 - [ ] **P10.2 — Readiness:** gate startup on usable devices, responsive engine, successful patch restoration and explicit routing. Provide waiting/error states rather than relying on fixed sleeps or a splash screen.
+  - [x] Native reboot: JACK readiness probe, socket availability, UI connection, saved patch restoration and four external routes verified. No desktop/login required.
+  - [ ] Complete device/patch readiness and native error-state acceptance, including missing/late physical hardware.
 - [ ] **P10.3 — Offline operation:** ensure startup and everyday playing/editing do not wait for network or model downloads. Cache the tested catalogue/assets locally.
+  - [x] Plugins, catalogue and the saved Clouds patch are local and used during the playing session.
+  - [ ] Verify unattended startup and everyday operations with network unavailable.
 - [ ] **P10.4 — Startup patch:** select and restore the intended saved revision, handle missing plugins/assets and show a repairable result without silently substituting a different musical patch.
+  - [x] Startup selection/restore code has PC tests; a real saved Clouds revision exists on Pi.
+  - [x] Select Clouds guitar and verify native boot restoration of its saved revision, identity, controls, layout and cables.
+  - [ ] Verify native missing-asset/plugin startup handling; boot restoration currently depends on the UI.
 - [ ] **P10.5 — Shutdown/storage:** finish saves before graceful shutdown, document safe recovery and decide whether an overlay/read-only root is needed after measuring its implications for persistent user storage.
 - [ ] **P10.6 — Cold-boot measurements:** perform the proposed five cold boots and measure power-on-to-audio and power-on-to-responsive-editor separately. Optimize observed delays; set numeric targets from the measured baseline.
+  - [x] Record one software reboot's service timings: UI starts at 9.40 s, Clouds load begins at 10.33 s, all external routes at 11.92 s since kernel startup. Physical display/touch confirmed.
+  - [ ] Five physical cold boots and separate power-on/audio/editor measurements, including firmware time.
 - [ ] **P10.7 — Failure recovery:** exercise UI crash, late audio-device availability, engine startup failure and controller reconnect. Distinguish UI recovery with continuous audio from engine recovery where an audio interruption is expected and must be reported.
+  - [x] Native ordinary UI restart preserves guitar audio and graph; automatic UI crash recovery has emulated evidence.
+  - [x] Native deliberate JACK crash: JACK/Ingen restart automatically, UI stays running, saved Clouds and four audio routes return.
+  - [ ] Verify native UI crash, late audio hardware, engine-start failure and controller-reconnect cases.
 
 **Deliverable:** verified service configuration, startup patch behaviour, shutdown/recovery instructions and measured boot results.
 
@@ -317,11 +443,19 @@ It stays open until it runs on the real encoders and footswitches. See [Linux an
 
 **Purpose:** make the result reproducible and state precisely what is supported.
 
+**Reconciled status — 14 October 2026:** The development package has been built/tested for arm64, installed on the actual Pi and retained with rollback instructions. The requirements table below now links the current native evidence. This is partial P11.1/P11.3/P11.5/P11.7 evidence; release provenance/source completeness, full lifecycle/endurance, remaining requirements and the complete user guide are still open.
+
 - [ ] **P11.1 — Requirements matrix:** map R01–R13 to named test results on the actual hardware. Treat NAM and extra model counts as separately recorded candidate capabilities, not implied requirements.
+  - [x] Current native evidence and gaps are mapped to R01–R13 in this plan.
+  - [ ] Complete the release acceptance matrix with the remaining named hardware test results.
 - [ ] **P11.2 — End-to-end sessions:** test representative Clouds, conventional and supported NAM patches under realistic screen/control activity; record DSP/per-thread CPU, xruns, memory, latency and thermal stability.
 - [ ] **P11.3 — Lifecycle regression:** verify normal boot/shutdown, UI restart, engine failure recovery, saved revisions, interrupted writes, asset relocation where supported, missing plugins and controller reconnect.
+  - [x] Native saved revisions, reload and UI-only restart have recorded results.
+  - [ ] Complete boot/shutdown, native engine failure, interrupted-write, relocation and controller cases.
 - [ ] **P11.4 — Provenance and licenses:** record all upstream and project commits, dependency pins, compiler options, plugin URIs, fonts/assets, license/version grants, exceptions and applicable notices. Inventory the selected modules and their complete dependencies; preserve Ingen's AGPL-3.0-or-later terms. Establish permissions for every distributed model/IR/asset. Ensure the new interface contains no copied Beebo code or assets. Follow [third-party notices](../THIRD_PARTY_NOTICES.md).
 - [ ] **P11.5 — Installation package:** prepare repeatable build/install steps, configuration templates, supported plugin/asset inventory and rollback instructions. Include required license/copyright notices and the corresponding source and build/install material required by the shipped components' terms, with an exact-version source retrieval record. Validate them on spare storage or a recoverable installation, not only the development tree.
+  - [x] Reproducible arm64 development package, actual Pi install and prefix rollback route recorded.
+  - [ ] Finish the release component/source/license inventory and full recovery-installation acceptance.
 - [ ] **P11.6 — User operation guide:** document patching, parameters, assignments, models/IRs, save/startup patch selection, shutdown, diagnostics and known limitations with actual screenshots.
 - [ ] **P11.7 — Release record:** report passed, failed, not-tested and explicitly accepted limitations. Do not mark the full instrument complete while agreed requirements remain unresolved.
 
@@ -337,24 +471,26 @@ Each phase record includes task IDs, date, source/build versions, hardware/audio
 
 ## Requirements coverage
 
-| Requirement | Primary phases | Acceptance focus |
+| Requirement | Primary phases | Current native evidence and remaining acceptance |
 | --- | --- | --- |
-| R01 automatic start | 10–11 | Unattended power-on reaches usable patch |
-| R02 restore saved patch | 5, 7, 10–11 | Routing, values, state/assets and assignments recover |
-| R03 modules/cables | 2, 4, 9 | Real graph and touch editor stay consistent |
-| R04 usable parameters | 2, 4, 6, 9 | Correct value types and finger operation |
-| R05 guitar processing | 0, 3–4, 11 | Measured correct stable input/output |
-| R06 Mutable processing | 6, 9, 11 | Clouds first, then recorded family results |
-| R07 MODEP-compatible LV2 | 3, 9, 11 | Per-plugin binary/host/editor/state verification |
-| R08 knob assignments | 7, 11 | Correct mappings, pickup/ranges and persistence |
-| R09 switch assignments | 7, 11 | Actions, timing, debounce and persistence |
-| R10 offline operation | 1–2, 5, 10–11 | Local simulator and installed instrument do not require internet |
-| R11 patch management | 5, 9, 11 | Save/load/rename/delete/startup selection |
-| R12 new native LVGL UI | 1–2, 4, 9, 11 | Shared project-owned UI at 800 × 480; Pi runs without desktop |
-| R13 independent audio | 3–4, 10–11 | UI restart preserves audio and resynchronizes graph |
+| R01 automatic start | 10–11 | Basic direct boot passed: target enabled, desktop/MODEP masked, saved Clouds/routing restored, physical display/touch confirmed ([record](24-instrument-boot.md)); full P10.2/P10.4/P10.6 acceptance remains |
+| R02 restore saved patch | 5, 7, 10–11 | Clouds graph/controls and two revisions restore on Pi ([persistence results](evidence/pi-persistence-results.txt)); file assets, physical assignments and boot restore remain |
+| R03 modules/cables | 2, 4, 9 | Touch patching and four stereo Clouds cables confirmed ([Pi record](23-pi-bring-up.md)); full add/remove/invalid/merge physical workflow remains P4.7 |
+| R04 usable parameters | 2, 4, 6, 9 | User changed Clouds controls and eleven values restored ([persistence](evidence/pi-persistence-results.txt)); full per-mode/editor finger sweep remains P6.4/P9.6 |
+| R05 guitar processing | 0, 3–4, 11 | Real guitar/Tascam/Clouds path heard; 22-second continuity run passed ([results](evidence/pi-persistence-results.txt)); gain/latency/endurance budgets remain |
+| R06 Mutable processing | 6, 9, 11 | Six offered Clouds modes pass native load/control checks; granular is heard ([deployment](evidence/pi-update-results.txt)); wider family/mode behaviour remains |
+| R07 MODEP-compatible LV2 | 3, 9, 11 | 226 inventory entries exported on Pi ([deployment](evidence/pi-update-results.txt)); native per-entry functional acceptance remains P9.3 |
+| R08 knob assignments | 7, 11 | PC simulation implemented; no physical encoders connected or accepted |
+| R09 switch assignments | 7, 11 | PC simulation implemented; no physical stomps connected or accepted |
+| R10 offline operation | 1–2, 5, 10–11 | Local binaries/catalogue/patch used; disconnected-network boot and operation not yet tested (P10.3) |
+| R11 patch management | 5, 9, 11 | Actual Pi save/reload/revisions pass ([results](evidence/pi-persistence-results.txt)); complete physical Save/Save-as/rename/delete/startup interaction sweep remains |
+| R12 new native LVGL UI | 1–2, 4, 9, 11 | Project-owned UI runs on actual 800 x 480 DRM/touch display ([bring-up](23-pi-bring-up.md)); dense/long-name/full navigation touch acceptance remains P9.6 |
+| R13 independent audio | 3–4, 10–11 | Passed for native UI-only restart: same JACK/Ingen PIDs, unchanged saved graph, no measured or heard interruption ([results](evidence/pi-persistence-results.txt)); wider failures remain P10.7 |
 
-## Decisions that remain open
+## Established baseline and remaining decisions
 
-The final OS/build baseline, audio interface, controller transport/count, visual theme, LVGL/backend revision, release plugin inventory, NAM runtime/quality policy and numeric boot/latency/resource targets remain open. Resolve routine build choices from compatibility evidence; ask for user preferences when they change musical behaviour, hardware selection or the intended scope. Record the decision in [the audit log](07-source-audit-and-decisions.md) before relying on it across phases.
+**Established for current development:** Debian 12 bookworm arm64 on the existing Pi 5; the compatible isolated dependency build; LVGL/C++20 and the DRM/evdev backend; the Tascam US-100 at 48 kHz / 128 x 3; four owned push encoders and three momentary SPST stomps; and the selected NeuralAudio-based NAM candidate. The desktop editor is accepted and the first audible Clouds milestone is achieved. These are no longer implementation starting questions. See [the decision log](07-source-audit-and-decisions.md).
 
-The immediate implementation starting point, when requested, is **Phase 1 on the PC**. Phase 0 can begin when Pi access is available; Phase 3 should follow early enough to settle engine assumptions before catalogue expansion.
+**Still to decide or verify:** final audio/power hardware and numeric latency/boot/resource targets; actual encoder/stomp transport and wiring; the conventional effect in the combined milestone patch; release plugin scope and adaptation work; NAM models, IRs, quality policy and measured budgets; dedicated boot/readiness/shutdown and storage durability; final operation/release acceptance.
+
+The active sequence is the **remaining Pi integration checks and saved combined Clouds patch**, followed by physical-control acceptance. Phase 1 debugger evidence is an independent outstanding item. Do not restart Phase 1 or treat completed Pi work as an unplanned side task. Future implementation work must update the owning numbered task, platform/evidence scope and remaining checks in this plan as well as its detailed record.

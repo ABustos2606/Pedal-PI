@@ -2,7 +2,7 @@
 
 Modular effects instrument for Raspberry Pi 5, with a new touchscreen interface inspired by Poly Effects' Beebo.
 
-**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine, and can now drive a real Ingen engine running under WSL through the project's own adapter, offering the plugins installed there from an exported catalogue (58 modules, the Mutable-derived ones included). Patches are saved to disk with their plugin state and revisions, and the interface shows and survives a lost engine. Four encoders and three footswitches work in the simulator through keys, with per-patch assignments; the GPIO wiring is proposed. The interface builds for Linux, and an arm64 package with installer and services is built and tested on the PC under emulation. Running on the Pi itself and audio hardware remain untested.
+**Status:** The engine, touchscreen interface and Tascam audio path run on the Pi. Today's arm64 package includes Clouds, NAM and the full buildable selected catalogue; the catalogue generated on the Pi holds 226 inventory entries. Six offered Clouds modes pass native load/control checks, and granular Clouds processes stereo test audio. The user has confirmed guitar listening through Clouds on the Pi: the first musical milestone. The Clouds patch saves and reloads on the Pi, and an interface-only restart during guitar playing caused no heard interruption or measured audio gap. NAM loads on the Pi but its model selector remains pending. The Windows editor, patch storage and simulated physical controls remain available; GPIO controls are not wired yet. See [Pi bring-up and update](docs/23-pi-bring-up.md).
 **Date:** 12 October 2026 â€” revised 13 October 2026 (LVGL direction, Casette reference, and NAM evaluation) and 14 October 2026 (patch storage, physical controls)  
 **Project folder:** `C:\Pedal PI`
 
@@ -51,6 +51,8 @@ Keys stand in for the physical controls: **Q/A, W/S, E/D, R/F** turn encoders 1â
 
 Inside Debian under WSL2, as root: `bash tools/pi/build-arm64.sh` builds the engine, plugins and interface for arm64 under emulation, tests them and leaves a package in `build/pi/`. On the Pi, unpack it and run `sudo ./install.sh`. See [Linux build, Pi packaging and services](docs/19-linux-and-pi.md).
 
+**Direct instrument boot is now verified on the Pi.** It powers up into Pedal PI and the saved Clouds guitar patch; LightDM, MODEP and automatic console login are disabled/masked. The user confirmed the screen and touch after reboot. For a new package use `sudo ./install.sh --instrument`; for an installed Pi use `sudo /opt/pedalpi/bin/pedalpi-instrument-boot`. [Setup, results and restoration](docs/24-instrument-boot.md).
+
 ## Documentation
 
 | File | Contents |
@@ -74,6 +76,10 @@ Inside Debian under WSL2, as root: `bash tools/pi/build-arm64.sh` builds the eng
 | [Patch storage and connection states](docs/17-patch-storage.md) | Patches on disk with plugin state: what the engine does on save and load, revisions and recovery, property schema, assets, the patch manager and the connection banner |
 | [Physical controls](docs/18-physical-controls.md) | The four encoders and three momentary footswitches: behaviour, mapping rules, assignments, simulator keys and a proposed GPIO wiring |
 | [Linux build, Pi packaging and services](docs/19-linux-and-pi.md) | The interface on Linux (DRM/KMS, framebuffer, SDL), the arm64 build route under emulation, the package, installer and rollback, and the services that keep audio playing while the interface restarts |
+| [Clouds](docs/20-clouds.md) | Clouds' build record for x86-64 and arm64, its seven modes checked in Ingen with test signals, and the per-control overlay |
+| [NAM in Ingen](docs/21-nam.md) | The two NAM plugins compared in the engine: model loading, worker and state, errors and the selected candidate |
+| [Plugin catalogue](docs/22-plugin-catalogue.md) | The selected inventory, how the rest of Poly's and Beebo's plugins are built, and a compatibility record for every entry |
+| [Pi bring-up](docs/23-pi-bring-up.md) | The Pi as found, and the first sound through the Pedal PI engine and interface on it |
 
 ## Retrieve the project and reference sources
 
@@ -113,7 +119,7 @@ Initialize the top-level references first, then the three repositories with decl
 - NAM is a candidate for evaluation on the Pi 5, 2 GB. An optimized runtime is promising, but CPU headroom, memory use, simultaneous model count, and operation alongside Clouds remain unverified. The older downloaded Poly NAM fork and current NeuralAudio-based LV2 implementations need comparison.
 - Beebo's interface repository (`digit_ui`) is **reference material only**. No code, QML, icons, fonts, or other assets from it will be copied into the new interface.
 
-Original application code and CMake build files now exist under `src/` and `config/`. The simulator is a UI development foundation; it does not process audio. The Pi is packed following the user's move, so Phase 0 inspection and all hardware validation are deferred. Upstream reference repositories remain unchanged.
+Original application code and CMake build files now exist under `src/` and `config/`. The simulator is a UI development foundation; it does not process audio. On 14 October 2026 the Pi was profiled and first played guitar through the Pedal PI engine and interface ([Pi bring-up](docs/23-pi-bring-up.md)); hardware measurements wait for an adequate power supply. Upstream reference repositories remain unchanged.
 
 ## Next step after documentation review
 

@@ -6,6 +6,7 @@
 //
 //   LV2_PATH=/usr/lib/lv2 pedal_catalogue_export -o catalogue.json
 //   pedal_catalogue_export --exclude eg-scope --sample-rate 48000 > catalogue.json
+//   pedal_catalogue_export --only inventory.txt -o catalogue.json
 #include "catalogue/catalogue.hpp"
 #include <lilv/lilv.h>
 #include <algorithm>
@@ -15,6 +16,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <set>
 #include <sys/utsname.h>
 
 using namespace pedal;
@@ -217,13 +219,29 @@ Exported export_plugin(const Terms& terms, const LilvPlugin* plugin, double rate
 int main(int argc, char** argv) {
     std::string output;
     std::vector<std::string> excluded;
+    // With --only, just the plugins a list names: one URI per line, and a #
+    // at the start or after a space begins a comment. Installed is not selected.
+    std::set<std::string> only;
+    bool restricted = false;
     double rate = 48000;
     for (int i = 1; i < argc; ++i) {
         const std::string option = argv[i];
         if (option == "-o" && i + 1 < argc) output = argv[++i];
         else if (option == "--exclude" && i + 1 < argc) excluded.push_back(argv[++i]);
         else if (option == "--sample-rate" && i + 1 < argc) rate = std::atof(argv[++i]);
-        else { std::cerr << "usage: pedal_catalogue_export [-o file] [--exclude uri-substring]... [--sample-rate hz]\n"; return 2; }
+        else if (option == "--only" && i + 1 < argc) {
+            std::ifstream list(argv[++i]);
+            if (!list) { std::cerr << "cannot read " << argv[i] << '\n'; return 2; }
+            restricted = true;
+            for (std::string line; std::getline(list, line);) {
+                // A comment starts a line or follows a space: addresses hold '#' too.
+                for (std::size_t at = 0; (at = line.find('#', at)) != std::string::npos; ++at)
+                    if (at == 0 || line[at - 1] == ' ' || line[at - 1] == '\t') { line.erase(at); break; }
+                line.erase(0, line.find_first_not_of(" \t\r"));
+                line.erase(line.find_last_not_of(" \t\r") + 1);
+                if (!line.empty()) only.insert(line);
+            }
+        } else { std::cerr << "usage: pedal_catalogue_export [-o file] [--exclude uri-substring]... [--sample-rate hz] [--only uri-list]\n"; return 2; }
     }
     if (!(rate >= 8000 && rate <= 768000)) { std::cerr << "sample rate out of range\n"; return 2; }
     std::unique_ptr<LilvWorld, void (*)(LilvWorld*)> world(lilv_world_new(), lilv_world_free);
@@ -238,6 +256,7 @@ int main(int argc, char** argv) {
         // A file: address names one machine's path (Ingen's own graph
         // templates are such); it would mean nothing on another.
         const bool local = uri.starts_with("file:");
+        if (restricted && !only.contains(uri)) { ++skipped; continue; }
         if (local || std::any_of(excluded.begin(), excluded.end(), [&](const std::string& part) { return uri.find(part) != std::string::npos; })) {
             ++skipped;
             std::cerr << "skipped " << uri << (local ? " (machine-local address)" : " (excluded)") << '\n';

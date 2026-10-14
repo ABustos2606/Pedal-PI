@@ -7,7 +7,7 @@
 - installation and a restart-only-the-interface loop (P4.8);
 - separate services with a deliberate restart policy (P10.1).
 
-**Verified with:** the native Linux build and its tests under WSL2; the arm64 build and its tests under emulation; the installed services running with JACK's dummy driver; and evdev events from virtual devices. **Not covered:** anything on the Pi itself — its screen, touch, GPIO, audio interface and timing. Those wait for Phase 0.
+**Verified with:** the native Linux build and its tests under WSL2; the arm64 build and its tests under emulation; the installed services running with JACK's dummy driver; and evdev events from virtual devices. **Original PC record excludes:** the Pi itself — its screen, touch, GPIO, audio interface and timing. Their first run on the Pi and the later guitar/UI restart check are recorded in [Pi bring-up](23-pi-bring-up.md).
 
 ## What was verified
 
@@ -63,9 +63,9 @@ Recorded output: [evidence/linux-and-pi-results.txt](evidence/linux-and-pi-resul
 
 `build/pi/pedalpi-<arch>-<date>-<version>.tar.gz` holds:
 
-- the prefix (engine, plugins, interface, catalogue exported from this build's plugins);
+- the prefix (patched engine, Mutable plugins including Clouds, the selected current NAM plugin, the full selected plugin inventory, interface and catalogue);
 - the configuration in `config/pi`;
-- `install.sh` and `check-services.sh`;
+- `install.sh`, `instrument-boot.sh`, `export-catalogue.sh` and `check-services.sh`;
 - the licenses.
 
 On the Pi:
@@ -73,6 +73,7 @@ On the Pi:
 ```bash
 tar xzf pedalpi-arm64-….tar.gz && cd pedalpi
 sudo ./install.sh                 # keeps the previous installation for --rollback
+sudo ./install.sh --instrument    # direct boot; saves and replaces desktop/MODEP boot policy
 sudo systemctl start pedalpi.target
 sudo bash check-services.sh       # optional: the same service checks, on JACK's dummy driver
 sudo systemctl restart pedalpi-ui # after copying a new interface: audio keeps playing
@@ -82,20 +83,23 @@ The installer:
 
 - checks the package's architecture against the machine's;
 - installs the libraries the programs were built against;
+- installs the distribution plugins from the selected inventory and regenerates the catalogue on the Pi with the same plugin paths the engine uses;
 - creates a `pedalpi` system account in the audio, video, input and GPIO groups that exist;
 - moves any previous installation to `/opt/pedalpi.previous`;
 - installs the settings `/etc/pedalpi/pedalpi.conf` and `controls.conf` once only, never overwriting them;
 - installs the units.
 
-It **never** edits `/boot/firmware/config.txt` and never stops MODEP, PipeWire or another JACK; it names any that is running, since they would compete for the audio interface (P0.6). `--remove` takes the services away and keeps patches and settings; `--rollback` restores the previous installation.
+It **never** edits `/boot/firmware/config.txt`. Ordinary installation reports competing audio services. Explicit `--instrument` invokes the boot utility to disable/mask LightDM, MODEP and its JACK and enable direct instrument startup, with the previous policy saved for restoration. `--remove` restores that saved policy if present, takes the services away and keeps patches and settings; `--rollback` restores the previous program installation. See [direct boot and recovery](24-instrument-boot.md).
 
 **Development loop.** Build on the PC (`build-arm64.sh --skip-engine` after the first time), copy the package over SSH, install, then restart only the interface. A Windows interface can also drive the Pi's engine over the network only if the engine is started with a TCP port. The installed service deliberately does not open one; a verified, firewalled transport is a separate decision.
+
+`--skip-engine` reuses all installed engine and plugin binaries; omit it when plugin sources or engine patches change. A full build now runs `02-plugins.sh`, `12-nam.sh` and `14-more-plugins.sh`, and refuses a failed catalogue component. The installed `sudo /opt/pedalpi/bin/pedalpi-export-catalogue` can refresh the catalogue after plugin changes; restart `pedalpi-ui` to read it.
 
 ## Services (P10.1)
 
 | Unit | Runs | Restart policy |
 | --- | --- | --- |
-| `pedalpi-jack` | `jackd` with the driver and options of `pedalpi.conf` | On failure. A JACK restart restarts the engine (its client). |
+| `pedalpi-jack` | `jackd` with the driver and options of `pedalpi.conf` | On failure, without exhausting a start limit. Wants the engine, so automatic JACK recovery also starts its client again. |
 | `pedalpi-engine` | Ingen on `/run/pedalpi/ingen.sock`, no TCP | On failure. Bound to JACK; independent of the interface. |
 | `pedalpi-route` | Keeps the engine's IN and OUT wired to the ports named in `pedalpi.conf` | Always. It checks every two seconds, so new ports after any restart are wired again. |
 | `pedalpi-ui` | The interface on DRM/KMS with the touch screen and controls | Always, after one second. It only *wants* the engine: either can restart without the other, and it reconnects by itself. |
@@ -103,7 +107,20 @@ It **never** edits `/boot/firmware/config.txt` and never stops MODEP, PipeWire o
 
 **Accounts and limits.** All run as `pedalpi`, with real-time limits granted to JACK and the engine (`LimitRTPRIO`, `LimitMEMLOCK`). The CPU governor, IRQ priorities and the rest of P10's readiness and boot-time work are not done.
 
+**Direct boot verified on the Pi, 14 October 2026.** The target is now enabled with `multi-user.target` as default and desktop/MODEP/automatic-console competitors masked. A software reboot restored Clouds and all four Tascam connections; the user confirmed the display and touch. Deliberate JACK failure recovered both audio services and the saved patch while the UI stayed running. Repeated cold boots, physical offline startup and the rest of Phase 10 remain open. [Boot record and recovery](24-instrument-boot.md).
+
 ## The interface on Linux (P1.3, P4.5)
+
+**Real guitar/UI restart verified on the Pi, 14 October 2026:** a saved and reloaded Clouds patch kept playing while `systemctl restart pedalpi-ui` replaced only the interface process. JACK and Ingen kept their PIDs, the interface reconnected to the same saved graph, and the user heard no interruption. A passive 22-second monitor recorded 8,251 continuous blocks without xruns or silent output blocks. See [Pi persistence evidence](23-pi-bring-up.md#patch-saveload-and-interface-restart-with-guitar).
+
+For a deliberate repeat with a player sustaining guitar, the installed native tools are:
+
+```bash
+sudo -u pedalpi /opt/pedalpi/libexec/pedalpi/pedal_pi_patch_live save-load
+sudo bash /opt/pedalpi/libexec/pedalpi/check-ui-restart.sh
+```
+
+The first command saves a new copy of the current patch and reloads it, leaving it playing. For frozen Clouds it retains revision 1 and saves a Freeze-off revision 2 for live input; the captured buffer is not persistent. The second monitors the existing audio ports, restarts only the interface, and compares the graph with the recorded baseline. It stores aggregate measurements, not audio. The checker is built from `tests/pi_patch_live.cpp` and uses the application's real adapter and patch store.
 
 `pedal_pi` takes `--display drm|fbdev|sdl|offscreen`. Without it: SDL when a desktop is present, else DRM, else the framebuffer.
 
@@ -119,9 +136,9 @@ It **never** edits `/boot/firmware/config.txt` and never stops MODEP, PipeWire o
 
 ## Limits and open points
 
-- **Nothing here ran on a Pi.** DRM/KMS was compiled but not exercised (WSL has no DRM device), and no real Pi screen, touch controller or GPIO was involved.
+- **On the Pi.** The package, DRM/KMS output and touch were first run on the Pi on 14 October 2026 ([Pi bring-up](23-pi-bring-up.md)). GPIO controls are still untried.
 - **Bench checks.** The overlays' names and steps per detent, and whether the panel offers 800 × 480, are to check on the bench. If it does not, a `video=` kernel argument may be needed.
-- **`pedalpi.conf` placeholders.** `JACK_DRIVER_OPTIONS=-d hw:USB -r 48000 -p 128 -n 3` is a placeholder until the audio interface is chosen and measured (P0.3).
-- **The startup patch.** It is loaded by the interface, so audio at boot waits for the interface (P10.2, P10.4).
+- **`pedalpi.conf` placeholders.** `JACK_DRIVER_OPTIONS=-d hw:USB -r 48000 -p 128 -n 3` is a placeholder until the audio interface is chosen and measured (P0.3). The Pi currently uses `-d hw:CODEC` for the Tascam US-100.
+- **The startup patch.** Clouds guitar is selected and restored on boot by the interface, so audio still waits for the interface. Missing-plugin/asset startup validation on Pi remains P10.4.
 - **Power loss.** An abrupt power loss during a save is still untested (P5.5/P10.5).
 - **TCP after a quick restart.** An engine restarted with a TCP port immediately after a kill can fail to open it ([patch storage](17-patch-storage.md)). The installed engine has no TCP port.

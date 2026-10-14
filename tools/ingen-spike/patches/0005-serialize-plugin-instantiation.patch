@@ -1,0 +1,49 @@
+diff --git a/src/server/LV2Block.cpp b/src/server/LV2Block.cpp
+index ad7b28ae..747f40c0 100644
+--- a/src/server/LV2Block.cpp
++++ b/src/server/LV2Block.cpp
+@@ -97,8 +97,11 @@ LV2Block::make_instance(URIs&      uris,
+ {
+ 	const Engine&     engine = parent_graph()->engine();
+ 	const LilvPlugin* lplug  = _lv2_plugin->lilv_plugin();
+-	LilvInstance*     inst   = lilv_plugin_instantiate(
+-		lplug, rate, _features->array());
++	LilvInstance*     inst   = nullptr;
++	{
++		const std::lock_guard<std::mutex> lock{instance_mutex()};
++		inst = lilv_plugin_instantiate(lplug, rate, _features->array());
++	}
+ 
+ 	if (!inst) {
+ 		engine.log().error("Failed to instantiate <%1%>\n",
+diff --git a/src/server/LV2Block.hpp b/src/server/LV2Block.hpp
+index 78b5ffac..9fd171bc 100644
+--- a/src/server/LV2Block.hpp
++++ b/src/server/LV2Block.hpp
+@@ -106,10 +106,25 @@ public:
+ 	static StatePtr load_state(World& world, const std::filesystem::path& path);
+ 
+ protected:
++	/** Held while creating or freeing a plugin instance.
++
++	    Lilv opens and closes plugin libraries through a cache that is not
++	    thread-safe. Blocks are created in the pre-processor and freed with
++	    their events in the post-processor, so deleting the last block of a
++	    library while another block of it is being created could close the
++	    library under the new instance, and crash the engine. */
++	static std::mutex& instance_mutex() {
++		static std::mutex mutex;
++		return mutex;
++	}
++
+ 	struct Instance : public raul::Noncopyable {
+ 		explicit Instance(LilvInstance* i) noexcept : instance(i) {}
+ 
+-		~Instance() { lilv_instance_free(instance); }
++		~Instance() {
++			const std::lock_guard<std::mutex> lock{instance_mutex()};
++			lilv_instance_free(instance);
++		}
+ 
+ 		LilvInstance* const instance;
+ 	};

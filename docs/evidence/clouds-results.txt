@@ -1,0 +1,99 @@
+==== build record
+lenticular_lv2 141fdc89e250987bae421664132ddaedae735107
+eurorack 99432f2bf443219b3eb77e65e1a18583faad422e (https://github.com/AndrewBelt/eurorack.git)
+eurorack/stmlib d9b189670be3d5c1e41ee143b6ee92171cfd6de3 (https://github.com/pichenettes/stmlib.git)
+parasites/stmlib 8ab2aaee77cbacb47b646d46d22ee5d358effe2d (https://github.com/mqtthiqs/stmlib.git)
+
+==== binaries
+---- x86-64 (this engine)
+Class:                             ELF64
+c32f535cfb585d07
+needs libstdc++.so.6
+needs libm.so.6
+needs libc.so.6
+Machine:                           Advanced Micro Devices X86-64
+other undefined: _ITM_deregisterTMCloneTable
+other undefined: _ITM_registerTMCloneTable
+---- arm64 root
+Class:                             ELF64
+a92a990e5f519fe9
+needs libstdc++.so.6
+needs libm.so.6
+needs libc.so.6
+Machine:                           AArch64
+other undefined: _ITM_deregisterTMCloneTable
+other undefined: _ITM_registerTMCloneTable
+arm64 ldd: 	linux-vdso.so.1 (0x000079ebf1a35000)
+arm64 ldd: 	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x000079ebef6c0000)
+arm64 ldd: 	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x000079ebef610000)
+arm64 ldd: 	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x000079ebef460000)
+arm64 ldd: 	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x000079ebef420000)
+arm64 ldd: 	/lib/ld-linux-aarch64.so.1 (0x000079ebf0130000)
+x86-64 ldd: 	linux-vdso.so.1 (0x000072ee6f891000)
+x86-64 ldd: 	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000072ee6f400000)
+x86-64 ldd: 	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000072ee6f753000)
+x86-64 ldd: 	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000072ee6f20c000)
+x86-64 ldd: 	/lib64/ld-linux-x86-64.so.2 (0x000072ee6f893000)
+x86-64 ldd: 	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000072ee6f726000)
+==== metadata as the host reads it
+granular      audio 4, CV 12, control 13; required: http://lv2plug.in/ns/ext/urid#map; optional: http://lv2plug.in/ns/lv2core#hardRTCapable
+stretch       audio 4, CV 12, control 13; required: http://lv2plug.in/ns/ext/urid#map; optional: http://lv2plug.in/ns/lv2core#hardRTCapable
+looping_delay audio 4, CV 12, control 13; required: http://lv2plug.in/ns/ext/urid#map; optional: http://lv2plug.in/ns/lv2core#hardRTCapable
+spectral      audio 4, CV 12, control 13; required: http://lv2plug.in/ns/ext/urid#map; optional: http://lv2plug.in/ns/lv2core#hardRTCapable
+oliverb       audio 4, CV 12, control 13; required: http://lv2plug.in/ns/ext/urid#map; optional: http://lv2plug.in/ns/lv2core#hardRTCapable
+resonestor    audio 4, CV 12, control 13; required: http://lv2plug.in/ns/ext/urid#map; optional: http://lv2plug.in/ns/lv2core#hardRTCapable
+beat_repeat   audio 4, CV 12, control 13; required: http://lv2plug.in/ns/ext/urid#map; optional: http://lv2plug.in/ns/lv2core#hardRTCapable
+==== in the engine
+==== engine at 48000 Hz, 128 frames
+PASS  the measurement itself: direct cable 0.1768 RMS
+==== granular
+PASS  granular loads with the plugin's defaults
+PASS  switched on, it is heard -- 0.0566 RMS left, 0.0336 right
+PASS  its own switch at 0 silences it -- 0.000000 RMS (it does not pass the dry signal)
+PASS  blend 0 is the dry signal -- 440 Hz, 100.0% of its energy in that tone
+NOTE  but -9.1 dB quieter than the input (0.0624 RMS out for 0.1768 in)
+PASS  blend 1 is wet only and still heard -- 0.0628 RMS
+PASS  pitch +0 semitones, wet only: strongest 440.3 Hz, expected 440.0
+PASS  pitch +12 semitones, wet only: strongest 884.1 Hz, expected 880.0
+PASS  pitch -12 semitones, wet only: strongest 216.5 Hz, expected 220.0
+PASS  pitch +7 semitones, wet only: strongest 661.9 Hz, expected 659.3
+PASS  freeze on, input stopped: still sounding after 1 s -- 0.0655 RMS
+PASS  freeze off, no input: decays to 0.00000 RMS
+PASS  without freeze the same pause is quieter -- 0.00000 RMS
+PASS  freeze at 0.6 does not hold (the plugin needs 1) -- 0.00000 RMS
+PASS  In gain does nothing -- 0.0624 at 0, 0.0624 at 1; the overlay hides it
+PASS  a full-scale input stays within full scale -- peak 0.338
+NOTE  an input above full scale (1.5) comes out at peak 0.341: Clouds clamps its input to 16 bits
+==== the seven modes: a control counts when moving it from one end to the other changes the
+     sound by more than twice the spread of three takes at the same settings, with steady
+     noise or with gated tones in. A coarse screen, not a listening test.
+PASS  granular      heard -- 0.0261 RMS
+      changes the sound: position 2.1x, pitch 6.3x, density 2.8x, texture 3.7x
+      no clear change:   size 1.2x, blend 1.1x, spread 1.1x, feedback 1.5x, reverb 2.0x
+PASS  stretch       heard -- 0.0387 RMS
+      changes the sound: pitch 6.6x, density 2.6x, blend 4.9x, feedback 23.8x, reverb 4.9x
+      no clear change:   position 0.2x, size 1.8x, texture 0.5x, spread 0.0x
+PASS  looping_delay heard -- 0.0333 RMS
+      changes the sound: position 4.3x, size 2.1x, pitch 11.7x, blend 3.2x, feedback 30.3x, reverb 4.6x
+      no clear change:   density 1.4x, texture 0.3x, spread 0.9x
+PASS  spectral      heard -- 0.2750 RMS
+      changes the sound: pitch 103.7x, density 56.7x, texture 161.4x, blend 173.6x, feedback 156.3x, reverb 24.2x
+      no clear change:   position 0.3x, size 1.6x, spread 0.3x
+PASS  oliverb       heard -- 0.0867 RMS
+      changes the sound: pitch 4.7x, density 26.0x, texture 14.0x, blend 21.6x
+      no clear change:   position 0.0x, size 1.2x, spread 0.4x, feedback 0.1x, reverb 1.8x
+PASS  resonestor    heard -- 0.0552 RMS
+      changes the sound: position 2.4x, size 5.1x, pitch 7.0x, density 8.7x, texture 36.6x, spread 138.2x, feedback 4.9x, reverb 6.6x
+      no clear change:   blend 0.0x
+PASS  beat_repeat   heard -- 0.0340 RMS
+      changes the sound: reverb 5.7x
+      no clear change:   position 1.5x, size 1.1x, pitch 0.9x, density 0.6x, texture 0.2x, blend 0.2x, spread 0.3x, feedback 0.5x
+==== state restoration through a bundle
+PASS  saved to /tmp/pedalpi-clouds/clouds.ingen
+PASS  loaded back
+PASS  every control value and the on switch came back
+PASS  the reloaded patch is heard -- 0.0061 RMS
+NOTE  the bundle holds control values only: Clouds has no LV2 state, so a frozen buffer is not saved (no state in main.ttl)
+==== all passed
+PASS  the engine is still running
+clouds exit 0

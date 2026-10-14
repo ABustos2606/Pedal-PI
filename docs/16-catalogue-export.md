@@ -67,7 +67,7 @@ The exporter alone: `LV2_PATH=/usr/lib/lv2 pedal_catalogue_export -o catalogue.j
 - **x86-64 only.** The Mutable-derived plugins were built with the upstream makefile's own flags for this PC. The Pi build (P6.1) still has to be done and its revisions recorded there; the catalogue then has to be exported on the Pi.
 - **Offered is not tested.** An offered module loads, matches its metadata and, for the five measured, passes sound. None has been judged by ear, measured for load, or checked for saved state.
 - **Upstream defects met.** The makefile's rule for `polyrings.ttl` ends in a stray command and fails; the build script works around it without changing the source. Upstream names the Rings module "Random CV Sampler", the same as Marbles; the overlay calls it "Resonator".
-- **The browser is long.** 64 entries at four to a page. Filtering belongs to P9.5.
-- **No per-control presentation yet.** The overlay works on whole modules; grouping and custom editors are P9.4.
+- **The browser is long.** Since 14 October 2026 the export offers only the selected inventory (`--only config/catalogue/inventory.txt`), but that is still about 180 modules. Categories keep it navigable; filtering belongs to P9.5.
+- **Per-control presentation.** Since 14 October 2026 the overlay can rename, reorder, hide and retype individual controls and choose their defaults; Clouds uses it ([Clouds](20-clouds.md)). Other modules still show their controls as exported.
 - **File parameters.** Plugins that take a file through an LV2 patch property, such as a NAM model, are exported with their ordinary controls only.
 - **Added to the WSL Debian:** `mda-lv2`, `gettext-base`, and the plugin build under `/opt/pedalpi`.

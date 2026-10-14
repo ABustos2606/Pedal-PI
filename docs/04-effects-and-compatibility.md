@@ -10,6 +10,8 @@ LV2 provides a shared plugin format. It does not guarantee that every MODEP bund
 
 **Update, 13 October 2026:** all seven libraries below were built for x86-64 at the pinned commit and every one of their 21 plugins loads in Ingen with ports and controls matching its metadata; Clouds and Warps passed a measured signal. Clouds, Warps and Rings are silent until their own `enabled` control is set. See [catalogue export](16-catalogue-export.md). Nothing has been built for the Pi or judged by ear.
 
+**Update, 14 October 2026:** Clouds' seven modes were checked with test signals and given a per-control overlay. Beat repeat ignores most of its controls in this port, and In gain does nothing in any mode. See [Clouds](20-clouds.md).
+
 Poly's `lenticular_lv2` Makefile defines these processing libraries:
 
 | Original family | Library | Examples of Beebo module mappings in the inspected source |
@@ -44,7 +46,13 @@ Compare the older fork with a compatible current implementation using recorded p
 
 For each candidate, verify model-path (`atom:Path`/patch) handling, LV2 worker/state support, save/restore, missing-model recovery, calibration, quality control, and block-size changes. Match the model's sample rate for the baseline; generally use 48 kHz for a 48 kHz capture. Oversampling has additional CPU cost and is outside the initial comparison. Use a cabinet IR after amp-only models and avoid automatically adding a second cabinet to a full-rig capture. [Upstream plugin documentation](https://github.com/mikeoliphant/neural-amp-modeler-lv2/blob/main/README.md)
 
-No NAM candidate is supported yet. One mono NAM plus a cabinet IR is the first test; NAM plus Clouds, delay/reverb, and multiple models enter the catalogue only with measured patch budgets and stability results.
+**Update, 14 October 2026:** both candidates were built and checked in Ingen on the PC. The current NeuralAudio-based plugin is selected: it loads A1 and A2 models, switches quality safely, and saves its model inside the patch bundle. The Poly fork cannot load A2 models. See [NAM in Ingen](21-nam.md). No NAM candidate is supported yet. One mono NAM plus a cabinet IR is the first test; NAM plus Clouds, delay/reverb, and multiple models enter the catalogue only with measured patch budgets and stability results.
+
+## Inventory and records — 14 October 2026
+
+The selected inventory is every plugin identity in Beebo's module map and Poly's public plugin sources, plus the MDA and LV2 example plugins used for development: 249 entries, listed in `config/catalogue/inventory.txt`. The exporter offers only those, so installing a package no longer puts its other plugins in front of the player.
+
+Every entry has a compatibility record following the workflow below, on the PC. The results are in [the compatibility matrix](evidence/compatibility-matrix.md) and explained in [the plugin catalogue](22-plugin-catalogue.md). "Essential MODEP effects" is still an open product choice (question 6 of the [decisions](07-source-audit-and-decisions.md)); the Beebo map stands in for it until one is made.
 
 ## Compatibility workflow
 
@@ -73,7 +81,7 @@ Classify results as **supported**, **needs adaptation**, **unavailable**, or **n
 
 The inspected `lenticular_lv2` and `poly_filters` Makefiles default to x86 SSE compiler options. Those defaults must be overridden or adapted for the Pi. Do not simply run their default build and expect ARM binaries.
 
-The `lenticular_lv2` Makefile also contains a suspicious empty quoted command in the Rings metadata target. Confirm and address this in the implementation phase. Compilation has not been attempted.
+The `lenticular_lv2` Makefile also contains a suspicious empty quoted command in the Rings metadata target. Confirm and address this in the implementation phase. Both are now built: the SSE flags are replaced by `-mcpu=cortex-a76` for the Pi, and the Rings defect is bypassed without changing the source. Other repositories' defects are listed in [the plugin catalogue](22-plugin-catalogue.md).
 
 ## Catalogue record — proposed
 

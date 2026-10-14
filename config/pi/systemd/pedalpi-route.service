@@ -5,6 +5,7 @@
 Description=Pedal PI audio connections
 PartOf=pedalpi.target
 After=pedalpi-engine.service
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple

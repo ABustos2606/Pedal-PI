@@ -6,6 +6,7 @@ Description=Pedal PI audio engine (Ingen)
 PartOf=pedalpi.target
 BindsTo=pedalpi-jack.service
 After=pedalpi-jack.service
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple

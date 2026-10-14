@@ -452,15 +452,20 @@ void adapter() {
 
     // A plugin with its own on/off control: adding it switches it on, bypass
     // clears that control, and the control never appears as a parameter.
+    // Its gain has a default the catalogue chose over the plugin's 0, which
+    // adding it must set.
     {
         ModuleDefinition own{switched, "Switched", "Utility", "", 0x93a4b5, {{"in", Direction::Input}, {"out", Direction::Output}},
-                             {{"gain", "Gain", "dB", ParameterKind::Continuous, -90, 24, 0}}};
+                             {{"gain", "Gain", "dB", ParameterKind::Continuous, -90, 24, -6}}};
         own.enable_symbol = "enabled";
+        own.project_defaults = {"gain"};
         register_definitions({own});
         check(rig.result(AddModule{switched, 600, 24}).accepted, "switched module refused");
         const auto id = rig.graph().modules.back().id;
         const auto port = "ingen:/main/m" + std::to_string(id) + "/enabled";
         check(property(fake, port, full(uri::ingen, "value"))->number == 1 && !rig.graph().modules.back().bypassed, "module with its own switch was left off");
+        check(property(fake, "ingen:/main/m" + std::to_string(id) + "/gain", full(uri::ingen, "value"))->number == -6 &&
+              rig.graph().modules.back().parameters[0].value == -6, "the catalogue's chosen default was not set on the new module");
         check(rig.graph().modules.back().parameters.size() == 1, "the on/off control was shown as a parameter");
         check(rig.result(SetBypass{id, true}).accepted && property(fake, port, full(uri::ingen, "value"))->number == 0 && find_module(rig.graph(), id)->bypassed, "bypass did not clear the plugin's switch");
         check(!property(fake, "ingen:/main/m" + std::to_string(id), full(uri::ingen, "enabled")), "the engine's own bypass was used as well");

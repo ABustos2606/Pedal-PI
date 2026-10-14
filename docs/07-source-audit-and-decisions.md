@@ -69,21 +69,21 @@ The inspected Ingen `meson.build` requests the following minimum versions, in ad
 | Lilv | 0.24.21 |
 | Raul | 2.0.0, using the `raul-2` package identity |
 
-This is a source-level dependency observation. Package availability and build compatibility on the user's Patchbox installation remain unknown. Decide whether to build dependencies, select compatible earlier revisions, or change the development OS only after identifying that installation.
+This is a source-level dependency observation. The Pi has since been identified as Debian 12 bookworm arm64. The compatible prefix build and actual Pi installation are verified; see D06 and the implementation plan. The minimum-version table remains source-audit evidence.
 
 ## Decisions
 
-The [technical implementation plan](10-technical-implementation-plan.md), prepared 13 October 2026, provides the authoritative proposed phase/task sequence. Its Windows simulator workflow uses shared UI code and a simulated engine, with early Pi audio validation. Source inspection of Ingen's `src/Serialiser.cpp` confirms bundle serialization using `main.ttl` and `manifest.ttl`; bundle save and reload were then verified at runtime ([evidence](14-ingen-engine-evidence.md)); plugin state inside bundles still needs testing. The companion JSON design was dropped on 13 October 2026 (D13).
+The [technical implementation plan](10-technical-implementation-plan.md), prepared 13 October 2026, provides the authoritative proposed phase/task sequence. Its Windows simulator workflow uses shared UI code and a simulated engine, with early Pi audio validation. Source inspection of Ingen's `src/Serialiser.cpp` confirms bundle serialization using `main.ttl` and `manifest.ttl`; bundle save and reload were then verified at runtime ([evidence](14-ingen-engine-evidence.md)); plugin state was subsequently checked on PC, and the Clouds graph/control bundle now saves and reloads on Pi; native file-based assets remain open. The companion JSON design was dropped on 13 October 2026 (D13).
 
 | ID | Topic | State |
 | --- | --- | --- |
 | D01 | Build a new touchscreen interface; Beebo is reference/inspiration only; MODEP is not the main interface | Agreed (revised 13 October 2026) |
 | D02 | Use the existing Raspberry Pi 5, 2 GB as starting hardware | Agreed |
-| D03 | Design for the user's 5-inch, advertised 800 × 480 screen | Agreed; actual mode/controller unverified |
+| D03 | Design for the user's 5-inch 800 × 480 screen | Agreed and verified on Pi, 14 October 2026: HDMI-A-1 at 800 × 480, QDtech MPI5001 USB touch, native DRM interface with correct touch positioning ([record](23-pi-bring-up.md)) |
 | D04 | Include Poly's Mutable Instruments-derived modules and compatible MODEP effects | Agreed ambition; individual compatibility unverified |
 | D05 | Documentation before implementation | Agreed |
-| D06 | Final OS/dependency baseline | Open until Phase 0 identifies the Pi's OS. Working baseline since 14 October 2026: Debian 12 (bookworm) arm64, the base of Raspberry Pi OS bookworm, with lilv 0.24.24 and zix 0.4.2 built into `/opt/pedalpi` because Debian 12's lilv is too old for Ingen ([Linux and Pi](19-linux-and-pi.md)) |
-| D07 | Audio interface, channels, sample rate, and buffers | Open; user is flexible and accepts inexpensive USB hardware |
+| D06 | OS/dependency baseline | Current baseline verified on Pi: Patchbox OS / Debian 12 bookworm arm64; matching bookworm build root with lilv 0.24.24 and zix 0.4.2 in /opt/pedalpi. The rebuilt package runs there; a later final OS decision remains separate ([record](23-pi-bring-up.md)) |
+| D07 | Audio interface, channels, sample rate and buffers | Current development path verified: Tascam US-100 / CODEC, stereo at 48 kHz / 128 frames × 3 periods. Guitar and short UI-restart continuity are confirmed; final interface choice, gain/latency and buffer budgets remain open |
 | D08 | Knob/switch counts and transport | Counts agreed 14 October 2026: four push encoders the user owns, three momentary SPST footswitches. Transport proposed: direct GPIO through the kernel's rotary-encoder and gpio-key drivers, to verify on the Pi ([physical controls](18-physical-controls.md)) |
 | D09 | Numeric cold-boot and latency targets | Open; measure first |
 | D10 | Storage layout, recovery, and shutdown design | Open |
@@ -94,22 +94,22 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D15 | Keep Poly's Ingen fork as the engine | Current direction; the engine client layer keeps substitution possible |
 | D16 | Routing cable types | Agreed, revised 13 October 2026: audio cables and control (CV) cables, each patched connector by connector. Audio and control are not joined to each other in the interface. MIDI cables remain deferred |
 | D17 | Retain Casette as another unchanged technical reference and update project documentation | Agreed 13 October 2026; downloaded and recorded in the reference manifest |
-| D18 | Evaluate a current NeuralAudio-based NAM LV2 plugin against the older Poly fork | Proposed; exact runtime/build and Ingen compatibility unverified |
+| D18 | Evaluate current NeuralAudio-based NAM against the Poly fork | Comparison complete on PC; selected current implementation pinned, built for arm64 and loaded on Pi without a model. Pi model/worker/state acceptance, selectors and budgets remain P8.2–P8.7 ([record](21-nam.md)) |
 | D19 | Automatic NAM quality reduction under load | Open; no automatic reduction policy agreed |
-| D20 | Shared Windows 800 × 480 LVGL simulator and Pi UI development workflow | Proposed implementation route documented in Phases 1–4; exact LVGL revision, driver and compiler remain to be selected |
-| D21 | Detailed phase/task implementation plan | Created at the user's request on 13 October 2026; no implementation phase has been executed |
-| D23 | Engine build and protocol | Evidence 13 October 2026: upstream Ingen `13a045d0` + Poly MIDI-learn fix + three project patches, Turtle protocol, verified under WSL2 ([record](14-ingen-engine-evidence.md)). Led to the D13 revision. Pi verification pending |
+| D20 | Shared Windows 800 × 480 LVGL simulator and Pi UI workflow | Implemented: pinned LVGL v9.5.0, C++20/CMake, Windows and Linux DRM/evdev backends; native Pi screen/touch and UI-only restart verified. Debugger session remains P1.1 |
+| D21 | Detailed phase/task implementation plan | Implementation under way since 13 October 2026. Reconciled 14 October with actual task checkboxes, native evidence, partial checks and next actions; the plan is the authoritative progress record ([plan](10-technical-implementation-plan.md)) |
+| D23 | Engine build and protocol | Verified working baseline: upstream Ingen 13a045d0 + Poly MIDI-learn fix + project patches 0001–0005, Turtle protocol. ARM build and Pi guitar/Clouds/save/load/UI-reconnect checks pass; remaining native host/routing cases stay P3.4–P3.7 ([record](23-pi-bring-up.md)) |
 | D22 | Project license | Agreed 13 October 2026: GPL-3.0-or-later for original Pedal PI files; preserve upstream licenses, including Ingen's AGPL-3.0-or-later |
 
-## Information needed before implementation
+## Remaining information and resolved implementation inputs
 
 1. Intended guitar/output connections and requirements for selecting a suitable USB audio interface.
-2. Patchbox OS release, 32/64-bit architecture, kernel, current JACK settings, and active services.
+2. Resolved for the current baseline: Debian 12 bookworm arm64, kernel and service inventory recorded in [Pi bring-up](23-pi-bring-up.md).
 3. Screen controller and actual pixel mode. The user confirms a capacitive panel with five touch points, touch and power over USB and video over HDMI, working under Zynthian and Patchbox/MODEP.
 4. Answered 14 October 2026: four 20-pulse push encoders and three momentary SPST footswitches. Still open: the enclosure arrangement, and the encoders' detent count on the bench.
 5. Cooling, storage, and whether a spare card is available for development. The power supply is the official 27 W unit.
 6. Which conventional effects are essential in the first usable patch, alongside Clouds.
-7. Whether later work will have direct access to the Pi or use user-provided diagnostic results.
+7. Resolved: SSH access to the Pi is configured and has been used for deployment and native tests.
 8. Look-and-feel preferences, colour theme, or branding references for the instrument's visual styling (when ready).
 9. Which NAM captures and representative patches to benchmark; desired quality and simultaneous model count remain open rather than guaranteed features.
 
