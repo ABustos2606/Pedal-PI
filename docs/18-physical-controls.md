@@ -37,7 +37,7 @@ Everything connects directly to the Pi 5's header, with no extra board: the scre
 - `rotary-encoder` overlays turn each encoder into relative-axis input events;
 - `gpio-key` overlays turn each push and stomp into key events.
 
-The kernel decodes the quadrature (and so ignores contact bounce on A/B); the interface only reads Linux input devices, found by name rather than by event number. A 20-pulse encoder with 20 detents gives one full quadrature cycle per detent; whether the overlay reports one step per detent must be checked on the bench. If the overlays prove unsuitable on the Pi 5, the fallback is reading the pins directly with libgpiod. That adapter (P7.3) is the remaining hardware task: it only has to produce the events below.
+The kernel decodes the quadrature (and so ignores contact bounce on A/B). Each encoder is given its own relative axis and each push or stomp its own key code, so the interface recognizes them by the codes they report, whatever the device numbering (`config/pi/controls.conf`). A 20-pulse encoder with 20 detents gives one full quadrature cycle per detent; whether the overlay reports one step per detent must be checked on the bench. If the overlays prove unsuitable on the Pi 5, the fallback is reading the pins directly with libgpiod. The adapter that reads these devices (P7.3) now exists and is tested with virtual devices ([Linux and Pi](19-linux-and-pi.md)); what remains is checking it against the real parts.
 
 ## How the controls behave
 
@@ -116,7 +116,7 @@ The keys work in the Windows build against the simulation or a real engine. They
 
 ## Open points
 
-- **P7.3:** the GPIO adapter, and checking the overlays, the steps per detent and switch bounce on the real parts.
+- **P7.3:** the adapter that reads the kernel's input devices exists and is tested with virtual devices; the overlays, bindings and boot lines are in `config/pi/` ([Linux and Pi](19-linux-and-pi.md)). Still to check on the real parts: the overlays themselves, the steps per detent and switch bounce.
 - **P7.6:** tap tempo needs a tempo the engine can use; none exists yet. A second action on a held stomp is not defined.
 - **P7.7:** unplug/reconnect does not apply to wired GPIO controls; a UI restart, patch reload and rapid gestures should be repeated on the Pi.
 - **While the interface is down** the controls do nothing: they are read by the interface. Controls that keep working through an interface restart would need a separate control daemon, which the engine supports as a second client.

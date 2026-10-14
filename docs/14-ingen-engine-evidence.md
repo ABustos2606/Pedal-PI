@@ -33,6 +33,7 @@ Our interface is new and has no need for Poly's JSON, so the engine built here i
 | Save format (P5.2) | `patch:Copy` to `file:///…/name.ingen` writes a directory with `main.ttl`, `manifest.ttl` and `plugins.ttl`, and replies with status 0. |
 | Load | Starting a new engine with that bundle restores blocks, cables, values, positions, custom properties and the JACK ports; audio passes at the expected level. |
 | Load while running (14 October 2026) | `patch:Copy` from the bundle into `ingen:/main` loads it into a running engine, plugin state included. It answers before announcing the content, reports success for bundles it cannot read, and loads nothing if one plugin is missing. Recorded with the other storage findings, including a client that never reads stalling the engine and a TCP port that does not reopen right after a kill, in [patch storage](17-patch-storage.md). |
+| Relative paths (14 October 2026) | Built against Debian 12's serd 0.30, the engine writes its paths relative to its base: `</main/m3>` for `<ingen:/main/m3>`. The adapter resolves them ([Linux and Pi](19-linux-and-pi.md)). |
 | Parallel processing | The engine has a `-p/--threads` option. Not exercised here. |
 
 ## Engine defects found, and what was done
@@ -51,7 +52,9 @@ Two rules for the client also came out of that work. A property set on the graph
 
 The engine also listens on TCP port 16180 on every interface, without authentication. That is convenient under WSL and must be closed or firewalled on the Pi.
 
-All three patches change AGPL-3.0-or-later files and stay under that license. They are small enough to offer upstream.
+A fourth patch was added on 14 October 2026: `patches/0004-engine-port-zero-disables-tcp.patch` lets `--engine-port 0` turn off the unauthenticated TCP listener, and makes the listener poll its sockets in fixed slots, since it read an uninitialized slot when only one socket was open. The Pi's service runs without TCP ([Linux and Pi](19-linux-and-pi.md)).
+
+All four patches change AGPL-3.0-or-later files and stay under that license. They are small enough to offer upstream.
 
 ## Consequences for the plan
 

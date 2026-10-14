@@ -25,9 +25,11 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq --no-install-recommends \
     build-essential meson ninja-build pkg-config git ca-certificates python3 python3-rdflib \
-    libboost-dev libsigc++-2.0-dev libjack-jackd2-dev jackd2 jack-example-tools \
+    libboost-dev libsigc++-2.0-dev libjack-jackd2-dev jackd2 \
     lv2-dev libserd-dev libsord-dev libsratom-dev liblilv-dev libsuil-dev \
     lilv-utils lv2-examples socat procps
+# jack_lsp and jack_connect: their own package since Debian 13, part of jackd2 before.
+if apt-cache show jack-example-tools >/dev/null 2>&1; then apt-get install -y -qq --no-install-recommends jack-example-tools; fi
 
 mkdir -p "$SRC"
 cd "$SRC"
@@ -37,6 +39,31 @@ if [ ! -d raul ]; then git clone -q --depth 1 --branch "$RAUL_TAG" https://gitla
 if [ ! -f "$PREFIX/lib/pkgconfig/raul-2.pc" ] && [ ! -f "$PREFIX/lib/x86_64-linux-gnu/pkgconfig/raul-2.pc" ] && [ ! -f "$PREFIX/lib/aarch64-linux-gnu/pkgconfig/raul-2.pc" ]; then
     meson setup raul/build raul --prefix "$PREFIX" -Dtests=disabled >/dev/null
     meson install -C raul/build >/dev/null
+fi
+
+# Configure a meson project once; a configure that failed part-way is redone.
+configure() {
+    local project=$1; shift
+    [ -f "$project/build/build.ninja" ] && return 0
+    rm -rf "$project/build"
+    meson setup "$project/build" "$project" --prefix "$PREFIX" --buildtype release "$@" >/dev/null
+}
+
+export PKG_CONFIG_PATH="$(find "$PREFIX" -name pkgconfig -type d | paste -sd:)"
+# This Ingen needs lilv 0.24.21 or later. Debian 12 (and so Raspberry Pi OS
+# bookworm) has 0.24.14: there, build lilv and the zix it needs into the prefix.
+LILV_TAG=v0.24.24
+ZIX_TAG=v0.4.2
+if ! pkg-config --atleast-version=0.24.21 lilv-0; then
+    [ -d zix ] || git clone -q --depth 1 --branch "$ZIX_TAG" https://gitlab.com/drobilla/zix.git
+    configure zix -Dtests=disabled -Dbenchmarks=disabled -Ddocs=disabled
+    meson install -C zix/build >/dev/null
+    export PKG_CONFIG_PATH="$(find "$PREFIX" -name pkgconfig -type d | paste -sd:)"
+    [ -d lilv ] || git clone -q --depth 1 --branch "$LILV_TAG" https://gitlab.com/lv2/lilv.git
+    configure lilv -Dtests=disabled -Ddocs=disabled -Dbindings_py=disabled -Ddefault_lv2_path="$PREFIX/lib/lv2:/usr/lib/lv2:/usr/local/lib/lv2"
+    meson install -C lilv/build >/dev/null
+    export PKG_CONFIG_PATH="$(find "$PREFIX" -name pkgconfig -type d | paste -sd:)"
+    echo "built lilv $(pkg-config --modversion lilv-0) into $PREFIX"
 fi
 
 if [ ! -d ingen ]; then
@@ -53,8 +80,7 @@ for patch in "$HERE"/patches/*.patch; do
 done
 
 export PKG_CONFIG_PATH="$(find "$PREFIX" -name pkgconfig -type d | paste -sd:)"
-[ -d ingen/build ] || meson setup ingen/build ingen --prefix "$PREFIX" --buildtype release \
-    -Dgui=disabled -Ddocs=disabled -Dbindings_py=disabled -Dportaudio=disabled -Djack=enabled -Dlint=false
+configure ingen -Dgui=disabled -Ddocs=disabled -Dbindings_py=disabled -Dportaudio=disabled -Djack=enabled -Dlint=false
 meson compile -C ingen/build
 meson install -C ingen/build >/dev/null
 

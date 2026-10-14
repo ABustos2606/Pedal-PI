@@ -11,6 +11,23 @@
 #define LV_USE_WINDOWS 1
 #else
 #define LV_USE_OS LV_OS_NONE
+/* Linux: the framebuffer and evdev touch need only the kernel's headers.
+ * DRM/KMS (the Pi's display) and SDL (a desktop window for development)
+ * are enabled by CMake when their libraries are found. */
+#define LV_USE_LINUX_FBDEV 1
+#define LV_USE_EVDEV 1
+#ifdef PEDAL_LVGL_DRM
+#define LV_USE_LINUX_DRM 1
+#endif
+#ifdef PEDAL_LVGL_SDL
+#define LV_USE_SDL 1
+#define LV_SDL_INCLUDE_PATH <SDL2/SDL.h>
+#define LV_SDL_RENDER_MODE LV_DISPLAY_RENDER_MODE_DIRECT
+#define LV_SDL_BUF_COUNT 1
+#define LV_SDL_ACCELERATED 0
+#define LV_SDL_FULLSCREEN 0
+#define LV_SDL_DIRECT_EXIT 1
+#endif
 #endif
 #define LV_FONT_MONTSERRAT_14 1
 #define LV_FONT_MONTSERRAT_18 1

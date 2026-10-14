@@ -1,0 +1,22 @@
+# Pedal PI: lines for the [all] section of /boot/firmware/config.txt.
+# PROPOSED wiring, not yet built or tested: see docs/18-physical-controls.md.
+# The installer never edits config.txt; copy these lines by hand, then reboot.
+#
+# Four 20-pulse push encoders. Each turns on its own axis (REL_X, REL_Y,
+# REL_Z, REL_RX). steps-per-period=1 counts one step per full quadrature
+# cycle, which is one detent on a 20-pulse, 20-detent encoder; if one click
+# reports two or four steps on the bench, set it to 2 or 4.
+dtoverlay=rotary-encoder,pin_a=5,pin_b=6,relative_axis=1,linux_axis=0,steps-per-period=1
+dtoverlay=rotary-encoder,pin_a=13,pin_b=16,relative_axis=1,linux_axis=1,steps-per-period=1
+dtoverlay=rotary-encoder,pin_a=22,pin_b=23,relative_axis=1,linux_axis=2,steps-per-period=1
+dtoverlay=rotary-encoder,pin_a=25,pin_b=26,relative_axis=1,linux_axis=3,steps-per-period=1
+#
+# The encoder pushes and three momentary footswitches, each switching to
+# ground with the internal pull-up, each with its own key code (KEY_F13..F19).
+dtoverlay=gpio-key,gpio=12,keycode=183,label="enc1-push",gpio_pull=up
+dtoverlay=gpio-key,gpio=17,keycode=184,label="enc2-push",gpio_pull=up
+dtoverlay=gpio-key,gpio=24,keycode=185,label="enc3-push",gpio_pull=up
+dtoverlay=gpio-key,gpio=27,keycode=186,label="enc4-push",gpio_pull=up
+dtoverlay=gpio-key,gpio=4,keycode=187,label="stomp1",gpio_pull=up
+dtoverlay=gpio-key,gpio=7,keycode=188,label="stomp2",gpio_pull=up
+dtoverlay=gpio-key,gpio=8,keycode=189,label="stomp3",gpio_pull=up

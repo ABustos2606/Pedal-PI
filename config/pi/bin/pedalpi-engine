@@ -1,0 +1,10 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pedal PI contributors
+# Start Ingen from /opt/pedalpi with its libraries and plugins, listening only
+# on the instrument's UNIX socket (port 0: no TCP, see patch 0004).
+PREFIX=/opt/pedalpi
+LD_LIBRARY_PATH="$(find "$PREFIX/lib" -maxdepth 2 -name 'libingen*' -printf '%h\n' | sort -u | paste -sd:)"
+LV2_PATH="$(find "$PREFIX/lib" -maxdepth 2 -name lv2 -type d | paste -sd:):/usr/lib/lv2"
+export LD_LIBRARY_PATH LV2_PATH
+exec "$PREFIX/bin/ingen" -e -f -E 0 -S "${PEDALPI_SOCKET:-/run/pedalpi/ingen.sock}" "$@"

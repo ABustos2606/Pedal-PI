@@ -118,7 +118,8 @@ private:
     InstanceId next_instance_ = 3;
     std::set<std::string> expected_copies_;
 
-    turtle::Reader reader_;
+    // The engine writes relative to its base <ingen:/> (older serd does).
+    turtle::Reader reader_{"ingen:/"};
     std::string buffer_;
     int depth_ = 0;
     std::vector<std::string> outgoing_;

@@ -2,7 +2,7 @@
 
 **Project:** Pedal PI  
 **Prepared:** 13 October 2026 (America/Buenos_Aires)  
-**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter and catalogue export (P4.1–P4.4) and its error and reconnect states (P4.6) are implemented and verified on the PC against Ingen under WSL2, as is Phase 5's patch storage (P5.1–P5.8) apart from power-loss tests. Phase 7's simulated controls, mapping rules and assignment screen (P7.2, P7.4, P7.5) are implemented without the hardware. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
+**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter and catalogue export (P4.1–P4.4) and its error and reconnect states (P4.6) are implemented and verified on the PC against Ingen under WSL2, as is Phase 5's patch storage (P5.1–P5.8) apart from power-loss tests. Phase 7's simulated controls, mapping rules and assignment screen (P7.2, P7.4, P7.5) are implemented without the hardware. The Linux build, an arm64 package with installer and services, and the restart-only-the-interface loop (P1.3, P4.8) are verified on the PC under WSL2 and emulation. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
@@ -74,6 +74,8 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** make everyday UI work possible on the PC without the Pi.
 
+**Execution record — 14 October 2026:** P1.3 is complete. The same shared code now builds for Linux, with DRM/KMS, framebuffer, SDL and offscreen displays. All its tests pass natively under WSL2 and on arm64 under emulation. See [Linux and Pi](19-linux-and-pi.md). P1.1's debugger validation remains.
+
 **Execution record — 13 October 2026:** P1.2 and P1.4–P1.8 are complete. The Windows Debug build and all three CTest checks passed. Domain and engine contracts, missing-module scenarios, and build/run/debug instructions are documented. VS Code launch/task configuration is prepared; its C/C++ debugger extension is not installed on this PC, so an actual breakpoint session remains part of P1.1. Linux UI platform work remains P1.3. See [UI development](11-windows-ui-foundation.md) and [domain/engine contracts](13-domain-and-engine-contracts.md).
 
 **P1.4 correction:** a user-reported blank native window exposed a startup refresh race missed by the original launch-only check. The initial redraw now waits for the Windows buffer, and the native test verifies rendered pixels and a completed flush without requiring a click. See the [startup fix and regression evidence](11-windows-ui-foundation.md#verification).
@@ -89,7 +91,7 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 - [ ] **P1.1 — Toolchain inventory:** identify available Windows C++ compiler, CMake, debugger and dependency tooling. Select a supported combination and document setup; choose a Linux build route for later Pi deployment separately.
 - [x] **P1.2 — Pin graphics dependencies:** select a stable LVGL revision and compatible Windows display/input backend. Prefer the official Win32 simulator when it fits the available compiler; SDL is a documented alternative. Record revisions, licenses and required fonts/assets; preserve supplied notices.
-- [ ] **P1.3 — Application skeleton:** create the proposed shared/platform separation and build targets for a Windows simulator and later Linux UI. Keep simulator drivers out of the shared application logic. Add GPL-3.0-or-later SPDX and accurate copyright notices to original project source files; keep adapted upstream files under their applicable terms.
+- [x] **P1.3 — Application skeleton:** create the proposed shared/platform separation and build targets for a Windows simulator and later Linux UI. Keep simulator drivers out of the shared application logic. Add GPL-3.0-or-later SPDX and accurate copyright notices to original project source files; keep adapted upstream files under their applicable terms.
 - [x] **P1.4 — Display baseline:** run a real LVGL application with an 800 × 480 logical drawing area, mouse pointer input and keyboard input. Account for Windows DPI scaling; optional zoom changes presentation, not logical coordinates.
 - [x] **P1.5 — Domain contracts:** define stable instance IDs, plugin URIs, port symbols/types/directions, parameter value types/ranges/units, connection records, canvas positions and assignment records. Separate engine identity from user display names.
 - [x] **P1.6 — Engine contract:** define connect/disconnect, snapshot, add/remove module, connect/disconnect ports, set parameter, load/save and state/error events. Define pending/success/failure semantics and unsupported-capability reporting before coding protocol details.
@@ -141,6 +143,14 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** verify the engine assumptions while the desktop editor is still small.
 
+**Execution record - 14 October 2026 (PC only):** the build route of P3.2 is established and the dependency baseline of P3.1 is chosen for Debian 12 (bookworm), the base of Raspberry Pi OS bookworm.
+
+- **Build route.** One script builds the engine, plugins and interface, runs the tests and packs them. It runs natively on the Pi, or on the PC in a Debian arm64 root under qemu, where the engine, plugins and interface were built and tested.
+- **Baseline.** Debian 12's lilv is too old for this Ingen, so lilv 0.24.24 and zix 0.4.2 are built into the prefix.
+- **Plugins.** The Mutable-derived plugins are built with Cortex-A76 flags instead of SSE.
+
+Both items stay open until the Pi's release is known and the build is repeated against it. See [Linux and Pi](19-linux-and-pi.md).
+
 **Execution record - 13 October 2026 (PC only):** the hardware-independent parts of P3.1 and P3.5-P3.8, and the bundle format of P5.2, were verified on x86-64 Debian under WSL2 with JACK's dummy backend; see [Ingen engine evidence](14-ingen-engine-evidence.md). Poly's published `main` does not compile (it needs an unpublished serd), so the engine is upstream Ingen plus Poly's MIDI-learn fix and three project patches. The tasks below stay open until repeated on the Pi with the real interface and plugins.
 
 - [ ] **P3.1 — Build baseline:** select Poly Ingen and dependency revisions compatible with the Phase 0 OS. Check the inspected Serd/Sord/Sratom/Suil/LV2/Lilv/Raul requirements; choose build dependencies or an alternative supported development image from evidence.
@@ -161,6 +171,16 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** turn the desktop editor into an instrument controller without coupling audio to the UI process.
 
+**Execution record - 14 October 2026 (PC only):** the code side of P4.5 is in place: DRM/KMS (preferring an 800 × 480 mode) or framebuffer, evdev touch found by capability, and rotation. It is built and tested for arm64, but not yet run on the Pi's screen.
+
+P4.8 is complete and verified under WSL2:
+
+- a package and installer with rollback, which never touches config.txt or MODEP;
+- `systemctl restart pedalpi-ui` restarts only the interface;
+- engine patch 0004 lets the installed engine listen on its UNIX socket only.
+
+See [Linux and Pi](19-linux-and-pi.md).
+
 **Execution record - 13 October 2026 (PC only):** P4.1–P4.3 are implemented in `src/engine/ingen/` and pass 39 live checks against the patched Ingen under WSL2, including a measured audio level through a patch the adapter built, a second client, an interface restart and an engine restart; the command checks were repeated over TCP. The Windows interface runs against that engine with `--engine`. The reconnecting half of P4.6 is included. See [the adapter record](15-ingen-adapter.md). Not done: an ARM build, the Pi, real plugins beyond the LV2 example amplifier, P4.4's Linux metadata export, P4.5, P4.7 and P4.8.
 
 - [x] **P4.1 — Ingen adapter:** implement the verified protocol using suitable RDF/Atom serialization/parsing, complete-message handling and bounded input. Do not parse Turtle by splitting arbitrary periods or assuming each socket read is a full message.
@@ -174,7 +194,7 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 - [x] **P4.6 — Error and reconnect states:** show starting/disconnected/reconnecting/plugin-failed status, reject unavailable operations, and recover the current graph after UI-only restart. A transient communication error must not launch a competing audio engine.
 - [ ] **P4.7 — Initial live workflows:** add/connect/edit/remove the simple effect on the physical screen; verify actual audio against the displayed graph. Test source/output endpoints, invalid cables and merge policy from Phase 3.
-- [ ] **P4.8 — Deployment loop:** document copying/installing the UI to an isolated Pi prefix and starting/restarting only the UI over configured remote access. Keep Windows simulation independent; direct Windows-to-Pi Ingen control is optional and requires an explicitly verified transport.
+- [x] **P4.8 — Deployment loop:** document copying/installing the UI to an isolated Pi prefix and starting/restarting only the UI over configured remote access. Keep Windows simulation independent; direct Windows-to-Pi Ingen control is optional and requires an explicitly verified transport.
 
 **Deliverable:** real Ingen adapter, exported catalogue, native Pi LVGL build and working touch-controlled simple patch.
 
@@ -219,6 +239,16 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 ## Phase 7 — physical controls and performance assignments
 
 **Purpose:** make the saved patch usable with owned knobs and selected switches.
+
+**Execution record - 14 October 2026 (PC only), P7.3:**
+
+- The adapter reads the kernel's input devices without blocking: each encoder on its own relative axis, each push or footswitch on its own key.
+- It finds devices again after they go, and ignores the kernel's autorepeat.
+- Debounce and press/release/hold come from the shared recognizer.
+- It was tested with virtual devices made through uinput.
+- Bindings and the proposed boot lines are in `config/pi/`.
+
+It stays open until it runs on the real encoders and footswitches. See [Linux and Pi](19-linux-and-pi.md).
 
 **Execution record - 14 October 2026 (PC only):** the hardware is known: four 20-pulse push encoders and three momentary SPST footswitches. P7.2, P7.4 and P7.5 are complete. Keys stand in for the controls and produce the same events the GPIO adapter will. Encoders follow the parameter page in view or are pinned to a parameter. Stomps toggle, hold or bypass, or change patch for every patch. Assignments are saved with the patch as engine graph properties and orphans are never applied. A direct-GPIO wiring and the kernel drivers are proposed for P7.1. P7.6 is done apart from tap tempo, which needs a tempo the engine does not yet have. See [physical controls](18-physical-controls.md). Not done: the GPIO adapter and bench checks (P7.3), tap tempo, and the resilience checks on the Pi (P7.7).
 
@@ -268,6 +298,8 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 ## Phase 10 — dedicated startup and recovery
 
 **Purpose:** turn the tested application into an unattended instrument.
+
+**Execution record - 14 October 2026 (PC only), P10.1:** JACK, the engine, the audio routing and the interface are separate systemd services under a `pedalpi` account, grouped by `pedalpi.target`. With JACK's dummy driver under WSL2, killing the interface during playback left all 750 measured periods at the expected level and restarted only the interface. An engine restart left the interface running, reconnected and rewired. It stays open until the device permissions and real-time limits are checked on the Pi. See [Linux and Pi](19-linux-and-pi.md).
 
 - [ ] **P10.1 — Service boundaries:** configure JACK, Ingen and UI startup separately with correct user/device permissions and a deliberate restart policy. Normal UI failure must not restart Ingen or JACK.
 - [ ] **P10.2 — Readiness:** gate startup on usable devices, responsive engine, successful patch restoration and explicit routing. Provide waiting/error states rather than relying on fixed sleeps or a splash screen.

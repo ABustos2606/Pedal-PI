@@ -58,6 +58,7 @@ The Debug build/PDBs and JSON configurations are present and checked. The C/C++ 
 | `src/engine/ingen/` | The real engine backend: Turtle reader, protocol, session state machine, socket threads and `IngenEngine`; see [the adapter record](15-ingen-adapter.md) |
 | `src/storage/` | Saved patches: the bundle reader and the simulator's writer, and the patch store with revisions, staging and the startup choice; see [patch storage](17-patch-storage.md) |
 | `src/controls/` | Physical controls without LVGL: raw events, gesture recognition, mapping rules and soft takeover; see [physical controls](18-physical-controls.md) |
+| `src/platform/linux/` | The Linux program (DRM/KMS, framebuffer, SDL or offscreen display, evdev touch) and the controls read from the kernel's input devices; see [Linux and Pi](19-linux-and-pi.md) |
 | `src/engine/` | Abstract engine interface and deterministic backend; connection lifecycle, capabilities, requests, 100 ms delayed results, snapshots, new/rename/session save/load and errors |
 | `src/ui/` | Shared LVGL screens and view state; callbacks queue edits and screen rebuilds happen outside event dispatch |
 | `src/platform/windows/` | Native display/input initialization and event loop |

@@ -155,7 +155,9 @@ int main(int argc, char** argv) {
     {
         const char* folder = std::getenv("PEDALPI_PATCHES");
         const std::filesystem::path root = folder ? std::filesystem::path(folder) : std::filesystem::temp_directory_path() / "pedalpi-live-patches";
-        std::filesystem::remove_all(root);
+        std::error_code cleared;
+        std::filesystem::remove_all(root, cleared);
+        check(!cleared, "the patch folder from an earlier run can be cleared", root.string() + (cleared ? ": " + cleared.message() : ""));
 #ifdef _WIN32
         PatchStore store(root, wsl_path(root));
 #else

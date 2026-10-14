@@ -45,6 +45,8 @@ struct FakeEngine {
     std::set<std::string> plugins{amp, switched};
     std::vector<FakeTransport*> clients;
     bool reachable = true, fail_saves = false;
+    // Write paths relative to <ingen:/>, as the engine does when built with serd 0.30 (Debian 12).
+    bool relative = false;
     int mute = 0, requests = 0, label = 0;
     // Saved bundles by file URI: the objects under ingen:/main and the cables.
     std::map<std::string, std::pair<std::map<std::string, Properties>, std::vector<std::pair<std::string, std::string>>>> files;
@@ -240,7 +242,7 @@ struct FakeEngine {
 };
 void FakeTransport::open() {
     close();
-    reader = {}; greeted = false;
+    reader = turtle::Reader(); greeted = false;
     if (!engine.reachable) { events.push_back({Event::Kind::Closed, "Engine is not reachable"}); return; }
     connected = true;
     engine.clients.push_back(this);
@@ -256,6 +258,7 @@ void FakeTransport::send(std::string text) {
     for (const auto& message : decode(triples)) engine.request(*this, message);
 }
 void FakeTransport::deliver(std::string text) {
+    if (engine.relative) for (std::size_t at; (at = text.find("<ingen:/")) != std::string::npos;) text.replace(at, 8, "</");
     if (!greeted) {
         text = "@prefix atom: <http://lv2plug.in/ns/ext/atom#> .\n@prefix ingen: <http://drobilla.net/ns/ingen#> .\n@prefix lv2: <http://lv2plug.in/ns/lv2core#> .\n"
                "@prefix patch: <http://lv2plug.in/ns/ext/patch#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n" + text;
@@ -628,10 +631,46 @@ void adapter() {
     check(engine.state() == EngineState::Ready && rig.graph().modules.size() == running.modules.size(), "reconnect after explicit disconnect failed");
 }
 }
+// The same engine built against Debian 12's serd writes its paths relative to
+// <ingen:/>. Recorded from the arm64 build on 14 October 2026.
+void relative_paths() {
+    turtle::Reader reader("ingen:/");
+    std::vector<turtle::Triple> triples;
+    check(reader.parse("@prefix ingen: <http://drobilla.net/ns/ingen#> .\n@prefix patch: <http://lv2plug.in/ns/ext/patch#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n"
+                       " _:b35\n\ta patch:Put ;\n\tpatch:sequenceNumber \"6\"^^xsd:int ;\n\tpatch:subject </main/> ;\n\tpatch:body [\n\t\ta ingen:Arc ;\n"
+                       "\t\tingen:tail </main/in_l> ;\n\t\tingen:head </main/out_l>\n\t] .\n", triples).empty(), "relative recording unreadable");
+    const auto messages = decode(triples);
+    check(messages.size() == 1 && messages[0].subject == "ingen:/main" && find(messages[0].body, full(uri::ingen, "head"))->text == "ingen:/main/out_l",
+          "relative engine paths were not resolved against <ingen:/>");
+    // The other forms a writer can produce, against a base with an authority.
+    turtle::Reader web("http://example.org/a/b?q#f");
+    triples.clear();
+    check(web.parse("<c> <#x> <//other/z> , </root> , <?p> , <> , <./d> , <urn:absolute> .", triples).empty() && triples.size() == 6, "resolution sample unreadable");
+    check(triples[0].subject.value == "http://example.org/a/c" && triples[0].predicate.value == "http://example.org/a/b?q#x" && triples[0].object.value == "http://other/z" &&
+          triples[1].object.value == "http://example.org/root" && triples[2].object.value == "http://example.org/a/b?p" &&
+          triples[3].object.value == "http://example.org/a/b?q" && triples[4].object.value == "http://example.org/a/d" && triples[5].object.value == "urn:absolute",
+          "relative references resolved wrongly");
+    // Without a base (a bundle's main.ttl), they stay as written.
+    turtle::Reader plain;
+    triples.clear();
+    check(plain.parse("<m3> <p> <m3/gain> .", triples).empty() && triples[0].subject.value == "m3" && triples[0].object.value == "m3/gain", "a baseless reader resolved");
+
+    // A whole session against an engine that writes this way.
+    FakeEngine fake;
+    fake.relative = true;
+    Rig rig(fake);
+    rig.engine->connect(); rig.settle();
+    check(rig.engine->state() == EngineState::Ready && rig.graph().modules.size() == 2, "relative engine did not become ready");
+    check(rig.result(NewPatch{"Relative"}).accepted && rig.graph().connections.size() == 2 && rig.graph().name == "Relative", "relative engine's cables or name not seen");
+    check(rig.result(AddModule{amp, 184, 132}).accepted && rig.graph().modules.size() == 3 && rig.graph().modules[2].parameters.size() == 1, "relative engine's block not seen");
+    check(rig.result(Connect{{1, 3, "out", "in"}}).accepted && rig.graph().connections.size() == 3, "relative engine's new cable not seen");
+    check(rig.result(NewPatch{"Again"}).accepted && rig.graph().modules.size() == 2 && rig.graph().connections.size() == 2, "replacing a patch on a relative engine failed");
+}
 int main() {
     try {
         turtle_and_protocol();
         adapter();
+        relative_paths();
         std::cout << "Ingen protocol reading, command mapping, acknowledgment, second client, timeout, reconnect and restart passed.\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

@@ -1,0 +1,137 @@
+# Linux build, arm64 package and services: recorded results, 14 October 2026
+# See docs/19-linux-and-pi.md.
+
+## bash tools/pi/build-arm64.sh --skip-engine, then 07-adapter.sh on the arm64 build (Debian 12 arm64 root under qemu, after 01-build.sh and 02-plugins.sh took 1312 s)
+
+==== interface
+==== tests
+3/8 Test #3: domain_and_engine ................   Passed    0.08 sec
+    Start 4: ingen_adapter
+4/8 Test #4: ingen_adapter ....................   Passed    0.39 sec
+    Start 5: catalogue_files
+5/8 Test #5: catalogue_files ..................   Passed    0.24 sec
+    Start 6: patch_storage
+6/8 Test #6: patch_storage ....................   Passed    0.20 sec
+    Start 7: physical_controls
+7/8 Test #7: physical_controls ................   Passed    0.12 sec
+    Start 8: linux_input
+8/8 Test #8: linux_input ......................   Passed    0.06 sec
+
+100% tests passed, 0 tests failed out of 8
+
+Total Test time (real) =  16.24 sec
+display=offscreen resolution=800x480 background_pixels=295581 card_pixels=58602
+==== catalogue
+skipped file:///opt/pedalpi/lib/aarch64-linux-gnu/lv2/ingen.lv2/MonoEffect.ttl (machine-local address)
+skipped file:///opt/pedalpi/lib/aarch64-linux-gnu/lv2/ingen.lv2/MonoInstrument.ttl (machine-local address)
+skipped file:///opt/pedalpi/lib/aarch64-linux-gnu/lv2/ingen.lv2/StereoEffect.ttl (machine-local address)
+skipped file:///opt/pedalpi/lib/aarch64-linux-gnu/lv2/ingen.lv2/StereoInstrument.ttl (machine-local address)
+withheld http://drobilla.net/plugins/mda/DX10: Played by MIDI notes, which cannot be routed yet.
+withheld http://drobilla.net/plugins/mda/EPiano: Played by MIDI notes, which cannot be routed yet.
+withheld http://drobilla.net/plugins/mda/JX10: Played by MIDI notes, which cannot be routed yet.
+withheld http://drobilla.net/plugins/mda/Piano: Played by MIDI notes, which cannot be routed yet.
+withheld http://lv2plug.in/plugins/eg-fifths: This module has no audio or control connectors to patch.
+withheld http://lv2plug.in/plugins/eg-params: This module has no audio or control connectors to patch.
+65 modules exported, 59 available, 6 withheld; 17 controls left to the plugin, 4 plugins skipped
+65 plugins exported
+==== package
+-rwxrwxrwx 1 1000 1000 23922598 Oct 14 15:22 /work/pedalpi/build/pi/pedalpi-arm64-20261014-unknown.tar.gz
+build exit 0 after 47 s
+==== live engine checks on arm64
+Ingen protocol reading, command mapping, acknowledgment, second client, timeout, reconnect and restart passed.
+Bundles, revisions, interrupted saves, fallback, startup choice, foreign bundles, missing files and simulated save/load passed.
+Control gestures, mapping rules, soft takeover and stored assignments passed.
+PASS  connect, read the graph and create the audio endpoints -- unix:///tmp/pedalpi-ingen.sock
+PASS  new patch replaces what the engine held
+PASS  new patch is IN wired to OUT on both sides
+PASS  add a plugin
+PASS  the new module carries the engine's ports and value -- id 3, 2 ports
+PASS  a plugin the engine lacks is refused
+PASS  remove the direct left cable
+PASS  cable IN to the module
+PASS  cable the module to OUT
+PASS  feedback is refused before it reaches the engine
+PASS  cables read back from the engine
+PASS  set a value
+PASS  value applied; out-of-range value refused
+PASS  bypass
+PASS  move
+PASS  duplicate keeps value and bypass at the new position
+PASS  rename the patch
+PASS  a second client reads the same graph
+PASS  values, bypass and positions were in the engine, not only in the first client
+PASS  second client sets a value
+PASS  the first client hears the second client's change
+PASS  second client removes a module
+PASS  the first client sees the removal
+PASS  bypass off
+PASS  session snapshot
+PASS  new patch
+PASS  engine graph emptied
+PASS  session snapshot rebuilt in the engine
+PASS  the second client followed the rebuild, including values it was never sent directly
+PASS  patch store opens -- /tmp/pedalpi-live-patches
+PASS  add a Mutable-derived module to the patch
+PASS  turn one of its controls
+PASS  pin encoder 1 to it
+PASS  the unsaved-changes marker is in the engine: both clients see it
+PASS  the engine saves the patch to disk -- 47.852740 ms; Saved Live "check" é ..
+PASS  what it wrote reads back with the right identity and is published
+PASS  the stored patch lists its name and modules -- 2 blocks
+PASS  replace it with an empty patch
+PASS  load the stored patch -- 251.678298 ms; Loaded Live "check" é ..
+PASS  identity, name, modules, cables, values and positions came back from disk
+PASS  the encoder assignment came back from disk
+PASS  the second client followed the load
+PASS  edit after loading
+PASS  a second save becomes revision 2
+PASS  a patch needing a missing plugin is refused before anything changes
+PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/pedalpi-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
+PASS  the newest revision loads -- Loaded Live "check" é ..
+PASS  a bundle without project properties is offered
+PASS  it loads with default names and layout, its values, and the folder's identity -- Loaded Untitled.
+PASS  back to the stored patch -- Loaded Live "check" é ..
+PASS  remove the granular module again
+PASS  restore the value
+INFO  edit round trip through the adapter -- median 6.43115 ms, p95 6.85546 ms, max 9.18683 ms (200 edits)
+PASS  a restarted interface recovers the graph under the same identities
+PASS  it also knows which stored patch is playing, and whether it has unsaved edits -- p20261014-152227-6c58, unsaved edits
+INFO  engine load reading -- none yet (none at connect)
+PASS  the restarted interface can edit
+SUMMARY all adapter checks passed
+SUMMARY all adapter checks passed
+PASS  the patch the adapter built is what is heard -- left through the amp at +6.02 dB 0.5000 (expected 0.5000), right direct 0.2500 (expected 0.2500); JACK ports ingen:control, ingen:in_l, ingen:in_r, ingen:notify, ingen:out_l, ingen:out_r
+PASS  edit before the engine goes away
+PASS  a stopped engine is noticed and reported -- Engine closed the connection
+PASS  edits are refused and the last graph kept while the engine is away
+PASS  the adapter reconnects by itself when the engine returns
+PASS  the graph shown is the new engine's, not the old one remembered
+PASS  edits work again
+SUMMARY engine restart survived
+live exit 0 after 64 s
+
+## tools/pi/build.sh --skip-engine (x86-64, WSL2), install.sh, then tools/pi/check-services.sh with JACK's dummy driver
+
+==== package
+-rwxrwxrwx 1 abustos abustos 24720427 Oct 14 15:25 /mnt/c/Pedal PI/build/pi/pedalpi-amd64-20261014-unknown.tar.gz
+exit 0
+==== services
+PASS  the instrument starts: JACK, engine and interface active
+PASS  the interface is connected to the engine's socket
+PASS  the engine listens on no TCP port
+PASS  the engine is wired to the audio interface's ports
+PASS  a patch was built through the installed engine
+PASS  audio passes through the patch: 0.25 in, 0.5000 out over 750 periods (0 off by more than 0.002, lowest 0.5000)
+PASS  audio never stopped while the interface was killed: 750 periods, none silent (0 off by more than 0.002, lowest 0.5000)
+PASS  the interface restarted by itself
+PASS  the engine and JACK were not restarted
+PASS  the restarted interface reconnected
+PASS  after an engine restart the interface reconnected
+PASS  an engine restart did not restart the interface
+PASS  routing was redone for the new engine
+PASS  stopping the instrument stops every part
+SUMMARY all service checks passed
+==== rollback
+Removed the services. /opt/pedalpi, /etc/pedalpi and /var/lib/pedalpi are kept.
+Restored the previous installation; the replaced one is in /opt/pedalpi.failed.
+development prefix restored

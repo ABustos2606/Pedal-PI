@@ -8,7 +8,7 @@
 
 ## What was verified
 
-`bash tools/ingen-spike/07-adapter.sh`, as root inside the Debian of the engine evidence, builds the adapter, runs its tests and then runs it against a live engine. The recorded output is in [evidence/ingen-adapter-results.txt](evidence/ingen-adapter-results.txt): 60 checks passed, none failed (39 on 13 October; the other 21 are the storage checks of [patch storage](17-patch-storage.md)).
+`bash tools/ingen-spike/07-adapter.sh`, as root inside the Debian of the engine evidence, builds the adapter, runs its tests and then runs it against a live engine. The recorded output is in [evidence/ingen-adapter-results.txt](evidence/ingen-adapter-results.txt): 62 checks passed, none failed (39 on 13 October; the others are the storage checks of [patch storage](17-patch-storage.md) and the assignment checks of [physical controls](18-physical-controls.md)). The same checks pass against the arm64 build of the engine ([Linux and Pi](19-linux-and-pi.md)).
 
 | Check | Result |
 | --- | --- |
@@ -73,7 +73,7 @@ A Unix socket address (`unix:///tmp/pedalpi-ingen.sock`) is the route on Linux a
 
 ## Limits and open points
 
-- **The engine's TCP port is open to the network.** Ingen listens on every interface at port 16180 with no authentication. On the Pi it must be closed or firewalled before the instrument is used on a shared network; the adapter itself needs only the Unix socket.
+- **The engine's TCP port is open to the network** when it is started with one: Ingen listens on every interface with no authentication. Since 14 October 2026 engine patch 0004 lets `--engine-port 0` turn it off, and the Pi's service does ([Linux and Pi](19-linux-and-pi.md)). The development engine in WSL keeps port 16180 for the Windows build.
 - **Catalogue.** Exported from the installed plugins since 13 October 2026 ([record](16-catalogue-export.md)); 58 modules are offered on the WSL engine. A control the catalogue leaves out is not shown.
 - **Unsaved-changes marker.** Since 14 October 2026 it is a property of the engine's graph (`pedalpi:modified`), so a restarted interface and a second client see it. Another client's edits set it only if that client sets it too.
 - **Control assignments** stored on ports are not read yet; that belongs with Phase 7.

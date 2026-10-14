@@ -22,12 +22,16 @@ struct Term {
 struct Triple { Term subject, predicate, object; };
 class Reader {
 public:
+    // Relative references resolve against `base`, which a @base directive
+    // replaces; with none they are kept as written.
+    explicit Reader(std::string base = {}) : base_(std::move(base)) {}
     // Prefixes persist between calls: the engine declares them once per
     // connection. Returns an empty string, or what was wrong; triples already
     // appended before an error belong to complete statements.
     std::string parse(std::string_view text, std::vector<Triple>& out);
 private:
     std::map<std::string, std::string, std::less<>> prefixes_;
+    std::string base_;
     unsigned long long anonymous_ = 0;
     friend struct Parser;
 };

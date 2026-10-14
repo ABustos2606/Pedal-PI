@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Keeps the engine wired to the audio interface, also after the engine or
+# JACK restarts.
+[Unit]
+Description=Pedal PI audio connections
+PartOf=pedalpi.target
+After=pedalpi-engine.service
+
+[Service]
+Type=simple
+User=pedalpi
+EnvironmentFile=/etc/pedalpi/pedalpi.conf
+ExecStart=/opt/pedalpi/bin/pedalpi-route
+Restart=always
+RestartSec=2

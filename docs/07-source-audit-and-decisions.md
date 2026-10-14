@@ -82,7 +82,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D03 | Design for the user's 5-inch, advertised 800 × 480 screen | Agreed; actual mode/controller unverified |
 | D04 | Include Poly's Mutable Instruments-derived modules and compatible MODEP effects | Agreed ambition; individual compatibility unverified |
 | D05 | Documentation before implementation | Agreed |
-| D06 | Final OS/dependency baseline | Open |
+| D06 | Final OS/dependency baseline | Open until Phase 0 identifies the Pi's OS. Working baseline since 14 October 2026: Debian 12 (bookworm) arm64, the base of Raspberry Pi OS bookworm, with lilv 0.24.24 and zix 0.4.2 built into `/opt/pedalpi` because Debian 12's lilv is too old for Ingen ([Linux and Pi](19-linux-and-pi.md)) |
 | D07 | Audio interface, channels, sample rate, and buffers | Open; user is flexible and accepts inexpensive USB hardware |
 | D08 | Knob/switch counts and transport | Counts agreed 14 October 2026: four push encoders the user owns, three momentary SPST footswitches. Transport proposed: direct GPIO through the kernel's rotary-encoder and gpio-key drivers, to verify on the Pi ([physical controls](18-physical-controls.md)) |
 | D09 | Numeric cold-boot and latency targets | Open; measure first |

@@ -1,0 +1,20 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pedal PI contributors
+# Keep the engine's IN and OUT wired to the audio interface. The engine's ports
+# exist once the interface has connected to it, and are new after the engine
+# or JACK restarts, so this keeps watching: every two seconds, any connection
+# that is missing is made. Connections that exist are left alone.
+set -u
+connect() {
+    if jack_lsp -c "$1" 2>/dev/null | grep -qx "   $2"; then return; fi
+    jack_lsp 2>/dev/null | grep -qx "$1" && jack_lsp 2>/dev/null | grep -qx "$2" || return
+    jack_connect "$1" "$2" 2>/dev/null && echo "connected $1 -> $2"
+}
+while true; do
+    connect "${AUDIO_IN_LEFT:-system:capture_1}" ingen:in_l
+    connect "${AUDIO_IN_RIGHT:-system:capture_2}" ingen:in_r
+    connect ingen:out_l "${AUDIO_OUT_LEFT:-system:playback_1}"
+    connect ingen:out_r "${AUDIO_OUT_RIGHT:-system:playback_2}"
+    sleep 2
+done

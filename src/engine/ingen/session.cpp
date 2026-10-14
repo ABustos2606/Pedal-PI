@@ -62,7 +62,7 @@ void Session::opening() {
 }
 void Session::opened() {
     state_ = EngineState::Connecting;
-    reader_ = {}; buffer_.clear(); depth_ = 0;
+    reader_ = turtle::Reader("ingen:/"); buffer_.clear(); depth_ = 0;
     outgoing_.clear(); outgoing_.push_back(prefixes());
     plugins_.clear();
     // The engine sends nothing on connect; ask for everything. The mirrored

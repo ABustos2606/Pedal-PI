@@ -2,7 +2,7 @@
 
 Modular effects instrument for Raspberry Pi 5, with a new touchscreen interface inspired by Poly Effects' Beebo.
 
-**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine, and can now drive a real Ingen engine running under WSL through the project's own adapter, offering the plugins installed there from an exported catalogue (58 modules, the Mutable-derived ones included). Patches are saved to disk with their plugin state and revisions, and the interface shows and survives a lost engine. Four encoders and three footswitches work in the simulator through keys, with per-patch assignments; the GPIO wiring is proposed. Pi integration and audio hardware remain unimplemented.
+**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine, and can now drive a real Ingen engine running under WSL through the project's own adapter, offering the plugins installed there from an exported catalogue (58 modules, the Mutable-derived ones included). Patches are saved to disk with their plugin state and revisions, and the interface shows and survives a lost engine. Four encoders and three footswitches work in the simulator through keys, with per-patch assignments; the GPIO wiring is proposed. The interface builds for Linux, and an arm64 package with installer and services is built and tested on the PC under emulation. Running on the Pi itself and audio hardware remain untested.
 **Date:** 12 October 2026 — revised 13 October 2026 (LVGL direction, Casette reference, and NAM evaluation) and 14 October 2026 (patch storage, physical controls)  
 **Project folder:** `C:\Pedal PI`
 
@@ -47,6 +47,10 @@ Global BPM and CPU readouts stay in the bottom-right footer on every page. The s
 
 Keys stand in for the physical controls: **Q/A, W/S, E/D, R/F** turn encoders 1–4, **1–4** push them, **Z, X, C** are the stomps. On a parameter page the encoders follow the four tiles; **Settings → Controls** assigns them and the stomps. See [physical controls](docs/18-physical-controls.md).
 
+## Build for the Pi
+
+Inside Debian under WSL2, as root: `bash tools/pi/build-arm64.sh` builds the engine, plugins and interface for arm64 under emulation, tests them and leaves a package in `build/pi/`. On the Pi, unpack it and run `sudo ./install.sh`. See [Linux build, Pi packaging and services](docs/19-linux-and-pi.md).
+
 ## Documentation
 
 | File | Contents |
@@ -63,12 +67,13 @@ Keys stand in for the physical controls: **Q/A, W/S, E/D, R/F** turn encoders 1�
 | [Detailed technical implementation plan](docs/10-technical-implementation-plan.md) | Phases 0–11 with numbered tasks, PC/Pi work split, deliverables, exit checks, and requirements coverage |
 | [Windows UI development](docs/11-windows-ui-foundation.md) | Build/run instructions, shared UI and simulated engine, verification and remaining Phase 1–2 work |
 | [Desktop editor review](docs/12-desktop-editor-review.md) | Recorded Phase 2 desktop acceptance, screenshots and interaction/domain checks |
-| [Ingen engine evidence](docs/14-ingen-engine-evidence.md) | Engine built and measured on the PC under WSL2: protocol, routing, summing, reconnect, save/load, six defects and three patches |
+| [Ingen engine evidence](docs/14-ingen-engine-evidence.md) | Engine built and measured on the PC under WSL2: protocol, routing, summing, reconnect, save/load, six defects and four patches |
 | [Catalogue export](docs/16-catalogue-export.md) | Installed LV2 plugins exported to a catalogue file, every entry loaded in the live engine, sound measured through Clouds, and the overlay the project owns |
 | [Ingen engine adapter](docs/15-ingen-adapter.md) | The interface's real engine backend: mapping, threading, synchronization, reconnection, live results and limits |
 | [Domain and engine contracts](docs/13-domain-and-engine-contracts.md) | Identity, typed metadata, missing modules, mono/stereo routing, lifecycle, save and capability semantics |
 | [Patch storage and connection states](docs/17-patch-storage.md) | Patches on disk with plugin state: what the engine does on save and load, revisions and recovery, property schema, assets, the patch manager and the connection banner |
 | [Physical controls](docs/18-physical-controls.md) | The four encoders and three momentary footswitches: behaviour, mapping rules, assignments, simulator keys and a proposed GPIO wiring |
+| [Linux build, Pi packaging and services](docs/19-linux-and-pi.md) | The interface on Linux (DRM/KMS, framebuffer, SDL), the arm64 build route under emulation, the package, installer and rollback, and the services that keep audio playing while the interface restarts |
 
 ## Retrieve the project and reference sources
 

@@ -1,0 +1,60 @@
+diff --git a/src/server/SocketListener.cpp b/src/server/SocketListener.cpp
+index fb961ee2..463ae21a 100644
+--- a/src/server/SocketListener.cpp
++++ b/src/server/SocketListener.cpp
+@@ -129,35 +129,35 @@ ingen_listen(Engine* engine, raul::Socket* unix_sock, raul::Socket* net_sock)
+ 		}
+ 	}
+ 
+-	// Bind TCP socket
++	// Bind TCP socket, on every interface and without authentication, unless
++	// the port is 0: a local instrument needs only the UNIX socket.
+ 	const int port = world.conf().option("engine-port").get<int32_t>();
+-	std::ostringstream ss;
+-	ss << "tcp://*:" << port;
+-	if (!net_sock->bind(URI(ss.str())) || !net_sock->listen()) {
+-		world.log().error("Failed to create TCP socket\n");
++	if (port <= 0) {
++		world.log().info("TCP socket disabled\n");
+ 		net_sock->close();
+ 	} else {
+-		world.log().info("Listening on TCP port %1%\n", port);
++		std::ostringstream ss;
++		ss << "tcp://*:" << port;
++		if (!net_sock->bind(URI(ss.str())) || !net_sock->listen()) {
++			world.log().error("Failed to create TCP socket\n");
++			net_sock->close();
++		} else {
++			world.log().info("Listening on TCP port %1%\n", port);
++		}
+ 	}
+ 
+ 	if (unix_sock->fd() == -1 && net_sock->fd() == -1) {
+ 		return; // No sockets to listen to, exit thread
+ 	}
+ 
+-	struct pollfd pfds[2];
+-	int           nfds = 0;
+-	if (unix_sock->fd() != -1) {
+-		pfds[nfds].fd      = unix_sock->fd();
+-		pfds[nfds].events  = POLLIN;
+-		pfds[nfds].revents = 0;
+-		++nfds;
+-	}
+-	if (net_sock->fd() != -1) {
+-		pfds[nfds].fd      = net_sock->fd();
+-		pfds[nfds].events  = POLLIN;
+-		pfds[nfds].revents = 0;
+-		++nfds;
+-	}
++	// Fixed slots, so the checks below always see the socket they name. A
++	// closed socket's slot holds -1, which poll() ignores.
++	struct pollfd pfds[2] = {};
++	const int     nfds    = 2;
++	pfds[0].fd            = unix_sock->fd();
++	pfds[0].events        = POLLIN;
++	pfds[1].fd            = net_sock->fd();
++	pfds[1].events        = POLLIN;
+ 
+ 	while (true) {
+ 		// Wait for input to arrive at a socket

@@ -53,12 +53,35 @@ struct Parser {
         }
         return code;
     }
+    // A relative reference against the base, as RFC 3986 does for the forms a
+    // writer produces: the engine's serd (0.30, Debian 12) writes </main/m3>
+    // for <ingen:/main/m3>, its base being <ingen:/>. Without a base, as for
+    // a bundle's main.ttl, a relative reference is kept as written.
+    std::string resolve(std::string ref) const {
+        const auto& base = reader.base_;
+        const auto scheme_end = ref.find_first_of(":/?#");
+        if (base.empty() || (scheme_end != std::string::npos && ref[scheme_end] == ':')) return ref;
+        const auto colon = base.find(':');
+        const auto fragment = base.substr(0, base.find('#'));
+        if (ref.empty()) return fragment;
+        if (ref[0] == '#' || ref[0] == '?') return fragment.substr(0, ref[0] == '?' ? fragment.find('?') : std::string::npos) + ref;
+        if (ref.starts_with("//")) return base.substr(0, colon + 1) + ref;
+        // After the scheme, and the authority when there is one.
+        auto root = colon + 1;
+        if (base.compare(root, 2, "//") == 0) root = std::min(base.find('/', root + 2), base.size());
+        if (ref[0] == '/') return base.substr(0, root) + ref;
+        const auto path = fragment.substr(0, fragment.find('?'));
+        const auto slash = path.rfind('/');
+        auto merged = (slash == std::string::npos || slash < root ? base.substr(0, root) + "/" : path.substr(0, slash + 1)) + ref;
+        for (std::size_t dot; (dot = merged.find("/./")) != std::string::npos;) merged.erase(dot, 2);
+        return merged;
+    }
     std::string iri_reference() {
         std::string value;
         for (++at; ; ) {
             if (done()) throw Failure("unterminated IRI");
             const char c = text[at++];
-            if (c == '>') return value;
+            if (c == '>') return resolve(value);
             if (c == '\\') {
                 const char kind = done() ? '\0' : text[at++];
                 if (kind == 'u') append_utf8(value, hex(4));
@@ -194,7 +217,8 @@ struct Parser {
         if (peek() != '<') throw Failure("expected an IRI in a directive");
         auto value = iri_reference();
         expect('.', "expected '.' after a directive");
-        if (!base) reader.prefixes_[name] = std::move(value);
+        if (base) reader.base_ = std::move(value);
+        else reader.prefixes_[name] = std::move(value);
     }
     void statement() {
         if (starts("@prefix") || starts("@base")) return directive();

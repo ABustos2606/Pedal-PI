@@ -8,7 +8,8 @@
 # ones. Run as root inside Debian, after 01-build.sh:
 #   bash 02-plugins.sh
 # Nothing under reference/ is touched; sources are cloned fresh. This is an
-# x86-64 build for exercising the host and the catalogue, not the Pi build.
+# x86-64 build for exercising the host and the catalogue; tools/pi/build-arm64.sh
+# runs the same script in an arm64 root for the Pi.
 set -euo pipefail
 
 PREFIX=/opt/pedalpi
@@ -33,8 +34,14 @@ git -C lenticular_lv2/eurorack submodule update -q --init stmlib
 # fails. Copying that one file first means make never runs the rule.
 mkdir -p lenticular_lv2/build
 cp lenticular_lv2/polyrings.ttl lenticular_lv2/build/polyrings.ttl
-# The makefile's own flags; they already target SSE on this architecture.
-make -C lenticular_lv2 -j"$(nproc)" PREFIX="$PREFIX" install > "$SRC/lenticular-build.log" 2>&1 || { grep -E "error|Error" "$SRC/lenticular-build.log" | head -20; exit 1; }
+# The makefile's own flags target SSE, which is right on x86-64 only. On the
+# Pi 5 the same optimizations are kept and the SSE ones replaced by tuning for
+# its Cortex-A76 cores.
+FLAGS=()
+if [ "$(uname -m)" = aarch64 ]; then
+    FLAGS=(OPTIMIZATIONS="-mcpu=cortex-a76 -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only -DNDEBUG -ftree-vectorize -funroll-loops -fdata-sections -g")
+fi
+make -C lenticular_lv2 -j"$(nproc)" PREFIX="$PREFIX" "${FLAGS[@]}" install > "$SRC/lenticular-build.log" 2>&1 || { grep -E "error|Error" "$SRC/lenticular-build.log" | head -20; exit 1; }
 
 echo "--- installed"
 ls "$PREFIX/lib/lv2/polylenticular.lv2"

@@ -7,11 +7,17 @@
 D="$(dirname "$(readlink -f "$0")")"
 . "$D/env.sh"
 BUILD="${PEDALPI_BUILD:-/tmp/pedalpi-adapter-build}"
-# The modules this engine offers, as exported by 08-catalogue.sh.
-CATALOGUE="$D/../../config/catalogue/wsl-debian.json"
-command -v cmake >/dev/null || apt-get install -y -q cmake >/dev/null
-cmake -S "$D/../.." -B "$BUILD" -G Ninja -DPEDAL_BUILD_UI=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo >/dev/null || exit 1
-cmake --build "$BUILD" 2>&1 | grep -E "error|warning|FAILED" ; [ -x "$BUILD/pedal_ingen_live" ] && [ -x "$BUILD/pedal_storage_tests" ] || exit 1
+# The modules this engine offers, as exported by 08-catalogue.sh (or PEDALPI_CATALOGUE).
+CATALOGUE="${PEDALPI_CATALOGUE:-$D/../../config/catalogue/wsl-debian.json}"
+# PEDALPI_PREBUILT=1 uses the build in PEDALPI_BUILD as it is, such as the one
+# tools/pi/build.sh made in the arm64 root.
+if [ -z "${PEDALPI_PREBUILT:-}" ]; then
+    command -v cmake >/dev/null || apt-get install -y -q cmake >/dev/null
+    cmake -S "$D/../.." -B "$BUILD" -G Ninja -DPEDAL_BUILD_UI=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo >/dev/null || exit 1
+    cmake --build "$BUILD" 2>&1 | grep -E "error|warning|FAILED"
+fi
+python3 -c "import jack, numpy" 2>/dev/null || apt-get install -y -qq python3-jack-client python3-numpy >/dev/null
+[ -x "$BUILD/pedal_ingen_live" ] && [ -x "$BUILD/pedal_storage_tests" ] || exit 1
 "$BUILD/pedal_ingen_tests" || exit 1
 "$BUILD/pedal_storage_tests" || exit 1
 "$BUILD/pedal_controls_tests" || exit 1
@@ -24,14 +30,18 @@ import time
 import jack
 LEVEL = 0.25
 client = jack.Client("probe"); out = client.outports.register("dc"); cap = client.inports.register("cap"); seen = []
+# Wait for real periods after (re)connecting: an emulated client starts slowly.
+def settle():
+    start = len(seen); deadline = time.time() + 10
+    while len(seen) < start + 40 and time.time() < deadline: time.sleep(0.05)
 def process(frames):
     out.get_array()[:] = LEVEL; seen.append(float(cap.get_array().max()))
 client.set_process_callback(process); client.activate()
 ports = sorted(p.name for p in client.get_ports("ingen:"))
-client.connect("probe:dc", "ingen:in_l"); client.connect("ingen:out_l", "probe:cap"); time.sleep(0.4)
+client.connect("probe:dc", "ingen:in_l"); client.connect("ingen:out_l", "probe:cap"); settle()
 left = seen[-1]
 client.disconnect("probe:dc", "ingen:in_l"); client.disconnect("ingen:out_l", "probe:cap")
-client.connect("probe:dc", "ingen:in_r"); client.connect("ingen:out_r", "probe:cap"); time.sleep(0.4)
+client.connect("probe:dc", "ingen:in_r"); client.connect("ingen:out_r", "probe:cap"); settle()
 right = seen[-1]
 ok = abs(left - 2 * LEVEL) < 0.002 and abs(right - LEVEL) < 0.002
 print("%s  the patch the adapter built is what is heard -- left through the amp at +6.02 dB %.4f (expected 0.5000), right direct %.4f (expected 0.2500); JACK ports %s"

@@ -11,8 +11,15 @@ std::vector<std::string> ControlLayout::ids() const {
     for (unsigned i = 1; i <= stomps; ++i) out.push_back("stomp" + std::to_string(i));
     return out;
 }
-bool is_encoder(const std::string& id) { return id.starts_with("enc") && id.size() > 3; }
-bool is_stomp(const std::string& id) { return id.starts_with("stomp") && id.size() > 5; }
+namespace {
+// The prefix, then a number: enc1, stomp3.
+bool numbered(const std::string& id, std::string_view prefix) {
+    return id.size() > prefix.size() && id.size() <= prefix.size() + 3 && id.starts_with(prefix) &&
+           std::all_of(id.begin() + static_cast<std::ptrdiff_t>(prefix.size()), id.end(), [](char c) { return c >= '0' && c <= '9'; });
+}
+}
+bool is_encoder(const std::string& id) { return numbered(id, "enc"); }
+bool is_stomp(const std::string& id) { return numbered(id, "stomp"); }
 std::string control_label(const std::string& id) {
     if (is_encoder(id)) return "Encoder " + id.substr(3);
     if (is_stomp(id)) return "Stomp " + id.substr(5);
