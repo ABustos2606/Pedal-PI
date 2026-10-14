@@ -20,6 +20,8 @@ const std::string value_key = iri(uri::ingen, "value"), enabled_key = iri(uri::i
 const std::string x_key = iri(uri::ingen, "canvasX"), y_key = iri(uri::ingen, "canvasY");
 const std::string name_key = iri(uri::pedalpi, "displayName"), patch_name_key = iri(uri::pedalpi, "patchName");
 const std::string patch_id_key = iri(uri::pedalpi, "patchId"), modified_key = iri(uri::pedalpi, "modified");
+// One graph property per pinned control: pedalpi:control-enc1 "parameter|m3|...".
+const std::string control_prefix = iri(uri::pedalpi, "control-");
 // Where the engine may write or read a bundle: a plain file URI to a .ingen
 // directory. Ingen does not decode escaped characters consistently.
 bool bundle_location(const std::string& location) {
@@ -410,6 +412,15 @@ void Session::rebuild() {
         Connection cable{from->first, to->first, from->second, to->second};
         if (std::find(graph.connections.begin(), graph.connections.end(), cable) == graph.connections.end()) graph.connections.push_back(std::move(cable));
     }
+    if (const auto root = objects_.find(main_path); root != objects_.end())
+        for (const auto& [key, value] : root->second) {
+            Assignment a;
+            std::string block;
+            if (!key.starts_with(control_prefix) || value.kind != Value::Kind::String || !decode_assignment(key.substr(control_prefix.size()), value.text, a, block)) continue;
+            // A block that is gone leaves the assignment orphaned: shown, never applied.
+            if (const auto id = ids_.find(child(main_path, block)); id != ids_.end()) a.module = id->second;
+            graph.assignments.push_back(std::move(a));
+        }
     graph_ = std::move(graph);
 }
 
@@ -439,6 +450,12 @@ void Session::mark(Transaction& to, bool modified) {
     send(to, set_on_graph(number, main_path, "pedalpi:modified", modified ? "true" : "false"), number);
     to.local.push_back({main_path, modified_key, {Value::Kind::Boolean, 0, modified, {}}});
     sent_modified_ = modified;
+}
+void Session::control_property(Transaction& to, const std::string& control, const std::string& text) {
+    // An empty value is an unpinned control; the engine has no way to remove a property.
+    const auto number = sequence();
+    send(to, set_on_graph(number, main_path, "pedalpi:control-" + control, string_literal(text)), number);
+    to.local.push_back({main_path, control_prefix + control, {Value::Kind::String, 0, false, text}});
 }
 void Session::proceed(Transaction& done) {
     // The engine has answered the save or load itself. Its identity steps
@@ -472,6 +489,10 @@ std::string Session::verified(const Transaction& done, bool& failed) {
 }
 std::string Session::clear_engine_graph(Transaction& to) {
     for (const auto& [id, path] : paths_) send(to, remove, path);
+    // Assignments belong to the patch being replaced.
+    if (const auto root = objects_.find(main_path); root != objects_.end())
+        for (const auto& [key, value] : Properties(root->second))
+            if (key.starts_with(control_prefix) && value.kind == Value::Kind::String && !value.text.empty()) control_property(to, key.substr(control_prefix.size()), "");
     // Cables between two endpoints outlive every block; the rest go with theirs.
     for (const auto& [tail, head] : arcs_)
         if (parent_of(tail) == main_path && parent_of(head) == main_path) {
@@ -521,6 +542,7 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
     }
     name_patch(to, graph.name);
     identify(to, graph.patch_id);
+    for (const auto& a : graph.assignments) control_property(to, a.control, encode_assignment(a, "m" + std::to_string(a.module)));
     return {};
 }
 std::string Session::plan(const Command& command, Transaction& to) {
@@ -595,6 +617,20 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 to.next = Transaction::Next::Saved;
                 to.message = "Saved " + graph_.name + ".";
             }
+        } else if constexpr (std::is_same_v<T, Assign>) {
+            auto a = c.assignment;
+            const auto* m = find_module(graph_, a.module);
+            const auto found = paths_.find(a.module);
+            if (!valid_control_id(a.control) || !m || found == paths_.end()) return "Invalid control assignment";
+            a.plugin = m->uri;
+            if (!assignment_target(graph_, a)) return "Control target is unavailable";
+            if (const auto* p = assignment_parameter(graph_, a); p && (a.minimum < p->minimum || a.maximum > p->maximum || a.minimum > a.maximum))
+                return "Invalid assignment parameter range";
+            control_property(to, a.control, encode_assignment(a, symbol_of(found->second)));
+        } else if constexpr (std::is_same_v<T, Unassign>) {
+            if (std::none_of(graph_.assignments.begin(), graph_.assignments.end(), [&](const Assignment& a) { return a.control == c.control; }))
+                return "Control is not assigned";
+            control_property(to, c.control, "");
         } else if constexpr (std::is_same_v<T, LoadPatch>) {
             if (!bundle_location(c.location)) return "Invalid patch location";
             std::vector<std::string> absent;
@@ -625,6 +661,8 @@ std::string Session::plan(const Command& command, Transaction& to) {
             if constexpr (std::is_same_v<T, RemoveModule>) {
                 if (m->fixed) return "Endpoints cannot be deleted";
                 send(to, remove, found->second);
+                // Its controls go with it, so nothing later given its identity inherits them.
+                for (const auto& a : graph_.assignments) if (a.module == c.id) control_property(to, a.control, "");
             } else if constexpr (std::is_same_v<T, MoveModule>) {
                 if (m->fixed) return "Endpoints are fixed";
                 const auto number = sequence();

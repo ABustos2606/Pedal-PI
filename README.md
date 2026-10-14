@@ -2,8 +2,8 @@
 
 Modular effects instrument for Raspberry Pi 5, with a new touchscreen interface inspired by Poly Effects' Beebo.
 
-**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine, and can now drive a real Ingen engine running under WSL through the project's own adapter, offering the plugins installed there from an exported catalogue (58 modules, the Mutable-derived ones included). Patches are saved to disk with their plugin state and revisions, and the interface shows and survives a lost engine. Pi integration and audio hardware remain unimplemented.
-**Date:** 12 October 2026 — revised 13 October 2026 (LVGL direction, Casette reference, and NAM evaluation) and 14 October 2026 (patch storage)  
+**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine, and can now drive a real Ingen engine running under WSL through the project's own adapter, offering the plugins installed there from an exported catalogue (58 modules, the Mutable-derived ones included). Patches are saved to disk with their plugin state and revisions, and the interface shows and survives a lost engine. Four encoders and three footswitches work in the simulator through keys, with per-patch assignments; the GPIO wiring is proposed. Pi integration and audio hardware remain unimplemented.
+**Date:** 12 October 2026 — revised 13 October 2026 (LVGL direction, Casette reference, and NAM evaluation) and 14 October 2026 (patch storage, physical controls)  
 **Project folder:** `C:\Pedal PI`
 
 ## Purpose
@@ -45,6 +45,8 @@ Global BPM and CPU readouts stay in the bottom-right footer on every page. The s
 
 **Patches** saves patches to disk (`%LOCALAPPDATA%PedalPIpatches`, or `--patches DIR`) and provides **Save**, **Save as**, **Load**, **Startup**, **Delete**, **New patch** and **Rename**; see [patch storage](docs/17-patch-storage.md). Names can be entered with the on-screen keyboard; replacing unsaved edits has a cancel option. Clouds' demo controls span two parameter pages. The catalogue distinguishes available, untested and unavailable demo entries; **Settings → Missing module** exercises placeholder recovery.
 
+Keys stand in for the physical controls: **Q/A, W/S, E/D, R/F** turn encoders 1–4, **1–4** push them, **Z, X, C** are the stomps. On a parameter page the encoders follow the four tiles; **Settings → Controls** assigns them and the stomps. See [physical controls](docs/18-physical-controls.md).
+
 ## Documentation
 
 | File | Contents |
@@ -66,6 +68,7 @@ Global BPM and CPU readouts stay in the bottom-right footer on every page. The s
 | [Ingen engine adapter](docs/15-ingen-adapter.md) | The interface's real engine backend: mapping, threading, synchronization, reconnection, live results and limits |
 | [Domain and engine contracts](docs/13-domain-and-engine-contracts.md) | Identity, typed metadata, missing modules, mono/stereo routing, lifecycle, save and capability semantics |
 | [Patch storage and connection states](docs/17-patch-storage.md) | Patches on disk with plugin state: what the engine does on save and load, revisions and recovery, property schema, assets, the patch manager and the connection banner |
+| [Physical controls](docs/18-physical-controls.md) | The four encoders and three momentary footswitches: behaviour, mapping rules, assignments, simulator keys and a proposed GPIO wiring |
 
 ## Retrieve the project and reference sources
 
@@ -98,7 +101,7 @@ Initialize the top-level references first, then the three repositories with decl
 - Raspberry Pi 5 with 2 GB RAM.
 - Existing Patchbox OS installation from an experiment last year; release and architecture are unknown.
 - 5-inch HDMI touchscreen advertised as 800 × 480. The user confirms (13 October 2026) that it is capacitive with five touch points, touch and power over USB, video over HDMI, so it leaves the GPIO header free. The Pi and screen already run Zynthian and Patchbox OS with MODEP, on the official 27 W supply. The controller identity and any calibration still need checking on the Pi.
-- The user has knobs; their type, number, and connection are not yet identified. Stomp-switch hardware remains unspecified.
+- The user has four 20-pulse rotary encoders with push switches and will use three momentary SPST footswitches (14 October 2026). Their wiring to the Pi is proposed in [physical controls](docs/18-physical-controls.md), not yet built.
 - The audio interface is flexible and still to be selected; an inexpensive USB interface is acceptable to the user. Its suitability for guitar input and low-latency Linux audio must be checked when selecting it.
 - Public Beebo-related source repositories are stored under `reference/` in the project. Their source code has not been compiled, installed, or tested on the Pi.
 - Casette is also downloaded under `reference/upstream/Casette` at commit `75ded6663e2d758bfe8a290952c672b2e8c01697`. It is a reference for LVGL, JACK, NAM, and preset handling; its fixed effects chain does not replace our modular engine.

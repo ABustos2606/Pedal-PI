@@ -14,8 +14,8 @@ The software direction is a **new touchscreen interface designed for this instru
 | Operating system | Patchbox OS | Identify release, kernel, userland architecture, and audio configuration |
 | Display | 5-inch HDMI touchscreen, advertised 800 × 480; capacitive with five touch points, touch and power over USB, video over HDMI (user-confirmed 13 October 2026) | Confirm actual mode, controller identity and calibration |
 | Audio interface | Flexible; not yet selected; inexpensive USB is acceptable | Select input/output channels, guitar input impedance, Linux support, and usable latency |
-| Knobs | User owns knobs; details unspecified | Identify encoders/potentiometers, quantity, and connection |
-| Stomp switches | Desired; hardware unspecified | Decide quantity, momentary/latching behaviour, and connection |
+| Knobs | Four 20-pulse rotary encoders with push switches, owned by the user (14 October 2026) | Wire to the Pi and verify detent counting; see [physical controls](18-physical-controls.md) |
+| Stomp switches | Three momentary SPST footswitches (14 October 2026); momentary rather than latching, so their meaning is set per patch | Wire to the Pi; see [physical controls](18-physical-controls.md) |
 
 The display description comes from the user's purchase link, which could not be independently retrieved. The user confirms that the panel is capacitive and that touch and power use USB while video uses HDMI; the GPIO header is therefore free for controls. It reports five touch points and already works with Zynthian and with Patchbox OS running MODEP. Controller identity and calibration remain unverified.
 

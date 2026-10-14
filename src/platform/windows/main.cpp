@@ -10,7 +10,42 @@
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <vector>
+
+namespace {
+// Keys stand in for the physical controls until the Pi's GPIO adapter exists.
+// They reach the window on the LVGL driver's thread; the events are queued for
+// the interface thread. The keys still go on to LVGL, which uses them as text
+// on the name page; the interface ignores controls there.
+std::mutex control_mutex;
+std::vector<pedal::ControlEvent> control_events;
+WNDPROC original_procedure = nullptr;
+LRESULT CALLBACK control_keys(HWND window, UINT message, WPARAM key, LPARAM details) {
+    if (message == WM_KEYDOWN || message == WM_KEYUP) {
+        const bool down = message == WM_KEYDOWN, repeat = down && (details & (1 << 30));
+        std::vector<pedal::ControlEvent> found;
+        static const std::pair<char, std::pair<int, int>> turns[] = {
+            // Upper row clockwise, the key below it anticlockwise: Q/A, W/S, E/D, R/F.
+            {'Q', {1, 1}}, {'A', {1, -1}}, {'W', {2, 1}}, {'S', {2, -1}}, {'E', {3, 1}}, {'D', {3, -1}}, {'R', {4, 1}}, {'F', {4, -1}}};
+        for (const auto& [letter, turn] : turns)
+            if (down && key == static_cast<WPARAM>(letter)) found.push_back({pedal::ControlEvent::Type::Turn, "enc" + std::to_string(turn.first), turn.second});
+        auto press = [&](const std::string& control) {
+            if (!repeat) found.push_back({down ? pedal::ControlEvent::Type::Press : pedal::ControlEvent::Type::Release, control, 0});
+        };
+        if (key >= '1' && key <= '4') press("enc" + std::to_string(key - '0'));
+        if (key == 'Z') press("stomp1");
+        if (key == 'X') press("stomp2");
+        if (key == 'C') press("stomp3");
+        if (!found.empty()) {
+            const std::lock_guard lock(control_mutex);
+            control_events.insert(control_events.end(), found.begin(), found.end());
+        }
+    }
+    return CallWindowProcW(original_procedure, window, message, key, details);
+}
+}
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
     bool smoke = command_line && wcscmp(command_line, L"--smoke") == 0;
@@ -106,6 +141,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
     pedal::Application app(engine, store.get());
     lv_unlock();
     const auto window = lv_windows_get_display_window_handle(display);
+    original_procedure = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(window, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(control_keys)));
     if (smoke) ShowWindow(window, SW_HIDE);
     const auto started = GetTickCount64();
     auto last = GetTickCount64();
@@ -127,6 +163,11 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
                 lv_timer_ready(refresh);
                 framebuffer_ready = true;
             }
+        }
+        {
+            std::vector<pedal::ControlEvent> events;
+            { const std::lock_guard guard(control_mutex); events.swap(control_events); }
+            for (const auto& event : events) app.control(event);
         }
         app.tick(static_cast<unsigned>(now - last));
         lv_unlock();

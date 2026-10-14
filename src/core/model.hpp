@@ -58,11 +58,24 @@ struct Connection {
     std::string output = "out", input = "in";
     bool operator==(const Connection&) const = default;
 };
+// A physical control pinned to something in this patch: an encoder to a
+// parameter, a stomp switch to a parameter or to a module's software bypass.
+enum class ControlAction { Parameter, Bypass };
+// How a stomp switch drives a parameter: flip it on each press, or hold the
+// top of the range only while pressed.
+enum class SwitchMode { Toggle, Momentary };
 struct Assignment {
     std::string control;
-    InstanceId module;
+    InstanceId module = 0;
     std::string parameter;
-    double minimum, maximum;
+    // The part of the parameter's range the control covers.
+    double minimum = 0, maximum = 1;
+    bool inverted = false;
+    ControlAction action = ControlAction::Parameter;
+    SwitchMode mode = SwitchMode::Toggle;
+    // The target's plugin when assigned. A different module that later holds
+    // the same identity is never controlled by mistake.
+    std::string plugin;
 };
 struct Graph {
     std::string name = "First light";
@@ -103,6 +116,16 @@ bool module_available(const Module&);
 std::string validate_patch_name(const std::string&);
 // Stored patch identities: 1-64 lowercase letters, digits and hyphens.
 bool valid_patch_id(const std::string&);
+// Physical control identities, such as enc1 or stomp3: the same characters.
+bool valid_control_id(const std::string&);
+// The module an assignment controls, or null when it is orphaned: its module
+// is gone, holds another plugin, or lacks the parameter.
+const Module* assignment_target(const Graph&, const Assignment&);
+const Parameter* assignment_parameter(const Graph&, const Assignment&);
+// An assignment as one engine property value, naming its block by symbol (m3).
+std::string encode_assignment(const Assignment&, const std::string& block);
+// Back again; the module is left 0 and the block symbol returned through `block`.
+bool decode_assignment(const std::string& control, const std::string& text, Assignment&, std::string& block);
 std::string validate_parameter(const Parameter&);
 std::string validate_graph(const Graph&);
 std::string validate_connection(const Graph&, const Connection&, bool retain_unavailable = false);

@@ -3,6 +3,7 @@
 #pragma once
 #include "storage/bundle.hpp"
 #include <filesystem>
+#include <map>
 #include <optional>
 
 namespace pedal {
@@ -56,6 +57,12 @@ public:
     std::string startup() const;
     // An empty identity clears the startup patch.
     std::string set_startup(const std::string& id);
+    // Instrument-wide control actions, kept beside the patches rather than in
+    // one: next-patch and previous-patch, by control identity. A patch's own
+    // assignment of the same control takes precedence while that patch plays.
+    std::map<std::string, std::string> global_controls() const;
+    // An empty action clears the control.
+    std::string set_global_control(const std::string& control, const std::string& action);
     // How many complete revisions a patch keeps.
     static constexpr unsigned kept_revisions = 2;
 private:

@@ -169,6 +169,10 @@ int main(int argc, char** argv) {
         const auto& knob = mist.parameters.front();
         const double turned = knob.minimum + (knob.maximum - knob.minimum) * 0.75;
         a->ok(SetParameter{mist.id, knob.symbol, turned}, "turn one of its controls");
+        Assignment pinned_knob;
+        pinned_knob.control = "enc1"; pinned_knob.module = mist.id; pinned_knob.parameter = knob.symbol; pinned_knob.minimum = knob.minimum; pinned_knob.maximum = knob.maximum;
+        pinned_knob.inverted = true;
+        a->ok(Assign{pinned_knob}, "pin encoder 1 to it");
         b.pump(150);
         check(a->graph().dirty && b.graph().dirty, "the unsaved-changes marker is in the engine: both clients see it");
         const auto id = store.new_id();
@@ -191,6 +195,8 @@ int main(int argc, char** argv) {
               a->graph().connections.size() == before_load.connections.size() && std::abs(gain_of(a->graph(), first.id) - 6.0206) < 1e-4 &&
               back && back->x == 456 && back->y == 264 && turned_back && std::abs(turned_back->value - turned) < 1e-3,
               "identity, name, modules, cables, values and positions came back from disk");
+        check(a->graph().assignments.size() == 1 && a->graph().assignments[0].inverted && assignment_target(a->graph(), a->graph().assignments[0]) &&
+              a->graph().assignments[0].module == mist.id, "the encoder assignment came back from disk");
         b.pump(200);
         check(b.graph().patch_id == id && b.graph().modules.size() == before_load.modules.size() && !b.graph().dirty, "the second client followed the load");
         a->ok(MoveModule{mist.id, 600, 264}, "edit after loading");

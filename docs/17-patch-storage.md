@@ -58,7 +58,7 @@ Recorded with `tools/ingen-spike/10-bundle-probe.sh` against the live engine. Ea
 | `pedalpi:modified` | graph | Unsaved edits since the last save or load |
 | `pedalpi:displayName` | block | Module name |
 | `ingen:canvasX`, `ingen:canvasY` | block | Position (Ingen's own) |
-| `pedalpi:assignedControl` | port | Reserved for Phase 7 assignments; already saved and restored by the engine |
+| `pedalpi:control-<control>` | graph | One per pinned physical control (`control-enc1`, `control-stomp2`); see [physical controls](18-physical-controls.md). An empty value is an unpinned control |
 
 Graph properties are set with `patch:context ingen:internalContext`, without which the engine does not keep them. Every property is optional on reading. Without a name a module takes its catalogue name, a block without a position is laid out in a row, a graph without a name is "Untitled", and a bundle without an identity takes its folder's.
 

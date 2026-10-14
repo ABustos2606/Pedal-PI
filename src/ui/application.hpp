@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pedal PI contributors
 #pragma once
+#include "controls/controls.hpp"
 #include "engine/engine.hpp"
 #include "storage/patch_store.hpp"
 #include "lvgl.h"
@@ -9,7 +10,8 @@
 #include <map>
 
 namespace pedal {
-enum class Page { Patch, Browser, Parameters, Patches, Settings, ModuleActions, NamePatch, ConfirmReplace, CvConnect, ConfirmAction };
+enum class Page { Patch, Browser, Parameters, Patches, Settings, ModuleActions, NamePatch, ConfirmReplace, CvConnect, ConfirmAction,
+                  Controls, AssignPicker, AssignmentDetail };
 class Application {
 public:
     // Without a store the Patches page offers the in-memory session snapshot.
@@ -21,12 +23,16 @@ public:
     bool pending() const { return !pending_.empty(); }
     const std::string& message() const { return message_; }
     lv_obj_t* screen() const { return screen_; }
+    // A raw event from a physical control, or from keys standing in for one.
+    void control(const ControlEvent&);
+    const ControlLayout& control_layout() const { return layout_; }
 private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
                         NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserGroup, MissingFixture,
                         ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage,
-                        SavePatch, LoadStored, DeleteStored, StartupStored, PatchPage, ConfirmAction, CancelAction };
+                        SavePatch, LoadStored, DeleteStored, StartupStored, PatchPage, ConfirmAction, CancelAction,
+                        AssignControl, EditControl, ClearControl, PickModule, PickTarget, PickerPage, InvertControl, SwitchModeChoice, RangeEnd };
     struct Binding {
         Application* app;
         Action action;
@@ -65,6 +71,16 @@ private:
     void ask(std::string title, std::string heading, std::string body, std::string button, std::function<void()> act);
     std::string status_text() const;
     std::string engine_banner() const;
+    void gesture(const Gesture&);
+    void encoder(const Gesture&);
+    void stomp(const Gesture&);
+    void step_patch(int direction);
+    const Assignment* pinned(const std::string& control) const;
+    std::size_t parameter_pages(const Module&) const;
+    void controls(lv_obj_t*);
+    void assign_picker(lv_obj_t*);
+    void assignment_detail(lv_obj_t*);
+    std::string assignment_text(const std::string& control) const;
     void update_viewport();
     void update_cables();
     void update_metrics();
@@ -102,6 +118,15 @@ private:
     std::string engine_note_;
     struct Confirmation { std::string title, heading, body, button; std::function<void()> act; };
     Confirmation confirmation_;
+    // Physical controls: gestures, and what the encoders follow on a parameter page.
+    ControlLayout layout_;
+    ControlRecognizer recognizer_;
+    struct Visible { InstanceId id; std::string symbol; };
+    std::vector<Visible> visible_;
+    // The control last used, highlighted on the Controls page; the one being assigned or edited.
+    std::string active_control_, editing_control_;
+    InstanceId picking_module_ = 0;
+    std::size_t picker_page_ = 0;
     std::size_t parameter_page_ = 0;
     // The module browser: the one open category, and where the list was scrolled.
     std::string browser_group_;

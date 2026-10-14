@@ -552,7 +552,110 @@ int main(int argc, char** argv) {
             pedal::Application again(fresh, &store); step(again, 256);
             check(again.graph().name == "Live edit", "restart replaced an unsaved patch with the startup patch");
         }
+        {
+            // A footswitch set to change patch steps through the stored patches, in list order, and wraps.
+            pedal::PatchStore store(root);
+            check(store.open().empty() && store.set_global_control("stomp3", "next-patch").empty(), "global stomp action not stored");
+            pedal::SimulatedEngine stepping;
+            pedal::Application app(stepping, &store); step(app, 256);
+            check(app.graph().name == "First light", "startup patch not loaded for patch stepping");
+            app.control({pedal::ControlEvent::Type::Press, "stomp3"}); step(app, 256);
+            app.control({pedal::ControlEvent::Type::Release, "stomp3"}); step(app);
+            check(app.graph().name == "First lighx", "next-patch footswitch did not load the next patch");
+            app.control({pedal::ControlEvent::Type::Press, "stomp3"}); step(app, 256);
+            app.control({pedal::ControlEvent::Type::Release, "stomp3"}); step(app);
+            check(app.graph().name == "First light", "next-patch footswitch did not wrap around");
+        }
         std::filesystem::remove_all(root);
+        {
+            // Encoders and stomps through the same entry point the hardware will use.
+            using Type = pedal::ControlEvent::Type;
+            pedal::SimulatedEngine engine2;
+            pedal::Application app(engine2); step(app);
+            auto turn = [&](const char* control, int steps) { app.control({Type::Turn, control, steps}); step(app, 256); };
+            auto press = [&](const char* control) { app.control({Type::Press, control}); step(app, 64); };
+            auto release = [&](const char* control) { app.control({Type::Release, control}); step(app, 256); };
+            auto value = [&](pedal::InstanceId id, std::size_t index) { return pedal::find_module(app.graph(), id)->parameters[index].value; };
+            turn("enc1", 1);
+            check(app.message().find("not pinned") != std::string::npos && !app.pending(), "an unpinned encoder on the patch page did something");
+            // On a parameter page the encoders follow the tiles in order.
+            click(app, 232, 252); check(app.page() == pedal::Page::Parameters, "Drive parameters did not open");
+            check(text_label(app.screen(), "E1") && text_label(app.screen(), "E3"), "tiles do not show which encoder follows them");
+            capture(app, output / "36-encoders-follow.bmp");
+            turn("enc1", 3);
+            check(std::abs(value(3, 0) - 38) < 1e-9, "encoder 1 did not move the first tile by three detents");
+            turn("enc3", -1);
+            check(std::abs(value(3, 2) - -3.72) < 1e-9, "encoder 3 did not move the third tile");
+            press("enc1"); turn("enc1", 1); release("enc1");
+            check(std::abs(value(3, 0) - 38.2) < 1e-9 && app.page() == pedal::Page::Parameters, "push and turn was not fine, or ended as a tap");
+            turn("enc4", 1);
+            check(app.message().find("no control on this page") != std::string::npos, "an encoder without a tile did not say so");
+            // Holding the push pins what the encoder turns, on every page.
+            press("enc2"); step(app, 800); release("enc2");
+            check(app.graph().assignments.size() == 1 && app.graph().assignments[0].control == "enc2" && app.graph().assignments[0].parameter == "tone", "hold did not pin the tile");
+            check(text_label(app.screen(), "E2 pinned"), "the pinned tile is not marked");
+            click(app, 68, 36);
+            const auto tone = value(3, 1);
+            turn("enc2", 2);
+            check(value(3, 1) > tone && app.page() == pedal::Page::Patch, "pinned encoder did not work from the patch page");
+            press("enc2"); release("enc2");
+            check(app.page() == pedal::Page::Parameters, "tapping a pinned encoder did not show its target");
+            press("enc2"); step(app, 800); release("enc2");
+            check(app.graph().assignments.empty(), "holding a pinned encoder did not unpin it");
+            click(app, 68, 36);
+            // Custom layouts follow too, and a tap moves to the next page of controls.
+            click(app, 396, 244);
+            const auto before_turn = pedal::find_module(app.graph(), 4)->parameters;
+            turn("enc1", 1);
+            const auto after_first = pedal::find_module(app.graph(), 4)->parameters;
+            press("enc1"); release("enc1");
+            turn("enc1", 1);
+            const auto after_second = pedal::find_module(app.graph(), 4)->parameters;
+            std::size_t first_changed = 99, second_changed = 99;
+            for (std::size_t i = 0; i < before_turn.size(); ++i) {
+                if (after_first[i].value != before_turn[i].value) first_changed = i;
+                if (after_second[i].value != after_first[i].value) second_changed = i;
+            }
+            check(first_changed != 99 && second_changed != 99 && first_changed != second_changed, "tap did not move the encoders to the next page of Clouds");
+            click(app, 68, 36);
+            // Stomps are assigned on the Controls page: stomp 1 toggles Clouds freeze.
+            click(app, 707, 36); click(app, 614, 312);
+            check(app.page() == pedal::Page::Controls && text_label(app.screen(), "Follows the parameter page"), "Controls page did not open");
+            click(app, 618, 304); check(app.page() == pedal::Page::AssignPicker, "Assign did not open the picker");
+            click(app, 592, 160); check(text_label(app.screen(), "Bypass") != nullptr, "picking Clouds did not list its controls");
+            click(app, 208, 296);
+            check(app.page() == pedal::Page::Controls && app.graph().assignments.size() == 1 && app.graph().assignments[0].parameter == "freeze", "stomp 1 not assigned to freeze");
+            press("stomp1"); release("stomp1");
+            check(value(4, 3) == 1, "stomp toggle did not switch freeze on");
+            press("stomp1"); release("stomp1");
+            check(value(4, 3) == 0, "stomp toggle did not switch freeze off");
+            // Momentary: held on, released off.
+            click(app, 726, 304); check(app.page() == pedal::Page::AssignmentDetail, "Edit did not open the assignment");
+            click(app, 456, 156);
+            check(app.graph().assignments[0].mode == pedal::SwitchMode::Momentary, "momentary mode not stored");
+            capture(app, output / "37-assignment-detail.bmp");
+            app.control({Type::Press, "stomp1"}); step(app, 256);
+            check(value(4, 3) == 1, "momentary press did not hold freeze on");
+            release("stomp1");
+            check(value(4, 3) == 0, "momentary release did not let go");
+            // Stomp 2 bypasses Delay.
+            click(app, 70, 36); click(app, 618, 354); click(app, 208, 228); click(app, 208, 160);
+            check(app.graph().assignments.size() == 2 && app.graph().assignments[1].action == pedal::ControlAction::Bypass, "bypass assignment not made");
+            press("stomp2"); release("stomp2");
+            check(pedal::find_module(app.graph(), 5)->bypassed, "bypass stomp did nothing");
+            press("stomp3"); release("stomp3");
+            check(app.message().find("Stomp 3 is not assigned") != std::string::npos, "an unassigned stomp did not say so");
+            capture(app, output / "38-controls.bmp");
+            // Controls are ignored while a name is typed.
+            click(app, 70, 36); click(app, 70, 36); click(app, 600, 36); click(app, 320, 364);
+            check(app.page() == pedal::Page::NamePatch, "name page did not open");
+            press("stomp2"); release("stomp2");
+            check(pedal::find_module(app.graph(), 5)->bypassed, "a stomp acted while a name was being typed");
+            keyboard_key(app, LV_SYMBOL_KEYBOARD);
+            // A removed module takes its assignment along.
+            engine2.submit(pedal::RemoveModule{4}); step(app, 256);
+            check(app.graph().assignments.size() == 1 && app.graph().assignments[0].control == "stomp2", "removed module kept its stomp");
+        }
         // Release the headless devices before the global runtime.
         lv_indev_delete(indev);
         lv_indev_delete(keypad);

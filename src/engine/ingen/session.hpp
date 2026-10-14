@@ -90,6 +90,7 @@ private:
     void name_patch(Transaction&, const std::string& name);
     void identify(Transaction&, const std::string& id);
     void mark(Transaction&, bool modified);
+    void control_property(Transaction&, const std::string& control, const std::string& text);
     void proceed(Transaction&);
     // What a load restored; `failed` when it restored nothing it should have.
     std::string verified(const Transaction&, bool& failed);

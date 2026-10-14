@@ -200,6 +200,7 @@ void Application::tick(unsigned ms) {
         if (kind == PendingKind::Replace) load_note_.clear();
         rebuild_ = true;
     }
+    for (const auto& g : recognizer_.advance(ms)) gesture(g);
     if (startup_pending_ && engine_.state() == EngineState::Ready && pending_.empty()) {
         startup_pending_ = false;
         // Only when the engine plays nothing stored and nothing unsaved: a
@@ -407,6 +408,23 @@ void Application::handle(Binding& b, lv_event_t* e) {
         }
         return;
     }
+    if (b.action == Action::RangeEnd) {
+        // The From (0) and To (1) ends of an assignment's range, sent on release.
+        const auto* a = pinned(editing_control_);
+        const auto* p = a ? assignment_parameter(graph_, *a) : nullptr;
+        if (!p) return;
+        auto end = *p;
+        end.value = value_from_normalized(*p, lv_slider_get_value(target) / 1000.0);
+        if (p->kind != ParameterKind::Continuous) end.value = std::round(end.value);
+        if (b.value_label) lv_label_set_text(b.value_label, format_value(end).c_str());
+        if (code == LV_EVENT_RELEASED) {
+            auto changed = *a;
+            (b.number ? changed.maximum : changed.minimum) = end.value;
+            if (changed.minimum > changed.maximum) { message("From must not pass To; use Invert to reverse the direction."); rebuild_ = true; return; }
+            submit(Assign{changed});
+        }
+        return;
+    }
     if (code != LV_EVENT_CLICKED) return;
     switch (b.action) {
     case Action::Navigate: navigate(static_cast<Page>(b.number)); break;
@@ -490,6 +508,45 @@ void Application::handle(Binding& b, lv_event_t* e) {
         refresh_stored(); rebuild_ = true; break;
     }
     case Action::PatchPage: patch_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
+    case Action::AssignControl:
+        editing_control_ = b.symbol; picking_module_ = 0; picker_page_ = 0;
+        message("Choose what " + control_label(b.symbol) + " controls in this patch.");
+        navigate(Page::AssignPicker); break;
+    case Action::EditControl: editing_control_ = b.symbol; navigate(Page::AssignmentDetail); break;
+    case Action::ClearControl:
+        if (pinned(b.symbol)) submit(Unassign{b.symbol});
+        else if (store_ && store_->global_controls().contains(b.symbol)) {
+            const auto issue = store_->set_global_control(b.symbol, {});
+            message(issue.empty() ? control_label(b.symbol) + " cleared." : issue);
+        }
+        navigate(Page::Controls); break;
+    case Action::PickModule: picking_module_ = b.id; picker_page_ = 0; rebuild_ = true; break;
+    case Action::PickerPage: picker_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
+    case Action::PickTarget: {
+        if (b.symbol == "@next-patch" || b.symbol == "@previous-patch") {
+            const auto issue = store_ ? store_->set_global_control(editing_control_, b.symbol.substr(1)) : std::string("Patch storage is not available");
+            message(issue.empty() ? control_label(editing_control_) + " changes patch in every patch that does not use it otherwise." : issue);
+            navigate(Page::Controls); break;
+        }
+        const auto* m = find_module(graph_, picking_module_);
+        if (!m) { picking_module_ = 0; rebuild_ = true; break; }
+        Assignment a;
+        a.control = editing_control_; a.module = m->id;
+        if (b.symbol == "@bypass") a.action = ControlAction::Bypass;
+        else {
+            const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == b.symbol; });
+            if (it == m->parameters.end()) break;
+            a.parameter = it->symbol; a.minimum = it->minimum; a.maximum = it->maximum;
+        }
+        submit(Assign{a});
+        navigate(Page::Controls); break;
+    }
+    case Action::InvertControl:
+        if (const auto* a = pinned(editing_control_)) { auto changed = *a; changed.inverted = !changed.inverted; submit(Assign{changed}); }
+        break;
+    case Action::SwitchModeChoice:
+        if (const auto* a = pinned(editing_control_)) { auto changed = *a; changed.mode = b.number ? SwitchMode::Momentary : SwitchMode::Toggle; submit(Assign{changed}); }
+        break;
     case Action::ConfirmAction: if (confirmation_.act) { auto act = std::move(confirmation_.act); confirmation_.act = nullptr; act(); } break;
     case Action::CancelAction: confirmation_.act = nullptr; navigate(Page::Patches); break;
     case Action::CommitName: commit_name(); break;
@@ -606,6 +663,7 @@ void Application::rebuild() {
         lv_obj_clean(screen_);
     }
     browser_list_ = nullptr;
+    visible_.clear();
     bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); cv_inputs_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
     tempo_value_ = cpu_value_ = nullptr;
     auto* header = panel(screen_, 0, 0, 800, 72, background);
@@ -624,11 +682,18 @@ void Application::rebuild() {
         button(header, "Patches", 556, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Patches));
         button(header, "Settings", 672, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Settings));
     } else {
-        button(header, "< Back", 16, 12, 104, Action::Navigate, 0, {}, static_cast<int>(page_ == Page::NamePatch ? Page::Patches : Page::Patch));
+        // Back returns to where the page was opened from.
+        const auto back = page_ == Page::NamePatch ? Page::Patches : page_ == Page::Controls ? Page::Settings :
+            page_ == Page::AssignPicker || page_ == Page::AssignmentDetail ? Page::Controls : Page::Patch;
+        button(header, "< Back", 16, 12, 104, Action::Navigate, 0, {}, static_cast<int>(back));
         std::string title = page_ == Page::Browser ? "Add a module" : page_ == Page::Patches ? (store_ ? "Patches" : "Session patches") :
             page_ == Page::Settings ? (engine_.capabilities().simulation ? "Simulator settings" : "Engine settings") : "Parameters";
         if (page_ == Page::NamePatch) title = saving_as_ ? "Save as a new patch" : renaming_ ? "Rename patch" : "New patch";
         if (page_ == Page::ConfirmAction) title = confirmation_.title;
+        if (page_ == Page::Controls) title = "Controls";
+        if (page_ == Page::AssignPicker && picking_module_) if (const auto* m = find_module(graph_, picking_module_)) title = control_label(editing_control_) + ": " + m->name;
+        if (page_ == Page::AssignPicker && !picking_module_) title = "Assign " + control_label(editing_control_);
+        if (page_ == Page::AssignmentDetail) title = control_label(editing_control_);
         if (page_ == Page::ConfirmReplace) title = "Replace current patch?";
         if (page_ == Page::CvConnect) title = "Control cable";
         if (page_ == Page::Parameters || page_ == Page::ModuleActions)
@@ -654,6 +719,9 @@ void Application::rebuild() {
     case Page::ConfirmReplace: confirm_replace(content); break;
     case Page::CvConnect: cv_connect(content); break;
     case Page::ConfirmAction: confirm_action(content); break;
+    case Page::Controls: controls(content); break;
+    case Page::AssignPicker: assign_picker(content); break;
+    case Page::AssignmentDetail: assignment_detail(content); break;
     }
     if (patch && engine_.state() != EngineState::Ready) {
         // Over the canvas, but never in the way: touches pass through to the patch below.
@@ -969,6 +1037,21 @@ void Application::parameters(lv_obj_t* parent) {
 void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parameter& p, int x, int y, int height, std::uint32_t ink) {
     auto* tile = panel(parent, x, y, 368, height);
     label(tile, p.name, 20, 12, 150);
+    // Unpinned encoders follow the tiles in the order they are drawn; pinned
+    // controls are named on their target wherever it appears.
+    const auto follower = "enc" + std::to_string(visible_.size() + 1);
+    visible_.push_back({m.id, p.symbol});
+    std::string badges;
+    for (const auto& a : graph_.assignments)
+        if (a.module == m.id && a.action == ControlAction::Parameter && a.parameter == p.symbol && assignment_target(graph_, a))
+            badges += (badges.empty() ? "" : " ") + std::string(is_encoder(a.control) ? "E" : "S") + a.control.substr(is_encoder(a.control) ? 3 : 5);
+    if (!badges.empty()) badges += " pinned";
+    else if (visible_.size() <= layout_.encoders && !pinned(follower)) badges = "E" + follower.substr(3);
+    // Compact tiles have no room beside their slider.
+    if (!badges.empty() && height >= 100) {
+        auto* badge = label(tile, badges, 236, height - 24, 116, badges.ends_with("pinned") ? accent : muted, &lv_font_montserrat_14);
+        lv_obj_set_style_text_align(badge, LV_TEXT_ALIGN_RIGHT, 0);
+    }
     auto* value = label(tile, format_value(p), 180, 12, 168, ink, &lv_font_montserrat_20);
     lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_t* control = nullptr;
@@ -1192,6 +1275,7 @@ void Application::settings(lv_obj_t* parent) {
         label(parent, "Disconnecting stops only this interface; the engine keeps playing.\nA lost engine is retried every second.", 24, 96, 752, muted, &lv_font_montserrat_14);
         button(parent, "Connect", 24, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Ready));
         button(parent, "Disconnect", 200, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Disconnected));
+        button(parent, "Controls", 376, 142, 160, Action::Navigate, 0, {}, static_cast<int>(Page::Controls));
         label(parent, store_ ? "Patches are stored in " + store_->root().generic_string() : "Patch storage is not available: session snapshots only.", 24, 216, 752, muted, &lv_font_montserrat_14);
         label(parent, "CPU is the engine's mean run load. Xruns, memory and temperature: not measured", 24, 300, 752, muted, &lv_font_montserrat_14);
         return;
@@ -1203,6 +1287,233 @@ void Application::settings(lv_obj_t* parent) {
     button(parent, "Engine error", 376, 142, 180, Action::State, 0, {}, static_cast<int>(EngineState::Error));
     button(parent, "Reject next edit", 24, 216, 220, Action::Reject);
     button(parent, "Missing module", 264, 216, 220, Action::MissingFixture);
+    button(parent, "Controls", 504, 216, 220, Action::Navigate, 0, {}, static_cast<int>(Page::Controls));
+    label(parent, "Keys: Q/A W/S E/D R/F turn encoders 1-4, keys 1-4 push them, Z X C are the stomps.", 24, 276, 752, muted, &lv_font_montserrat_14);
     label(parent, "DSP, xruns, memory and temperature: not measured", 24, 300, 730, muted, &lv_font_montserrat_14);
+}
+
+// Physical controls. Events arrive from whatever stands in for the hardware;
+// the recognizer turns them into gestures, applied here on the LVGL thread.
+void Application::control(const ControlEvent& event) { recognizer_.input(event); }
+const Assignment* Application::pinned(const std::string& control) const {
+    const auto it = std::find_if(graph_.assignments.begin(), graph_.assignments.end(), [&](const Assignment& a) { return a.control == control; });
+    return it == graph_.assignments.end() ? nullptr : &*it;
+}
+std::size_t Application::parameter_pages(const Module& m) const {
+    const auto layout = module_layout(m);
+    if (!generic_parameters_ && layout == ModuleLayout::Clouds) return 2;
+    if (!generic_parameters_ && layout == ModuleLayout::Delay) return 1;
+    return std::max<std::size_t>(1, (m.parameters.size() + 3) / 4);
+}
+void Application::gesture(const Gesture& g) {
+    // Typing a name: the keys standing in for controls are text there.
+    if (page_ == Page::NamePatch) return;
+    active_control_ = g.control;
+    if (page_ == Page::Controls) rebuild_ = true;
+    if (is_encoder(g.control)) encoder(g);
+    else if (is_stomp(g.control)) stomp(g);
+}
+void Application::encoder(const Gesture& g) {
+    const auto name = control_label(g.control);
+    // A pinned encoder controls its target on every page; an unpinned one
+    // follows the parameter page in view, tile by tile.
+    const auto* pin = pinned(g.control);
+    InstanceId id = 0;
+    std::string symbol;
+    if (pin && assignment_parameter(graph_, *pin)) { id = pin->module; symbol = pin->parameter; }
+    else if (!pin && page_ == Page::Parameters) {
+        const auto index = static_cast<std::size_t>(std::stoul(g.control.substr(3))) - 1;
+        if (index < visible_.size()) { id = visible_[index].id; symbol = visible_[index].symbol; }
+    }
+    const auto* m = id ? find_module(graph_, id) : nullptr;
+    const Parameter* p = nullptr;
+    if (m) for (const auto& candidate : m->parameters) if (candidate.symbol == symbol) p = &candidate;
+    switch (g.kind) {
+    case Gesture::Kind::Turn: {
+        if (!p) {
+            message(pin ? name + " is pinned to a module that is gone. Settings > Controls repairs it." :
+                    page_ == Page::Parameters ? name + " has no control on this page." : name + " is not pinned. Open a module's parameters, or Settings > Controls.");
+            return;
+        }
+        // Continue from a value still on its way to the engine, not the last acknowledged one.
+        const bool streaming = stream_ && stream_->id == id && stream_->symbol == symbol;
+        const auto current = streaming ? stream_->latest : p->value;
+        const auto next = turned_value(*p, current, g.steps, g.fine, g.interval_ms, pin);
+        auto shown = *p; shown.value = next;
+        message(name + (g.fine ? " (fine): " : ": ") + m->name + " / " + p->name + " " + format_value(shown) + (next == current ? " (limit)" : ""));
+        if (next == current) return;
+        if (p->kind == ParameterKind::Continuous || p->kind == ParameterKind::Integer) stream_parameter(id, symbol, next);
+        else submit(SetParameter{id, symbol, next});
+        return;
+    }
+    case Gesture::Kind::Tap:
+        if (pin && m) {
+            // Show what the pinned encoder controls.
+            selected_ = m->id; generic_parameters_ = false;
+            const auto index = static_cast<std::size_t>(std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& q) { return q.symbol == symbol; }) - m->parameters.begin());
+            parameter_page_ = module_layout(*m) == ModuleLayout::Generic ? index / 4 : 0;
+            navigate(Page::Parameters);
+        } else if (page_ == Page::Parameters) {
+            if (const auto* shown = find_module(graph_, selected_)) { parameter_page_ = (parameter_page_ + 1) % parameter_pages(*shown); rebuild_ = true; }
+        } else message(name + " push: opens what it is pinned to, or the next page of parameters.");
+        return;
+    case Gesture::Kind::Hold:
+        if (pin) {
+            submit(Unassign{g.control});
+            message(name + " unpinned: it follows the parameter page again.");
+        } else if (p) {
+            Assignment a;
+            a.control = g.control; a.module = id; a.parameter = symbol; a.minimum = p->minimum; a.maximum = p->maximum;
+            submit(Assign{a});
+            message(name + " pinned to " + m->name + " / " + p->name + " on every page. Hold again to unpin.");
+        } else message("Open a module's parameters, then hold an encoder to pin the control it turns.");
+        return;
+    default: return;
+    }
+}
+void Application::stomp(const Gesture& g) {
+    const auto name = control_label(g.control);
+    const bool pressed = g.kind == Gesture::Kind::Press;
+    if (const auto* pin = pinned(g.control)) {
+        const auto* m = assignment_target(graph_, *pin);
+        if (!m) { if (pressed) message(name + " is pinned to a module that is gone. Settings > Controls repairs it."); return; }
+        // Switch actions go straight to the engine: never coalesced with turns.
+        if (pin->action == ControlAction::Bypass) {
+            if (pressed) { submit(SetBypass{m->id, !m->bypassed}); message(name + ": " + m->name + (m->bypassed ? " on" : " bypassed")); }
+            return;
+        }
+        const auto* p = assignment_parameter(graph_, *pin);
+        const auto value = switched_value(*p, p->value, *pin, pressed);
+        if (!value || *value == p->value) return;
+        auto shown = *p; shown.value = *value;
+        submit(SetParameter{m->id, p->symbol, *value});
+        message(name + ": " + m->name + " / " + p->name + " " + format_value(shown));
+        return;
+    }
+    if (!pressed) return;
+    const auto global = store_ ? store_->global_controls() : std::map<std::string, std::string>{};
+    if (const auto it = global.find(g.control); it != global.end()) { step_patch(it->second == "next-patch" ? 1 : -1); return; }
+    message(name + " is not assigned. Settings > Controls.");
+}
+void Application::step_patch(int direction) {
+    refresh_stored();
+    std::vector<const StoredPatch*> loadable;
+    for (const auto& patch : stored_) if (patch.revision) loadable.push_back(&patch);
+    if (loadable.empty()) { message("No saved patches to step through."); return; }
+    const auto here = std::find_if(loadable.begin(), loadable.end(), [&](const StoredPatch* p) { return p->id == graph_.patch_id; });
+    std::size_t next = 0;
+    if (here == loadable.end()) next = direction > 0 ? 0 : loadable.size() - 1;
+    else next = (static_cast<std::size_t>(here - loadable.begin()) + loadable.size() + direction) % loadable.size();
+    // Unsaved edits are guarded as on screen: the footswitch never discards them silently.
+    load_stored(loadable[next]->id, false, true);
+}
+std::string Application::assignment_text(const std::string& control) const {
+    if (const auto* a = pinned(control)) {
+        const auto* m = assignment_target(graph_, *a);
+        if (!m) return "Orphaned: its module is gone or changed. Edit to clear it.";
+        if (a->action == ControlAction::Bypass) return m->name + " / bypass";
+        const auto* p = assignment_parameter(graph_, *a);
+        auto low = *p, high = *p; low.value = a->minimum; high.value = a->maximum;
+        std::string summary = m->name + " / " + p->name;
+        if (a->minimum != p->minimum || a->maximum != p->maximum) summary += ", " + format_value(low) + " to " + format_value(high);
+        if (a->inverted) summary += ", inverted";
+        if (is_stomp(control)) summary += a->mode == SwitchMode::Momentary ? ", momentary" : ", toggle";
+        return summary;
+    }
+    if (store_) if (const auto global = store_->global_controls(); global.contains(control))
+        return global.at(control) == "next-patch" ? "Next patch (every patch)" : "Previous patch (every patch)";
+    return is_encoder(control) ? "Follows the parameter page" : "Not assigned";
+}
+void Application::controls(lv_obj_t* parent) {
+    const auto ids = layout_.ids();
+    for (std::size_t i = 0; i < ids.size(); ++i) {
+        const auto& id = ids[i];
+        auto* row = panel(parent, 24, 8 + static_cast<int>(i) * 50, 752, 48);
+        // Turning or pressing a control shows which row it is.
+        if (id == active_control_) lv_obj_set_style_border_color(row, color(accent), 0);
+        label(row, control_label(id), 14, 13, 120, id == active_control_ ? accent : text);
+        const auto* pin = pinned(id);
+        const bool orphan = pin && !assignment_target(graph_, *pin);
+        auto* what = label(row, assignment_text(id), 140, 14, 396, orphan ? 0xf0aa72 : pin ? text : muted, &lv_font_montserrat_14);
+        lv_label_set_long_mode(what, LV_LABEL_LONG_DOT); lv_obj_set_height(what, 18);
+        button(row, "Assign", 544, 0, 100, Action::AssignControl, 0, id);
+        auto* edit = button(row, "Edit", 652, 0, 100, Action::EditControl, 0, id);
+        if (!pin && !(store_ && store_->global_controls().contains(id))) lv_obj_add_state(edit, LV_STATE_DISABLED);
+    }
+}
+void Application::assign_picker(lv_obj_t* parent) {
+    struct Choice { std::string title; Action action; InstanceId id; std::string symbol; };
+    std::vector<Choice> choices;
+    const bool stomp = is_stomp(editing_control_);
+    if (!picking_module_) {
+        if (stomp && store_) {
+            choices.push_back({"Next patch", Action::PickTarget, 0, "@next-patch"});
+            choices.push_back({"Previous patch", Action::PickTarget, 0, "@previous-patch"});
+        }
+        for (const auto& m : graph_.modules)
+            if (!m.fixed && module_available(m) && (stomp || !m.parameters.empty())) choices.push_back({m.name, Action::PickModule, m.id, {}});
+    } else if (const auto* m = find_module(graph_, picking_module_)) {
+        if (stomp) choices.push_back({"Bypass", Action::PickTarget, 0, "@bypass"});
+        for (const auto& p : m->parameters) choices.push_back({p.name, Action::PickTarget, 0, p.symbol});
+    }
+    auto* prompt = label(parent, picking_module_ ? "Which control?" : stomp ? "A module, or a patch change for every patch" : "Which module?", 24, 18, 560, text, &lv_font_montserrat_20);
+    lv_label_set_long_mode(prompt, LV_LABEL_LONG_DOT); lv_obj_set_height(prompt, 26);
+    if (choices.empty()) { label(parent, "Nothing in this patch can be controlled yet.", 24, 72, 752, muted); return; }
+    const auto pages = std::max<std::size_t>(1, (choices.size() + 7) / 8);
+    picker_page_ = std::min(picker_page_, pages - 1);
+    if (pages > 1) {
+        auto* previous = button(parent, "<", 600, 4, 48, Action::PickerPage, 0, {}, static_cast<int>(picker_page_ ? picker_page_ - 1 : 0));
+        if (!picker_page_) lv_obj_add_state(previous, LV_STATE_DISABLED);
+        label(parent, std::to_string(picker_page_ + 1) + " / " + std::to_string(pages), 664, 18, 56, muted, &lv_font_montserrat_14);
+        auto* next = button(parent, ">", 728, 4, 48, Action::PickerPage, 0, {}, static_cast<int>(std::min(picker_page_ + 1, pages - 1)));
+        if (picker_page_ + 1 >= pages) lv_obj_add_state(next, LV_STATE_DISABLED);
+    }
+    for (std::size_t i = picker_page_ * 8; i < std::min(choices.size(), picker_page_ * 8 + 8); ++i) {
+        const auto slot = i - picker_page_ * 8;
+        auto* choice = button(parent, choices[i].title, 24 + static_cast<int>(slot % 2) * 384, 64 + static_cast<int>(slot / 2) * 68, 368,
+                              choices[i].action, choices[i].id, choices[i].symbol);
+        if (auto* title = lv_obj_get_child(choice, 0)) { lv_label_set_long_mode(title, LV_LABEL_LONG_DOT); lv_obj_set_width(title, 340); lv_obj_center(title); }
+    }
+}
+void Application::assignment_detail(lv_obj_t* parent) {
+    const auto& id = editing_control_;
+    auto* heading = label(parent, assignment_text(id), 24, 16, 752, accent, &lv_font_montserrat_20);
+    lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT); lv_obj_set_height(heading, 26);
+    button(parent, "Clear", 24, 280, 160, Action::ClearControl, 0, id);
+    button(parent, "Done", 616, 280, 160, Action::Navigate, 0, {}, static_cast<int>(Page::Controls));
+    const auto* a = pinned(id);
+    if (!a) { label(parent, "This control acts the same in every patch.", 24, 64, 752, muted); return; }
+    const auto* p = assignment_parameter(graph_, *a);
+    if (!assignment_target(graph_, *a)) {
+        label(parent, "Its module was removed, or now holds a different plugin, so it is never applied.\nClear it, then assign the control again.", 24, 64, 752, muted);
+        return;
+    }
+    if (!p) { label(parent, "Each press switches the module's software bypass.", 24, 64, 752, muted); return; }
+    auto* invert = button(parent, a->inverted ? "Inverted" : "Invert", 24, 60, 160, Action::InvertControl);
+    if (a->inverted) lv_obj_set_style_border_color(invert, color(accent), 0);
+    if (is_stomp(id)) {
+        auto* toggle = button(parent, "Toggle", 200, 60, 160, Action::SwitchModeChoice, 0, {}, 0);
+        auto* momentary = button(parent, "Momentary", 376, 60, 160, Action::SwitchModeChoice, 0, {}, 1);
+        lv_obj_set_style_border_color(a->mode == SwitchMode::Momentary ? momentary : toggle, color(accent), 0);
+    }
+    label(parent, is_stomp(id) ? (a->mode == SwitchMode::Momentary ? "Held: To. Released: From." : "Each press: From, then To.")
+                               : "Clockwise moves from From towards To; push and turn for fine steps.", 24, 120, 752, muted, &lv_font_montserrat_14);
+    if (p->kind == ParameterKind::Toggle || p->kind == ParameterKind::Enumeration) return;
+    // The two ends of the range, in the parameter's own (linear or logarithmic) scale.
+    for (int end = 0; end < 2; ++end) {
+        const int y = 148 + end * 64;
+        auto shown = *p; shown.value = end ? a->maximum : a->minimum;
+        label(parent, end ? "To" : "From", 24, y + 8, 80, text);
+        auto* value = label(parent, format_value(shown), 600, y + 8, 176, accent);
+        lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_RIGHT, 0);
+        auto* slider = lv_slider_create(parent); lv_obj_set_pos(slider, 120, y + 14); lv_obj_set_size(slider, 460, 12);
+        lv_slider_set_range(slider, 0, 1000); lv_slider_set_value(slider, static_cast<int>(normalized_value(shown) * 1000), LV_ANIM_OFF);
+        lv_obj_set_style_bg_color(slider, color(border), LV_PART_MAIN); lv_obj_set_style_bg_opa(slider, LV_OPA_COVER, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(slider, color(accent), LV_PART_INDICATOR); lv_obj_set_style_bg_opa(slider, LV_OPA_COVER, LV_PART_INDICATOR);
+        lv_obj_set_style_bg_color(slider, color(text), LV_PART_KNOB); lv_obj_set_style_pad_all(slider, 10, LV_PART_KNOB);
+        lv_obj_set_style_bg_opa(slider, LV_OPA_COVER, LV_PART_KNOB); lv_obj_set_style_radius(slider, LV_RADIUS_CIRCLE, LV_PART_KNOB);
+        lv_obj_set_ext_click_area(slider, 20);
+        bind(slider, Action::RangeEnd, 0, {}, end, value);
+    }
 }
 }

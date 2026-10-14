@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Pedal PI contributors
 #include "core/model.hpp"
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
@@ -133,6 +134,59 @@ std::string validate_patch_name(const std::string& name) {
     for (unsigned char c : name) if (c < 32 || c == 127) return "Patch name contains a control character.";
     return {};
 }
+bool valid_control_id(const std::string& id) {
+    return !id.empty() && id.size() <= 32 && std::all_of(id.begin(), id.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'; });
+}
+const Module* assignment_target(const Graph& g, const Assignment& a) {
+    const auto* m = find_module(g, a.module);
+    if (!m || m->fixed || !module_available(*m) || (!a.plugin.empty() && a.plugin != m->uri)) return nullptr;
+    if (a.action == ControlAction::Parameter &&
+        std::none_of(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == a.parameter; })) return nullptr;
+    return m;
+}
+const Parameter* assignment_parameter(const Graph& g, const Assignment& a) {
+    const auto* m = a.action == ControlAction::Parameter ? assignment_target(g, a) : nullptr;
+    if (!m) return nullptr;
+    return &*std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == a.parameter; });
+}
+namespace {
+std::string number_text(double value) {
+    char buffer[32];
+    const auto result = std::to_chars(buffer, buffer + sizeof buffer, value);
+    return std::string(buffer, result.ptr);
+}
+}
+std::string encode_assignment(const Assignment& a, const std::string& block) {
+    // action|block|plugin|parameter|minimum|maximum|inverted|mode. No field can
+    // hold a '|': blocks and parameters are LV2 symbols, plugins safe IRIs.
+    return std::string(a.action == ControlAction::Bypass ? "bypass" : "parameter") + "|" + block + "|" + a.plugin + "|" + a.parameter + "|" +
+           number_text(a.minimum) + "|" + number_text(a.maximum) + "|" + (a.inverted ? "1" : "0") + "|" + (a.mode == SwitchMode::Momentary ? "momentary" : "toggle");
+}
+bool decode_assignment(const std::string& control, const std::string& text, Assignment& a, std::string& block) {
+    std::vector<std::string> fields;
+    for (std::size_t start = 0;;) {
+        const auto bar = text.find('|', start);
+        fields.push_back(text.substr(start, bar == std::string::npos ? std::string::npos : bar - start));
+        if (bar == std::string::npos) break;
+        start = bar + 1;
+    }
+    if (fields.size() != 8 || !valid_control_id(control) || fields[1].empty()) return false;
+    auto read = [](const std::string& field, double& out) {
+        const auto result = std::from_chars(field.data(), field.data() + field.size(), out);
+        return result.ec == std::errc{} && result.ptr == field.data() + field.size() && std::isfinite(out);
+    };
+    a = {};
+    a.control = control;
+    if (fields[0] == "bypass") a.action = ControlAction::Bypass;
+    else if (fields[0] != "parameter" || fields[3].empty()) return false;
+    block = fields[1];
+    a.plugin = fields[2];
+    a.parameter = fields[3];
+    if (!read(fields[4], a.minimum) || !read(fields[5], a.maximum) || a.minimum > a.maximum) return false;
+    a.inverted = fields[6] == "1";
+    a.mode = fields[7] == "momentary" ? SwitchMode::Momentary : SwitchMode::Toggle;
+    return true;
+}
 bool valid_patch_id(const std::string& id) {
     return !id.empty() && id.size() <= 64 && std::all_of(id.begin(), id.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'; });
 }
@@ -215,11 +269,12 @@ std::string validate_graph(const Graph& g) {
         if (auto issue = validate_connection(checked, c, true); !issue.empty()) return issue;
         checked.connections.push_back(c);
     }
+    std::unordered_set<std::string> controls;
     for (const auto& a : g.assignments) {
-        const auto* m = find_module(g, a.module);
-        if (!m || a.control.empty() || !std::isfinite(a.minimum) || !std::isfinite(a.maximum) || a.minimum > a.maximum) return "Invalid control assignment";
-        const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == a.parameter; });
-        if (it == m->parameters.end() || a.minimum < it->minimum || a.maximum > it->maximum) return "Invalid assignment parameter range";
+        if (!valid_control_id(a.control) || !controls.insert(a.control).second || !std::isfinite(a.minimum) || !std::isfinite(a.maximum) || a.minimum > a.maximum)
+            return "Invalid control assignment";
+        // An orphan is kept for repair; it is never applied, so its range is not checked.
+        if (const auto* p = assignment_parameter(g, a); p && (a.minimum < p->minimum || a.maximum > p->maximum)) return "Invalid assignment parameter range";
     }
     return {};
 }

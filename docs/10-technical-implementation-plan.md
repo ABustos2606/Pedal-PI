@@ -2,7 +2,7 @@
 
 **Project:** Pedal PI  
 **Prepared:** 13 October 2026 (America/Buenos_Aires)  
-**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter and catalogue export (P4.1–P4.4) and its error and reconnect states (P4.6) are implemented and verified on the PC against Ingen under WSL2, as is Phase 5's patch storage (P5.1–P5.8) apart from power-loss tests. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
+**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter and catalogue export (P4.1–P4.4) and its error and reconnect states (P4.6) are implemented and verified on the PC against Ingen under WSL2, as is Phase 5's patch storage (P5.1–P5.8) apart from power-loss tests. Phase 7's simulated controls, mapping rules and assignment screen (P7.2, P7.4, P7.5) are implemented without the hardware. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
@@ -220,11 +220,13 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** make the saved patch usable with owned knobs and selected switches.
 
+**Execution record - 14 October 2026 (PC only):** the hardware is known: four 20-pulse push encoders and three momentary SPST footswitches. P7.2, P7.4 and P7.5 are complete. Keys stand in for the controls and produce the same events the GPIO adapter will. Encoders follow the parameter page in view or are pinned to a parameter. Stomps toggle, hold or bypass, or change patch for every patch. Assignments are saved with the patch as engine graph properties and orphans are never applied. A direct-GPIO wiring and the kernel drivers are proposed for P7.1. P7.6 is done apart from tap tempo, which needs a tempo the engine does not yet have. See [physical controls](18-physical-controls.md). Not done: the GPIO adapter and bench checks (P7.3), tap tempo, and the resilience checks on the Pi (P7.7).
+
 - [ ] **P7.1 — Select transport:** choose USB MIDI, Linux input or an appropriate GPIO/ADC adapter from the hardware profile. Document wiring and device identification only after the actual components are known.
-- [ ] **P7.2 — Simulated controls:** map desktop keys/wheel or explicit simulator controls to the same normalized events as the hardware adapter. Use this to develop assignment workflows without the Pi.
+- [x] **P7.2 — Simulated controls:** map desktop keys/wheel or explicit simulator controls to the same normalized events as the hardware adapter. Use this to develop assignment workflows without the Pi.
 - [ ] **P7.3 — Hardware events:** implement nonblocking reads, reconnect detection, debounce, press/release/hold and encoder direction/detent handling. Queue events independently of drawing work.
-- [ ] **P7.4 — Mapping rules:** support relative encoder increments, bounded acceleration/fine adjustment, potentiometer pickup where applicable, inversion, numeric/logarithmic ranges and discrete values. Avoid jumps when changing patches.
-- [ ] **P7.5 — Assignment UI:** select a control and target parameter/action, preview its effect, pin assignments and persist them as properties on the target port or graph. Show and disable orphaned mappings rather than targeting a different module accidentally.
+- [x] **P7.4 — Mapping rules:** support relative encoder increments, bounded acceleration/fine adjustment, potentiometer pickup where applicable, inversion, numeric/logarithmic ranges and discrete values. Avoid jumps when changing patches.
+- [x] **P7.5 — Assignment UI:** select a control and target parameter/action, preview its effect, pin assignments and persist them as properties on the target port or graph. Show and disable orphaned mappings rather than targeting a different module accidentally.
 - [ ] **P7.6 — Musical actions:** validate one knob parameter and one stomp action first; include freeze/toggle, then tap tempo and patch changes where supported. Preserve urgent discrete actions when coalescing continuous controls.
 - [ ] **P7.7 — Resilience:** verify controller unplug/reconnect, UI restart, patch reload, bounce, rapid gestures and removal of an assigned module. Record any control interruption during UI failure; uninterrupted physical control during UI downtime is a separate architecture decision if required.
 

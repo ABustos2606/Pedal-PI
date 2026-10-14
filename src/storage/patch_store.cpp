@@ -260,6 +260,30 @@ std::string PatchStore::remove(const std::string& id) {
     if (startup() == id) set_startup({});
     return {};
 }
+std::map<std::string, std::string> PatchStore::global_controls() const {
+    std::map<std::string, std::string> out;
+    const auto text = slurp(root_ / "controls");
+    if (!text) return out;
+    std::istringstream lines(*text);
+    for (std::string control, action; lines >> control >> action;)
+        if (valid_control_id(control) && (action == "next-patch" || action == "previous-patch")) out[control] = action;
+    return out;
+}
+std::string PatchStore::set_global_control(const std::string& control, const std::string& action) {
+    if (!usable_) return "Patch storage is not available";
+    if (!valid_control_id(control) || (!action.empty() && action != "next-patch" && action != "previous-patch")) return "Invalid control action";
+    auto all = global_controls();
+    if (action.empty()) all.erase(control); else all[control] = action;
+    const auto temporary = root_ / ".controls.tmp";
+    {
+        std::ofstream out(temporary, std::ios::binary | std::ios::trunc);
+        for (const auto& [id, what] : all) out << id << " " << what << "\n";
+        if (!out) return "Could not write the control settings";
+    }
+    std::error_code error;
+    fs::rename(temporary, root_ / "controls", error);
+    return error ? "Could not record the control settings: " + error.message() : std::string();
+}
 std::string PatchStore::startup() const {
     const auto text = slurp(root_ / "startup");
     if (!text) return {};

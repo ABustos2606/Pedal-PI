@@ -84,10 +84,10 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D05 | Documentation before implementation | Agreed |
 | D06 | Final OS/dependency baseline | Open |
 | D07 | Audio interface, channels, sample rate, and buffers | Open; user is flexible and accepts inexpensive USB hardware |
-| D08 | Knob/switch counts and transport | Open; user already owns knobs |
+| D08 | Knob/switch counts and transport | Counts agreed 14 October 2026: four push encoders the user owns, three momentary SPST footswitches. Transport proposed: direct GPIO through the kernel's rotary-encoder and gpio-key drivers, to verify on the Pi ([physical controls](18-physical-controls.md)) |
 | D09 | Numeric cold-boot and latency targets | Open; measure first |
 | D10 | Storage layout, recovery, and shutdown design | Open |
-| D11 | Four encoders and three stomp switches | Proposed only |
+| D11 | Four encoders and three stomp switches | Agreed 14 October 2026, matching the user's hardware |
 | D12 | UI toolkit and programming language | Agreed: LVGL (C/C++ on Linux DRM/KMS or framebuffer with evdev touch) |
 | D13 | Storage of UI data (positions, assignments) | Agreed, revised 13 October 2026: stored as properties on blocks, ports and the graph inside the engine and its saved bundle. The earlier companion JSON file is dropped |
 | D14 | Visual interaction and identity | Agreed interaction: drag-and-drop square modules, tap to enter parameter page, series/parallel audio routing; visual styling and name open |
@@ -106,7 +106,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 1. Intended guitar/output connections and requirements for selecting a suitable USB audio interface.
 2. Patchbox OS release, 32/64-bit architecture, kernel, current JACK settings, and active services.
 3. Screen controller and actual pixel mode. The user confirms a capacitive panel with five touch points, touch and power over USB and video over HDMI, working under Zynthian and Patchbox/MODEP.
-4. Type, count, and connection of the user's existing knobs; stomp-switch availability and preferred enclosure arrangement.
+4. Answered 14 October 2026: four 20-pulse push encoders and three momentary SPST footswitches. Still open: the enclosure arrangement, and the encoders' detent count on the bench.
 5. Cooling, storage, and whether a spare card is available for development. The power supply is the official 27 W unit.
 6. Which conventional effects are essential in the first usable patch, alongside Clouds.
 7. Whether later work will have direct access to the Pi or use user-provided diagnostic results.

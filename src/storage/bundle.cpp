@@ -70,6 +70,8 @@ std::string read_bundle(std::string_view text, Bundle& out) {
         else if (predicate == pedalpi_ns + "patchId" && object.kind == Term::Kind::Literal) out.id = object.value;
         else if (predicate == pedalpi_ns + "schemaVersion") out.schema = static_cast<int>(number(object).value_or(0));
         else if (predicate == pedalpi_ns + "modified") out.modified = boolean(object).value_or(false);
+        else if (predicate.starts_with(pedalpi_ns + "control-") && object.kind == Term::Kind::Literal && !object.value.empty())
+            out.controls[predicate.substr(pedalpi_ns.size() + 8)] = object.value;
         else if (predicate == ingen_ns + "arc" && object.kind == Term::Kind::Blank) {
             std::string tail, head;
             const auto arc = subjects.find("_:" + object.value);
@@ -190,6 +192,14 @@ Graph bundle_graph(const Bundle& bundle) {
         Connection cable{from->first, to->first, from->second, to->second};
         if (std::find(graph.connections.begin(), graph.connections.end(), cable) == graph.connections.end()) graph.connections.push_back(std::move(cable));
     }
+    for (const auto& [control, text] : bundle.controls) {
+        Assignment a;
+        std::string block;
+        if (!decode_assignment(control, text, a, block)) continue;
+        // A block the bundle lacks leaves the assignment orphaned, for repair.
+        if (const auto id = ids.find(block); id != ids.end()) a.module = id->second;
+        graph.assignments.push_back(std::move(a));
+    }
     return graph;
 }
 
@@ -222,6 +232,8 @@ std::string write_main_ttl(const Graph& graph) {
     }
     for (const auto& c : graph.connections)
         text += " ;\n\tingen:arc [\n\t\tingen:tail " + iri(address(c.from, c.output, true)) + " ;\n\t\tingen:head " + iri(address(c.to, c.input, false)) + "\n\t]";
+    for (const auto& a : graph.assignments)
+        text += " ;\n\tpedalpi:control-" + a.control + " " + ingen::string_literal(encode_assignment(a, "m" + std::to_string(a.module)));
     text += " ;\n\tpedalpi:patchName " + ingen::string_literal(graph.name);
     if (!graph.patch_id.empty()) text += " ;\n\tpedalpi:patchId " + ingen::string_literal(graph.patch_id);
     text += " ;\n\tpedalpi:schemaVersion " + std::to_string(bundle_schema_version) + " ;\n\tpedalpi:modified " + (graph.dirty ? "true" : "false") + " .\n";

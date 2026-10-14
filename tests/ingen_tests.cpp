@@ -548,6 +548,28 @@ void adapter() {
     check(rig.result(LoadPatch{first_bundle, blocks}).accepted && rig.graph().patch_id == "p-one", "load after a failed load");
     check(!rig.result(LoadPatch{"file:///patches/x"}).accepted && !rig.result(LoadPatch{"http://example.org/x.ingen"}).accepted, "unsafe load location accepted");
     check(rig.result(SaveGraph{SaveScope::Persistent, true, first_bundle, "p-one"}).accepted, "save after load failed");
+    // Control assignments are graph properties: every client sees them, a restart keeps them, a save carries them.
+    Assignment knob;
+    knob.control = "enc1"; knob.module = 3; knob.parameter = "gain"; knob.minimum = -12; knob.maximum = 12;
+    const auto control_key = full(uri::pedalpi, "control-enc1");
+    check(rig.result(Assign{knob}).accepted && rig.graph().assignments.size() == 1 && rig.graph().assignments[0].plugin == amp &&
+          property(fake, "ingen:/main", control_key)->text.starts_with("parameter|m3|"), "assignment not stored on the engine's graph");
+    other.settle();
+    check(other.graph().assignments.size() == 1 && other.graph().assignments[0].module == 3 && other.graph().assignments[0].maximum == 12, "another client did not see the assignment");
+    auto too_wide = knob; too_wide.maximum = 99;
+    check(!rig.result(Assign{too_wide}).accepted && !rig.result(Assign{Assignment{"enc2", 77, "gain"}}).accepted, "invalid assignment accepted");
+    {
+        Rig fresh(fake);
+        fresh.engine->connect(); fresh.settle();
+        check(fresh.graph().assignments.size() == 1 && assignment_target(fresh.graph(), fresh.graph().assignments[0]), "a restarted interface lost the assignment");
+    }
+    const std::string knob_bundle = "file:///patches/p-knob/r000001.ingen";
+    check(rig.result(SaveGraph{SaveScope::Persistent, true, knob_bundle, "p-knob"}).accepted, "save with an assignment failed");
+    check(rig.result(NewPatch{"Bare"}).accepted && rig.graph().assignments.empty() && property(fake, "ingen:/main", control_key)->text.empty(), "a new patch kept the assignment");
+    check(rig.result(LoadPatch{knob_bundle, blocks, "p-knob"}).accepted && rig.graph().assignments.size() == 1 && assignment_target(rig.graph(), rig.graph().assignments[0]),
+          "saved assignment not restored");
+    check(rig.result(RemoveModule{3}).accepted && rig.graph().assignments.empty() && !rig.result(Unassign{"enc1"}).accepted, "a removed module kept its assignment");
+
     // Back to the session snapshot for what follows.
     check(rig.result(LoadSession{}).accepted && rig.graph().patch_id.empty() && find_module(rig.graph(), 3)->parameters[0].value == 6.5, "session snapshot lost");
     other.settle();

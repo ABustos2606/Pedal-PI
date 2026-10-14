@@ -56,8 +56,11 @@ struct LoadPatch {
     // lacks it (a bundle stripped of its project properties).
     std::string patch_id;
 };
+// Pin a physical control, replacing whatever it had in this patch; saved with it.
+struct Assign { Assignment assignment; };
+struct Unassign { std::string control; };
 using Command = std::variant<AddModule, RemoveModule, MoveModule, DuplicateModule, SetParameter, SetBypass, Connect, Disconnect,
-                             LoadGraph, NewPatch, RenamePatch, SaveGraph, LoadSession, LoadPatch>;
+                             LoadGraph, NewPatch, RenamePatch, SaveGraph, LoadSession, LoadPatch, Assign, Unassign>;
 struct EngineEvent {
     RequestId request = 0;
     bool accepted = true;

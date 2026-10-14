@@ -1,0 +1,125 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Pedal PI contributors
+#include "controls/controls.hpp"
+#include <algorithm>
+#include <cmath>
+
+namespace pedal {
+std::vector<std::string> ControlLayout::ids() const {
+    std::vector<std::string> out;
+    for (unsigned i = 1; i <= encoders; ++i) out.push_back("enc" + std::to_string(i));
+    for (unsigned i = 1; i <= stomps; ++i) out.push_back("stomp" + std::to_string(i));
+    return out;
+}
+bool is_encoder(const std::string& id) { return id.starts_with("enc") && id.size() > 3; }
+bool is_stomp(const std::string& id) { return id.starts_with("stomp") && id.size() > 5; }
+std::string control_label(const std::string& id) {
+    if (is_encoder(id)) return "Encoder " + id.substr(3);
+    if (is_stomp(id)) return "Stomp " + id.substr(5);
+    return id;
+}
+
+void ControlRecognizer::reset() { states_.clear(); pending_.clear(); }
+void ControlRecognizer::input(const ControlEvent& event) {
+    auto& state = states_[event.control];
+    switch (event.type) {
+    case ControlEvent::Type::Turn: {
+        if (!event.steps) return;
+        const auto interval = state.turned ? static_cast<unsigned>(std::min<unsigned long long>(clock_ - state.turned_at, 60000)) : 60000u;
+        state.turned = true; state.turned_at = clock_;
+        // Turning while pushed is fine adjustment, and spends the push.
+        if (state.pressed) state.used = true;
+        pending_.push_back({Gesture::Kind::Turn, event.control, event.steps, state.pressed, interval});
+        break;
+    }
+    case ControlEvent::Type::Press:
+        if (state.pressed) return;
+        // Contacts that close again just after opening are bouncing, not pressed.
+        if (state.released && clock_ - state.released_at < bounce_ms) return;
+        state.pressed = true; state.used = false; state.pressed_at = clock_;
+        if (is_stomp(event.control)) pending_.push_back({Gesture::Kind::Press, event.control});
+        break;
+    case ControlEvent::Type::Release:
+        if (!state.pressed) return;
+        state.pressed = false; state.released = true; state.released_at = clock_;
+        if (is_stomp(event.control)) pending_.push_back({Gesture::Kind::Release, event.control});
+        else if (!state.used) pending_.push_back({Gesture::Kind::Tap, event.control});
+        break;
+    }
+}
+std::vector<Gesture> ControlRecognizer::advance(unsigned milliseconds) {
+    clock_ += milliseconds;
+    for (auto& [control, state] : states_)
+        if (state.pressed && !state.used && is_encoder(control) && clock_ - state.pressed_at >= hold_ms) {
+            state.used = true;
+            pending_.push_back({Gesture::Kind::Hold, control});
+        }
+    auto out = std::move(pending_);
+    pending_.clear();
+    return out;
+}
+
+double acceleration(unsigned interval_ms, bool fine) {
+    if (fine) return 1;
+    // Detents this close together are a deliberate spin; bounded so one flick
+    // never crosses the whole range.
+    if (interval_ms <= 25) return 5;
+    if (interval_ms <= 50) return 3;
+    if (interval_ms <= 100) return 2;
+    return 1;
+}
+namespace {
+// The parameter narrowed to an assignment's range, ends swapped when inverted.
+struct Span { Parameter parameter; bool inverted = false; };
+Span span(const Parameter& p, const Assignment* range) {
+    Span s{p, false};
+    if (range) {
+        s.parameter.minimum = std::max(p.minimum, std::min(range->minimum, range->maximum));
+        s.parameter.maximum = std::min(p.maximum, std::max(range->minimum, range->maximum));
+        if (s.parameter.minimum > s.parameter.maximum) s.parameter.minimum = s.parameter.maximum;
+        s.inverted = range->inverted;
+    }
+    return s;
+}
+}
+double turned_value(const Parameter& p, double current, int steps, bool fine, unsigned interval_ms, const Assignment* range) {
+    auto narrowed = span(p, range);
+    auto& q = narrowed.parameter;
+    if (narrowed.inverted) steps = -steps;
+    current = std::clamp(current, q.minimum, q.maximum);
+    if (!steps) return current;
+    switch (q.kind) {
+    case ParameterKind::Toggle: return steps > 0 ? q.maximum : q.minimum;
+    case ParameterKind::Enumeration: return std::clamp(std::round(current) + steps, q.minimum, q.maximum);
+    case ParameterKind::Integer: {
+        // Small ranges move one value per detent; wide ones may accelerate.
+        const double rate = q.maximum - q.minimum > 24 ? acceleration(interval_ms, fine) : 1;
+        return std::clamp(std::round(current) + steps * rate, q.minimum, q.maximum);
+    }
+    case ParameterKind::Continuous: break;
+    }
+    if (q.maximum <= q.minimum) return q.minimum;
+    q.value = current;
+    const auto moved = normalized_value(q) + steps * (fine ? fine_step : turn_step * acceleration(interval_ms, fine));
+    return std::clamp(value_from_normalized(q, std::clamp(moved, 0.0, 1.0)), q.minimum, q.maximum);
+}
+std::optional<double> switched_value(const Parameter& p, double current, const Assignment& a, bool pressed) {
+    const auto [q, inverted] = span(p, &a);
+    const double off = inverted ? q.maximum : q.minimum, on = inverted ? q.minimum : q.maximum;
+    if (a.mode == SwitchMode::Momentary) return pressed ? on : off;
+    if (!pressed) return std::nullopt;
+    // Whichever end the value is nearer, go to the other.
+    return std::abs(current - on) < std::abs(current - off) ? off : on;
+}
+std::optional<double> Pickup::move(double current, double position) {
+    constexpr double near = 0.01;
+    if (!engaged_) {
+        const bool crossed = previous_ && (*previous_ - current) * (position - current) <= 0;
+        previous_ = position;
+        if (!crossed && std::abs(position - current) >= near) return std::nullopt;
+        engaged_ = true;
+    }
+    previous_ = position;
+    return position;
+}
+}

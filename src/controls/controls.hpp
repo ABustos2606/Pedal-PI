@@ -1,0 +1,89 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Pedal PI contributors
+#pragma once
+#include "core/model.hpp"
+#include <map>
+#include <optional>
+#include <string>
+#include <vector>
+
+// Physical controls, independent of where their events come from: the
+// simulator's keyboard now, the Pi's GPIO through Linux input later. Every
+// source produces the same raw events; everything after that is shared.
+// See docs/18-physical-controls.md.
+namespace pedal {
+// The instrument's surface: push encoders enc1..encN, stomp switches stomp1..stompN.
+struct ControlLayout {
+    unsigned encoders = 4, stomps = 3;
+    std::vector<std::string> ids() const;
+};
+std::string control_label(const std::string& id);
+bool is_encoder(const std::string& id);
+bool is_stomp(const std::string& id);
+
+// What a control reports. An encoder's push is a Press and Release on the
+// encoder itself; a Turn carries detents, positive clockwise.
+struct ControlEvent {
+    enum class Type { Turn, Press, Release };
+    Type type = Type::Turn;
+    std::string control;
+    int steps = 0;
+};
+// What it means. Encoders: Turn (fine while the push is held), Tap (pushed and
+// released without turning), Hold (pushed long without turning). Stomps: Press
+// and Release, at once, so a musical action never waits for a gesture to end.
+struct Gesture {
+    enum class Kind { Turn, Tap, Hold, Press, Release };
+    Kind kind = Kind::Turn;
+    std::string control;
+    int steps = 0;
+    bool fine = false;
+    // Since this encoder's previous detent; drives acceleration.
+    unsigned interval_ms = 0;
+};
+class ControlRecognizer {
+public:
+    static constexpr unsigned hold_ms = 700;
+    // A switch that closes again this soon after opening is bouncing.
+    static constexpr unsigned bounce_ms = 25;
+    void input(const ControlEvent&);
+    std::vector<Gesture> advance(unsigned milliseconds);
+    // Forget every pressed control, as when the control source reconnects.
+    void reset();
+private:
+    struct State {
+        bool pressed = false, used = false;
+        unsigned long long pressed_at = 0, released_at = 0, turned_at = 0;
+        bool turned = false, released = false;
+    };
+    std::map<std::string, State> states_;
+    std::vector<Gesture> pending_;
+    unsigned long long clock_ = 0;
+};
+
+// Mapping rules. Encoders are relative, so a patch change never makes a value
+// jump. Continuous values move in the parameter's own (linear or logarithmic)
+// space, within the assignment's range.
+inline constexpr double turn_step = 1.0 / 50, fine_step = 1.0 / 500;
+// 1 for slow turning, rising to a bounded 5 for fast spins; never when fine.
+double acceleration(unsigned interval_ms, bool fine);
+// The value after `steps` detents. `range` narrows the parameter (and may
+// invert it); without one the whole range is used.
+double turned_value(const Parameter&, double current, int steps, bool fine, unsigned interval_ms, const Assignment* range = nullptr);
+// A stomp switch on a parameter: Toggle flips between the range's ends on each
+// press; Momentary holds the far end while pressed. Nothing when the event
+// does nothing in that mode.
+std::optional<double> switched_value(const Parameter&, double current, const Assignment&, bool pressed);
+// Soft takeover for an absolute control (a potentiometer or an expression
+// pedal): its position takes effect only once it reaches or crosses the
+// current value, so a patch change never makes the sound jump. Positions and
+// value are normalized 0..1.
+class Pickup {
+public:
+    std::optional<double> move(double current, double position);
+    void release() { previous_.reset(); engaged_ = false; }
+private:
+    std::optional<double> previous_;
+    bool engaged_ = false;
+};
+}

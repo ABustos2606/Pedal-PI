@@ -1,5 +1,6 @@
 Ingen protocol reading, command mapping, acknowledgment, second client, timeout, reconnect and restart passed.
 Bundles, revisions, interrupted saves, fallback, startup choice, foreign bundles, missing files and simulated save/load passed.
+Control gestures, mapping rules, soft takeover and stored assignments passed.
 PASS  connect, read the graph and create the audio endpoints -- unix:///tmp/pedalpi-ingen.sock
 PASS  new patch replaces what the engine held
 PASS  new patch is IN wired to OUT on both sides
@@ -32,13 +33,15 @@ PASS  the second client followed the rebuild, including values it was never sent
 PASS  patch store opens -- /tmp/pedalpi-live-patches
 PASS  add a Mutable-derived module to the patch
 PASS  turn one of its controls
+PASS  pin encoder 1 to it
 PASS  the unsaved-changes marker is in the engine: both clients see it
-PASS  the engine saves the patch to disk -- 13.330504 ms; Saved Live "check" é ..
+PASS  the engine saves the patch to disk -- 15.268893 ms; Saved Live "check" é ..
 PASS  what it wrote reads back with the right identity and is published
 PASS  the stored patch lists its name and modules -- 2 blocks
 PASS  replace it with an empty patch
-PASS  load the stored patch -- 83.830714 ms; Loaded Live "check" é ..
+PASS  load the stored patch -- 84.092171 ms; Loaded Live "check" é ..
 PASS  identity, name, modules, cables, values and positions came back from disk
+PASS  the encoder assignment came back from disk
 PASS  the second client followed the load
 PASS  edit after loading
 PASS  a second save becomes revision 2
@@ -50,9 +53,9 @@ PASS  it loads with default names and layout, its values, and the folder's ident
 PASS  back to the stored patch -- Loaded Live "check" é ..
 PASS  remove the granular module again
 PASS  restore the value
-INFO  edit round trip through the adapter -- median 5.8094 ms, p95 6.21534 ms, max 8.34031 ms (200 edits)
+INFO  edit round trip through the adapter -- median 5.79018 ms, p95 6.15039 ms, max 6.27991 ms (200 edits)
 PASS  a restarted interface recovers the graph under the same identities
-PASS  it also knows which stored patch is playing, and whether it has unsaved edits -- p20261014-111902-0d64, unsaved edits
+PASS  it also knows which stored patch is playing, and whether it has unsaved edits -- p20261014-114659-e550, unsaved edits
 INFO  engine load reading -- none yet (none at connect)
 PASS  the restarted interface can edit
 SUMMARY all adapter checks passed

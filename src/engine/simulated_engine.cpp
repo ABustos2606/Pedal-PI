@@ -115,6 +115,18 @@ std::string SimulatedEngine::apply(const Command& command) {
         } else if constexpr (std::is_same_v<T, LoadSession>) {
             if (!saved_session_) return "No session snapshot saved";
             graph_ = *saved_session_;
+        } else if constexpr (std::is_same_v<T, Assign>) {
+            auto a = c.assignment;
+            const auto* m = find_module(graph_, a.module);
+            if (!valid_control_id(a.control) || !m) return "Invalid control assignment";
+            a.plugin = m->uri;
+            if (!assignment_target(graph_, a)) return "Control target is unavailable";
+            if (const auto* p = assignment_parameter(graph_, a); p && (a.minimum < p->minimum || a.maximum > p->maximum || a.minimum > a.maximum))
+                return "Invalid assignment parameter range";
+            std::erase_if(graph_.assignments, [&](const Assignment& old) { return old.control == a.control; });
+            graph_.assignments.push_back(std::move(a));
+        } else if constexpr (std::is_same_v<T, Unassign>) {
+            if (!std::erase_if(graph_.assignments, [&](const Assignment& old) { return old.control == c.control; })) return "Control is not assigned";
         } else if constexpr (std::is_same_v<T, LoadPatch>) {
             const auto path = local_path(c.location);
             std::ifstream in(path / "main.ttl", std::ios::binary);

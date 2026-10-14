@@ -144,7 +144,7 @@ These are starting values, not proven acceptance results. Test them on the 5-inc
 
 ## Physical controls
 
-No number or wiring has been selected by the user. Four push encoders and three stomp switches are an earlier **proposal**, not an agreed bill of materials. Beebo's hardware exposes two encoders and three switches with combined gestures; our control model is designed independently around whatever hardware is chosen.
+The user owns four 20-pulse push encoders and will use three momentary SPST footswitches (14 October 2026). Beebo's hardware exposes two encoders and three switches with combined gestures; our control model is designed independently. The behaviour, mapping rules, assignment screen and a wiring proposal are recorded in [physical controls](18-physical-controls.md).
 
 | Control type | Proposed behaviour | Design question |
 | --- | --- | --- |

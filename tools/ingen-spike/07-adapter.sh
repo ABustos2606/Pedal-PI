@@ -14,6 +14,7 @@ cmake -S "$D/../.." -B "$BUILD" -G Ninja -DPEDAL_BUILD_UI=OFF -DCMAKE_BUILD_TYPE
 cmake --build "$BUILD" 2>&1 | grep -E "error|warning|FAILED" ; [ -x "$BUILD/pedal_ingen_live" ] && [ -x "$BUILD/pedal_storage_tests" ] || exit 1
 "$BUILD/pedal_ingen_tests" || exit 1
 "$BUILD/pedal_storage_tests" || exit 1
+"$BUILD/pedal_controls_tests" || exit 1
 start_engine || exit 1
 "$BUILD/pedal_ingen_live" unix:///tmp/pedalpi-ingen.sock "$CATALOGUE"; live=$?
 # The same checks over TCP, which is how a Windows build reaches an engine in WSL.
