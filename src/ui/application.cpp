@@ -95,7 +95,7 @@ RequestId Application::submit(Command command) {
         std::holds_alternative<RenamePatch>(command) ? PendingKind::Rename : PendingKind::Edit;
     const auto id = engine_.submit(std::move(command));
     pending_[id] = kind;
-    message("Waiting for simulated engine...");
+    message(engine_.capabilities().simulation ? "Waiting for simulated engine..." : "Waiting for engine...");
     return id;
 }
 void Application::stream_parameter(InstanceId id, const std::string& symbol, double value) {

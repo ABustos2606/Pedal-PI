@@ -2,7 +2,7 @@
 
 **Project:** Pedal PI  
 **Prepared:** 13 October 2026 (America/Buenos_Aires)  
-**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
+**Status:** Phase 2 desktop acceptance complete with a simulated engine. Phase 4's engine adapter (P4.1–P4.3) is implemented and verified on the PC against Ingen under WSL2. Phase 1 retains Linux-platform and debugger setup work. Phase 0 deferred while the Pi is packed.
 **Display target:** 800 × 480.  
 **Hardware baseline:** Raspberry Pi 5, 2 GB RAM; Windows PC for everyday interface development.
 
@@ -141,7 +141,7 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** verify the engine assumptions while the desktop editor is still small.
 
-**Execution record - 13 October 2026 (PC only):** the hardware-independent parts of P3.1 and P3.5-P3.8, and the bundle format of P5.2, were verified on x86-64 Debian under WSL2 with JACK's dummy backend; see [Ingen engine evidence](14-ingen-engine-evidence.md). Poly's published `main` does not compile (it needs an unpublished serd), so the engine is upstream Ingen plus Poly's MIDI-learn fix and two project patches. The tasks below stay open until repeated on the Pi with the real interface and plugins.
+**Execution record - 13 October 2026 (PC only):** the hardware-independent parts of P3.1 and P3.5-P3.8, and the bundle format of P5.2, were verified on x86-64 Debian under WSL2 with JACK's dummy backend; see [Ingen engine evidence](14-ingen-engine-evidence.md). Poly's published `main` does not compile (it needs an unpublished serd), so the engine is upstream Ingen plus Poly's MIDI-learn fix and three project patches. The tasks below stay open until repeated on the Pi with the real interface and plugins.
 
 - [ ] **P3.1 — Build baseline:** select Poly Ingen and dependency revisions compatible with the Phase 0 OS. Check the inspected Serd/Sord/Sratom/Suil/LV2/Lilv/Raul requirements; choose build dependencies or an alternative supported development image from evidence.
 - [ ] **P3.2 — Linux builds:** establish a native Pi or reproducible Linux cross-build route with correct architecture and sysroot. Do not transplant Casette's Windows paths, Cortex-A72 target or unpinned dependency folder.
@@ -161,9 +161,11 @@ The engine is the authority for live DSP state. The UI model is its synchronized
 
 **Purpose:** turn the desktop editor into an instrument controller without coupling audio to the UI process.
 
-- [ ] **P4.1 — Ingen adapter:** implement the verified protocol using suitable RDF/Atom serialization/parsing, complete-message handling and bounded input. Do not parse Turtle by splitting arbitrary periods or assuming each socket read is a full message.
-- [ ] **P4.2 — Communication threading:** isolate socket I/O from LVGL drawing, queue normalized events to the UI thread, bound queues and coalesce redundant continuous-parameter updates. Preserve discrete switch actions and graph operations.
-- [ ] **P4.3 — State synchronization:** load a complete engine snapshot, apply subsequent updates and correlate pending edits with results. Define snapshot completion and update ordering so reconnect cannot lose edits or duplicate modules.
+**Execution record - 13 October 2026 (PC only):** P4.1–P4.3 are implemented in `src/engine/ingen/` and pass 39 live checks against the patched Ingen under WSL2, including a measured audio level through a patch the adapter built, a second client, an interface restart and an engine restart; the command checks were repeated over TCP. The Windows interface runs against that engine with `--engine`. The reconnecting half of P4.6 is included. See [the adapter record](15-ingen-adapter.md). Not done: an ARM build, the Pi, real plugins beyond the LV2 example amplifier, P4.4's Linux metadata export, P4.5, P4.7 and P4.8.
+
+- [x] **P4.1 — Ingen adapter:** implement the verified protocol using suitable RDF/Atom serialization/parsing, complete-message handling and bounded input. Do not parse Turtle by splitting arbitrary periods or assuming each socket read is a full message.
+- [x] **P4.2 — Communication threading:** isolate socket I/O from LVGL drawing, queue normalized events to the UI thread, bound queues and coalesce redundant continuous-parameter updates. Preserve discrete switch actions and graph operations.
+- [x] **P4.3 — State synchronization:** load a complete engine snapshot, apply subsequent updates and correlate pending edits with results. Define snapshot completion and update ordering so reconnect cannot lose edits or duplicate modules.
 - [ ] **P4.4 — Metadata discovery:** export installed LV2 metadata on Linux using the selected host/Lilv facilities. Generate a versioned catalogue consumed by the UI; use an exported fixture on Windows so PC work does not need native LV2 binaries.
 - [ ] **P4.5 — Pi platform backend:** build the same views/domain code for Linux with a validated DRM/KMS or framebuffer driver and evdev/libinput touch. Configure stable device selection, 800 × 480 output and rotation/calibration where needed.
 - [ ] **P4.6 — Error and reconnect states:** show starting/disconnected/reconnecting/plugin-failed status, reject unavailable operations, and recover the current graph after UI-only restart. A transient communication error must not launch a competing audio engine.

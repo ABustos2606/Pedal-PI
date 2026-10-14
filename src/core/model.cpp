@@ -51,14 +51,21 @@ const std::vector<ModuleDefinition>& demo_catalogue() {
     };
     return catalogue;
 }
-const std::vector<ModuleDefinition>& catalogue() {
-    static const std::vector<ModuleDefinition> merged = [] {
-        auto all = demo_catalogue();
+namespace {
+// A deque: registering an entry must not move the ones already handed out.
+std::deque<ModuleDefinition>& entries() {
+    static std::deque<ModuleDefinition> merged = [] {
+        std::deque<ModuleDefinition> all(demo_catalogue().begin(), demo_catalogue().end());
         const auto& reference = reference_catalogue();
         all.insert(all.end(), reference.begin(), reference.end());
         return all;
     }();
     return merged;
+}
+}
+const std::deque<ModuleDefinition>& catalogue() { return entries(); }
+void register_definitions(std::vector<ModuleDefinition> added) {
+    for (auto& d : added) if (!definition(d.uri)) entries().push_back(std::move(d));
 }
 const ModuleDefinition* definition(const std::string& uri) {
     for (const auto& d : catalogue()) if (d.uri == uri) return &d;

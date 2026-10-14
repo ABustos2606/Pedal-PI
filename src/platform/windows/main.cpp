@@ -1,20 +1,44 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pedal PI contributors
 #include "ui/application.hpp"
+#include "engine/ingen/ingen_engine.hpp"
 #include "engine/simulated_engine.hpp"
 #include <windows.h>
+#include <shellapi.h>
 #include <algorithm>
 #include <fstream>
+#include <memory>
+#include <string>
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
-    const bool smoke = command_line && wcscmp(command_line, L"--smoke") == 0;
+    bool smoke = command_line && wcscmp(command_line, L"--smoke") == 0;
+    // --engine tcp://host:port drives a running Ingen instead of the simulation,
+    // for example one started under WSL, which Windows reaches on 127.0.0.1.
+    std::string address;
+    int count = 0;
+    if (auto* arguments = CommandLineToArgvW(GetCommandLineW(), &count)) {
+        for (int i = 1; i < count; ++i) smoke = smoke || wcscmp(arguments[i], L"--smoke") == 0;
+        for (int i = 1; i + 1 < count; ++i) if (wcscmp(arguments[i], L"--engine") == 0) {
+            address.resize(static_cast<std::size_t>(WideCharToMultiByte(CP_UTF8, 0, arguments[i + 1], -1, nullptr, 0, nullptr, nullptr)));
+            WideCharToMultiByte(CP_UTF8, 0, arguments[i + 1], -1, address.data(), static_cast<int>(address.size()), nullptr, nullptr);
+            address.resize(address.empty() ? 0 : address.size() - 1);
+        }
+        LocalFree(arguments);
+    }
     lv_init();
-    auto* display = lv_windows_create_display(L"Pedal PI - UI simulator", 800, 480, 100, true, true);
+    auto* display = lv_windows_create_display(address.empty() ? L"Pedal PI - UI simulator" : L"Pedal PI - Ingen engine", 800, 480, 100, true, true);
     if (!display) return 1;
     auto* group = lv_group_create(); lv_group_set_default(group);
     lv_windows_acquire_pointer_indev(display);
     lv_indev_set_group(lv_windows_acquire_keypad_indev(display), group);
-    pedal::SimulatedEngine engine;
+    std::unique_ptr<pedal::Engine> owned;
+    if (address.empty()) owned = std::make_unique<pedal::SimulatedEngine>();
+    else {
+        pedal::register_definitions(pedal::ingen_development_catalogue());
+        owned = std::make_unique<pedal::IngenEngine>(pedal::ingen::Options{address});
+        owned->connect();
+    }
+    auto& engine = *owned;
     lv_lock();
     bool display_alive = true;
     unsigned completed_flushes = 0;

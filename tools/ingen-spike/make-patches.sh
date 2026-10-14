@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# One-off authoring helper: edit the Ingen checkout, then export the two
+# One-off authoring helper: edit the Ingen checkout, then export the three
 # patches that 01-build.sh applies. Kept so the patches can be regenerated.
 set -euo pipefail
+out="$(dirname "$(readlink -f "$0")")/patches"
 cd /opt/pedalpi/src/ingen
 git checkout -q -- src
 python3 - <<'PY'
@@ -108,9 +109,31 @@ edit("src/ingen/ingen.cpp", [
 			std::this_thread::sleep_for(std::chrono::milliseconds(5));"""),
 ])
 PY
-out="$(dirname "$(readlink -f "$0")")/patches"
 mkdir -p "$out"
 git diff -- src/server/SocketServer.hpp src/SocketReader.cpp > "$out/0001-unregister-clients-on-hangup.patch"
 git diff -- src/ingen/ingen.cpp > "$out/0002-post-process-every-5ms.patch"
+# The third patch touches a file the first one already changed: diff it
+# against the tree with the first two applied.
+git add -A src
+python3 - <<'PY'
+path = "src/SocketReader.cpp"
+s = open(path).read()
+a = """	if (c < 0) {
+		self->_socket_error = errno;
+		return 0;
+	}
+"""
+assert s.count(a) == 1
+open(path, "w").write(s.replace(a, a + """
+	// End of stream. A TCP client that closes its side leaves the socket
+	// readable for ever, without the hangup poll() reports for a Unix socket,
+	// and this reader then spun at full load. Treat it as the departure it is.
+	if (c == 0) {
+		self->_socket_error = ECONNRESET;
+	}
+"""))
+PY
+git diff -- src/SocketReader.cpp > "$out/0003-end-reader-at-end-of-stream.patch"
+git reset -q
 git checkout -q -- src
 wc -l "$out"/*.patch

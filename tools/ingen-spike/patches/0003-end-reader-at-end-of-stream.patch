@@ -1,0 +1,18 @@
+diff --git a/src/SocketReader.cpp b/src/SocketReader.cpp
+index 37d1e920..a1dba7db 100644
+--- a/src/SocketReader.cpp
++++ b/src/SocketReader.cpp
+@@ -101,6 +101,13 @@ SocketReader::c_recv(void* buf, size_t size, size_t nmemb, void* stream)
+ 		return 0;
+ 	}
+ 
++	// End of stream. A TCP client that closes its side leaves the socket
++	// readable for ever, without the hangup poll() reports for a Unix socket,
++	// and this reader then spun at full load. Treat it as the departure it is.
++	if (c == 0) {
++		self->_socket_error = ECONNRESET;
++	}
++
+ 	return c;
+ }
+ 

@@ -52,11 +52,12 @@ The Debug build/PDBs and JSON configurations are present and checked. The C/C++ 
 | Path | Responsibility |
 | --- | --- |
 | `src/core/` | Stable IDs/URIs/display names, explicit port types/channel symbols, tagged parameters, graph validation, logical/physical routing plans and retained missing-module metadata; no LVGL/Windows dependency |
+| `src/engine/ingen/` | The real engine backend: Turtle reader, protocol, session state machine, socket threads and `IngenEngine`; see [the adapter record](15-ingen-adapter.md) |
 | `src/engine/` | Abstract engine interface and deterministic backend; connection lifecycle, capabilities, requests, 100 ms delayed results, snapshots, new/rename/session save/load and errors |
 | `src/ui/` | Shared LVGL screens and view state; callbacks queue edits and screen rebuilds happen outside event dispatch |
 | `src/platform/windows/` | Native display/input initialization and event loop |
 | `config/lv_conf.h` | LVGL configuration and selected fonts |
-| `tests/` | Domain/engine checks and actual LVGL pointer interactions on an in-memory display |
+| `tests/` | Domain/engine checks, the Ingen adapter against a stand-in engine (`ingen_tests`) and a live one (`ingen_live`), and actual LVGL pointer interactions on an in-memory display |
 
 The simulation owns the graph. The application consumes accepted snapshots and keeps pending requests separately. Continuous sliders send their value while the finger moves: one request is in flight per control and the newest value replaces anything waiting, so the rate follows engine acknowledgment. Release sends the final position; a touch that moves nothing is not an edit. Disconnect cancels queued edits so reconnect cannot apply stale requests. UI drawing and simulation updates run on the LVGL thread under its Windows lock; a future network adapter will need its own I/O thread and bounded event queue.
 

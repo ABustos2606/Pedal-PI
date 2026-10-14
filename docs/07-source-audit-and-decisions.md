@@ -98,7 +98,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D19 | Automatic NAM quality reduction under load | Open; no automatic reduction policy agreed |
 | D20 | Shared Windows 800 × 480 LVGL simulator and Pi UI development workflow | Proposed implementation route documented in Phases 1–4; exact LVGL revision, driver and compiler remain to be selected |
 | D21 | Detailed phase/task implementation plan | Created at the user's request on 13 October 2026; no implementation phase has been executed |
-| D23 | Engine build and protocol | Evidence 13 October 2026: upstream Ingen `13a045d0` + Poly MIDI-learn fix + two project patches, Turtle protocol, verified under WSL2 ([record](14-ingen-engine-evidence.md)). Led to the D13 revision. Pi verification pending |
+| D23 | Engine build and protocol | Evidence 13 October 2026: upstream Ingen `13a045d0` + Poly MIDI-learn fix + three project patches, Turtle protocol, verified under WSL2 ([record](14-ingen-engine-evidence.md)). Led to the D13 revision. Pi verification pending |
 | D22 | Project license | Agreed 13 October 2026: GPL-3.0-or-later for original Pedal PI files; preserve upstream licenses, including Ingen's AGPL-3.0-or-later |
 
 ## Information needed before implementation

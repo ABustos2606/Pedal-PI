@@ -1,0 +1,487 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Pedal PI contributors
+// The Ingen adapter against a stand-in engine that speaks the recorded
+// protocol, including the awkward parts: replies split across reads, values
+// that are not echoed to their sender, copies announced without contents and
+// notification numbers that collide with request numbers. What the real
+// engine does is checked separately by pedal_ingen_live.
+#include "engine/ingen/ingen_engine.hpp"
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+
+using namespace pedal;
+using namespace pedal::ingen;
+namespace {
+void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
+const std::string amp = "http://lv2plug.in/plugins/eg-amp";
+const std::string rdf_type(uri::rdf_type);
+std::string full(std::string_view space, std::string_view local) { return std::string(space) + std::string(local); }
+Value iri_value(std::string text) { return {Value::Kind::Uri, 0, false, std::move(text)}; }
+Value number_value(double number) { return {Value::Kind::Number, number, false, {}}; }
+
+struct FakeEngine;
+struct FakeTransport final : Transport {
+    FakeTransport(FakeEngine& engine, std::size_t chunk) : engine(engine), chunk(chunk) {}
+    ~FakeTransport() override { close(); }
+    void open() override;
+    void close() override;
+    void send(std::string) override;
+    std::vector<Event> poll() override { auto out = std::move(events); events.clear(); return out; }
+    void deliver(std::string text);
+    FakeEngine& engine;
+    std::size_t chunk;
+    std::vector<Event> events;
+    turtle::Reader reader;
+    bool connected = false, greeted = false;
+};
+struct FakeEngine {
+    std::map<std::string, Properties> objects{{"ingen:/main", {}}};
+    std::vector<std::pair<std::string, std::string>> arcs;
+    std::set<std::string> plugins{amp};
+    std::vector<FakeTransport*> clients;
+    bool reachable = true;
+    int mute = 0, requests = 0, label = 0;
+
+    static std::string term(const Value& value) {
+        switch (value.kind) {
+        case Value::Kind::Uri: return "<" + value.text + ">";
+        case Value::Kind::Number: return float_literal(value.number);
+        case Value::Kind::Boolean: return value.boolean ? "true" : "false";
+        // The engine switches to a long string when the text has a quote in it.
+        default: return value.text.find('"') != std::string::npos ? "\"\"\"" + value.text + "\"\"\"" : string_literal(value.text);
+        }
+    }
+    static std::string key(const std::string& predicate) {
+        if (predicate == rdf_type) return "a";
+        if (predicate.starts_with(uri::ingen)) return "ingen:" + predicate.substr(uri::ingen.size());
+        if (predicate.starts_with(uri::lv2)) return "lv2:" + predicate.substr(uri::lv2.size());
+        return "<" + predicate + ">";
+    }
+    static std::string body(const Properties& properties) {
+        if (properties.empty()) return "[]";
+        std::string text = "[\n";
+        for (std::size_t i = 0; i < properties.size(); ++i)
+            text += "\t\t" + key(properties[i].first) + " " + term(properties[i].second) + (i + 1 < properties.size() ? " ;\n" : "\n");
+        return text + "\t\t]";
+    }
+    std::string node(const std::string& lines) { return "\n_:b" + std::to_string(label++) + "\n" + lines + " .\n"; }
+    std::string bundle(bool start) { return node(std::string("\ta ingen:Bundle") + (start ? "Start" : "End") + " ;\n\tpatch:sequenceNumber \"" + std::to_string(label) + "\"^^xsd:int"); }
+    std::string response(int sequence, int status, const std::string& subject = {}) {
+        return node("\ta patch:Response ;\n\tpatch:sequenceNumber \"" + std::to_string(sequence) + "\"^^xsd:int ;\n" +
+                    (subject.empty() ? "" : "\tpatch:subject <" + subject + "> ;\n") + "\tpatch:body \"" + std::to_string(status) + "\"^^xsd:int");
+    }
+    // Notifications reuse the request's number, as the real engine's sometimes do.
+    std::string put(int sequence, const std::string& subject, const Properties& properties) {
+        return node("\ta patch:Put ;\n\tpatch:sequenceNumber \"" + std::to_string(sequence) + "\"^^xsd:int ;\n\tpatch:subject <" + subject + "> ;\n\tpatch:body " + body(properties));
+    }
+    std::string arc(int sequence, const char* type, const std::string& tail, const std::string& head) {
+        return node(std::string("\ta patch:") + type + " ;\n\tpatch:sequenceNumber \"" + std::to_string(sequence) + "\"^^xsd:int ;\n" +
+                    (std::string(type) == "Put" ? "\tpatch:subject <ingen:/main/> ;\n" : "") +
+                    "\tpatch:body [\n\t\ta ingen:Arc ;\n\t\tingen:tail <" + tail + "> ;\n\t\tingen:head <" + head + ">\n\t]");
+    }
+    static void merge(Properties& object, const Properties& added) {
+        for (const auto& [name, ignored] : added) std::erase_if(object, [&](const auto& entry) { return entry.first == name; });
+        object.insert(object.end(), added.begin(), added.end());
+    }
+    std::string describe(int sequence, const std::string& path) {
+        auto text = put(sequence, path, objects.at(path));
+        for (const auto& [child, properties] : objects) if (child.starts_with(path + "/")) text += put(sequence, child, properties);
+        return text;
+    }
+    void create_block(const std::string& path, Properties properties) {
+        objects[path] = std::move(properties);
+        auto port = [&](const char* symbol, int index, const char* kind, const char* direction) {
+            auto& made = objects[path + "/" + symbol];
+            made = {{full(uri::lv2, "index"), number_value(index)}, {rdf_type, iri_value(full(uri::lv2, kind))}, {rdf_type, iri_value(full(uri::lv2, direction))}};
+            return &made;
+        };
+        auto* gain = port("gain", 0, "ControlPort", "InputPort");
+        gain->insert(gain->begin(), {full(uri::ingen, "value"), number_value(0)});
+        port("in", 1, "AudioPort", "InputPort");
+        port("out", 2, "AudioPort", "OutputPort");
+    }
+    void erase(const std::string& path) {
+        std::erase_if(objects, [&](const auto& entry) { return entry.first == path || entry.first.starts_with(path + "/"); });
+        std::erase_if(arcs, [&](const auto& a) { return a.first.starts_with(path + "/") || a.second.starts_with(path + "/") || a.first == path || a.second == path; });
+    }
+    void request(FakeTransport& from, const Message& m) {
+        ++requests;
+        if (mute > 0) { --mute; return; }
+        int status = 0;
+        std::string subject, all, others;
+        auto end_of = [&](const char* local) { const auto* end = find(m.body, full(uri::ingen, local)); return end ? normal_path(end->text) : std::string(); };
+        switch (m.type) {
+        case Message::Type::Get:
+            if (m.subject == "ingen:/plugins") {
+                auto text = bundle(true) + response(m.sequence, 0) + bundle(true);
+                for (const auto& plugin : plugins) text += put(label, plugin, {{rdf_type, iri_value(full(uri::lv2, "Plugin"))}});
+                // The real listing closes its inner bundle, then the outer one in a second message.
+                from.deliver(text + bundle(false));
+                from.deliver(bundle(false));
+                return;
+            }
+            if (m.subject == "ingen:/main") {
+                all = put(1, "ingen:/main/", {{full(uri::ingen, "polyphony"), number_value(1)}});
+                if (objects.contains(m.subject)) all += put(1, m.subject, objects.at(m.subject));
+                for (const auto& [path, properties] : objects) if (path != m.subject) all += put(m.sequence, path, properties);
+                for (const auto& [tail, head] : arcs) all += arc(m.sequence, "Put", tail, head);
+            } else if (objects.contains(m.subject)) all = describe(m.sequence, m.subject);
+            else status = 16;
+            from.deliver(bundle(true) + response(m.sequence, status) + all + bundle(false));
+            return;
+        case Message::Type::Put:
+            if (has(m.body, rdf_type, full(uri::ingen, "Arc"))) {
+                const std::pair cable{end_of("tail"), end_of("head")};
+                if (!objects.contains(cable.first) || !objects.contains(cable.second)) status = 16;
+                else if (std::find(arcs.begin(), arcs.end(), cable) != arcs.end()) status = 11;
+                else { arcs.push_back(cable); all = arc(m.sequence, "Put", cable.first, cable.second); }
+                subject = cable.second;
+            } else if (has(m.body, rdf_type, full(uri::ingen, "Block")) && !objects.contains(m.subject)) {
+                const auto* prototype = find(m.body, full(uri::lv2, "prototype"));
+                if (!prototype || !plugins.contains(prototype->text)) { status = 22; subject = prototype ? prototype->text : ""; }
+                else {
+                    create_block(m.subject, m.body);
+                    // Two responses for one request, as recorded.
+                    all = describe(m.sequence, m.subject) + response(m.sequence, 0, m.subject) + put(m.sequence, m.subject, objects.at(m.subject));
+                }
+            } else if (objects.contains(m.subject) || has(m.body, rdf_type, full(uri::lv2, "AudioPort"))) {
+                merge(objects[m.subject], m.body);
+                all = put(m.sequence, m.subject, m.body);
+            } else status = 4;
+            break;
+        case Message::Type::Set:
+            subject = m.subject;
+            if (!objects.contains(m.subject)) status = 16;
+            else {
+                // A graph property set without a context is accepted and never described again.
+                if (m.subject != "ingen:/main" || m.context == full(uri::ingen, "internalContext")) merge(objects[m.subject], {{m.property, m.value}});
+                // Told to everyone except the client that asked.
+                others = node("\ta patch:Set ;\n\tpatch:sequenceNumber \"" + std::to_string(m.sequence) + "\"^^xsd:int ;\n\tpatch:subject <" + m.subject +
+                              "> ;\n\tpatch:property " + key(m.property) + " ;\n\tpatch:value " + term(m.value));
+            }
+            break;
+        case Message::Type::Delete:
+            if (!m.subject.empty()) {
+                if (!objects.contains(m.subject)) { status = 16; subject = m.subject; }
+                else { erase(m.subject); all = node("\ta patch:Delete ;\n\tpatch:sequenceNumber \"" + std::to_string(m.sequence) + "\"^^xsd:int ;\n\tpatch:subject <" + m.subject + ">"); }
+            } else {
+                const std::pair cable{end_of("tail"), end_of("head")};
+                if (!std::erase(arcs, cable)) { status = 16; subject = cable.second; }
+                else all = arc(m.sequence, "Delete", cable.first, cable.second);
+            }
+            break;
+        case Message::Type::Copy:
+            if (!objects.contains(m.subject)) status = 16;
+            else if (objects.contains(m.destination)) status = 11;
+            else {
+                std::map<std::string, Properties> copies;
+                for (const auto& [path, properties] : objects)
+                    if (path == m.subject || path.starts_with(m.subject + "/")) copies[m.destination + path.substr(m.subject.size())] = properties;
+                objects.insert(copies.begin(), copies.end());
+                // Announced, never described.
+                all = node("\ta patch:Copy ;\n\tpatch:sequenceNumber \"" + std::to_string(m.sequence) + "\"^^xsd:int ;\n\tpatch:subject <" + m.subject +
+                           "> ;\n\tpatch:destination <" + m.destination + ">");
+            }
+            break;
+        default: status = 4;
+        }
+        for (auto* client : clients) {
+            const auto start = bundle(true);
+            client->deliver(start + (client == &from ? response(m.sequence, status, subject) + all : all + others) + bundle(false));
+        }
+    }
+    void die() {
+        for (auto* client : std::vector(clients)) { client->connected = false; client->events.push_back({Transport::Event::Kind::Closed, "Engine closed the connection"}); }
+        clients.clear();
+    }
+};
+void FakeTransport::open() {
+    close();
+    reader = {}; greeted = false;
+    if (!engine.reachable) { events.push_back({Event::Kind::Closed, "Engine is not reachable"}); return; }
+    connected = true;
+    engine.clients.push_back(this);
+    events.push_back({Event::Kind::Opened, {}});
+}
+void FakeTransport::close() { connected = false; events.clear(); std::erase(engine.clients, this); }
+void FakeTransport::send(std::string text) {
+    if (!connected) return;
+    // The reader deadlock in the real engine: one newline after the last period, never a NUL.
+    check(text.ends_with(" .\n") && text.find('\0') == std::string::npos, "request framing would park the engine's reader");
+    std::vector<turtle::Triple> triples;
+    check(reader.parse(text, triples).empty(), "adapter wrote Turtle the engine could not read");
+    for (const auto& message : decode(triples)) engine.request(*this, message);
+}
+void FakeTransport::deliver(std::string text) {
+    if (!greeted) {
+        text = "@prefix atom: <http://lv2plug.in/ns/ext/atom#> .\n@prefix ingen: <http://drobilla.net/ns/ingen#> .\n@prefix lv2: <http://lv2plug.in/ns/lv2core#> .\n"
+               "@prefix patch: <http://lv2plug.in/ns/ext/patch#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n" + text;
+        greeted = true;
+    }
+    text += '\0';
+    // One read is rarely one message.
+    for (std::size_t at = 0; at < text.size(); at += chunk) events.push_back({Event::Kind::Data, text.substr(at, chunk)});
+}
+
+struct Rig {
+    explicit Rig(FakeEngine& fake, std::size_t chunk = 7) {
+        auto owned = std::make_unique<FakeTransport>(fake, chunk);
+        transport = owned.get();
+        engine = std::make_unique<IngenEngine>(Options{}, std::move(owned));
+    }
+    // Run until the engine has nothing more to say, and return what it said.
+    std::vector<EngineEvent> settle(unsigned step = 1) {
+        std::vector<EngineEvent> all;
+        for (int quiet = 0; quiet < 3;) {
+            auto events = engine->advance(step);
+            quiet = events.empty() ? quiet + 1 : 0;
+            for (auto& event : events) all.push_back(std::move(event));
+        }
+        return all;
+    }
+    EngineEvent result(Command command) {
+        const auto id = engine->submit(std::move(command));
+        for (auto& event : settle()) if (event.request == id) return event;
+        throw std::runtime_error("no result for a submitted command");
+    }
+    const Graph& graph() const { return engine->snapshot(); }
+    FakeTransport* transport;
+    std::unique_ptr<IngenEngine> engine;
+};
+const Value* property(const FakeEngine& fake, const std::string& path, const std::string& predicate) {
+    const auto it = fake.objects.find(path);
+    return it == fake.objects.end() ? nullptr : find(it->second, predicate);
+}
+
+void turtle_and_protocol() {
+    // Recorded from the engine on 13 October 2026, whitespace and repetitions included.
+    const std::string recorded =
+        "@prefix atom: <http://lv2plug.in/ns/ext/atom#> .\n@prefix ingen: <http://drobilla.net/ns/ingen#> .\n@prefix lv2: <http://lv2plug.in/ns/lv2core#> .\n"
+        "@prefix patch: <http://lv2plug.in/ns/ext/patch#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n"
+        "_:b60\n\ta ingen:BundleStart ;\n\tpatch:sequenceNumber \"45\"^^xsd:int .\n\n"
+        "_:b61\n\ta patch:Response ;\n\tpatch:sequenceNumber \"12\"^^xsd:int ;\n\tpatch:body \"0\"^^xsd:int .\n\n"
+        "_:b62\n\ta patch:Put ;\n\tpatch:context ingen:internalContext ;\n\tpatch:subject <ingen:/main/> ;\n\tpatch:body [\n\t\tingen:polyphony \"1\"^^xsd:int\n\t] .\n\n"
+        "_:b64\n\ta patch:Put ;\n\tpatch:sequenceNumber \"1\"^^xsd:int ;\n\tpatch:context ingen:externalContext ;\n\tpatch:subject <ingen:/main/> ;\n\tpatch:body [] .\n\n"
+        "_:b66\n\ta patch:Put ;\n\tpatch:sequenceNumber \"2\"^^xsd:int ;\n\tpatch:subject <ingen:/main/m3> ;\n\tpatch:body [\n\t\tingen:canvasX \"300.0\"^^xsd:float ;\n"
+        "\t\tingen:canvasY \"132.0\"^^xsd:float ;\n\t\tingen:enabled false ;\n\t\tlv2:prototype <http://lv2plug.in/plugins/eg-amp> ;\n\t\ta ingen:Block ;\n"
+        "\t\t<urn:pedalpi:ns#displayName> \"Amp\"\n\t] .\n\n"
+        "_:b68\n\ta patch:Put ;\n\tpatch:sequenceNumber \"3\"^^xsd:int ;\n\tpatch:subject <ingen:/main/control> ;\n\tpatch:body [\n\t\tatom:bufferType atom:Sequence ,\n"
+        "\t\t\tatom:Sequence ;\n\t\tatom:supports patch:Message ;\n\t\t<http://lv2plug.in/ns/ext/resize-port#minimumSize> \"4096\"^^xsd:int ;\n"
+        "\t\tlv2:index \"0\"^^xsd:int ,\n\t\t\t\"0\"^^xsd:int ;\n\t\tlv2:name \"Control\" ;\n\t\ta atom:AtomPort ,\n\t\t\tatom:AtomPort ,\n\t\t\tlv2:InputPort\n\t\t] .\n\n"
+        "_:b82\n\ta patch:Put ;\n\tpatch:sequenceNumber \"10\"^^xsd:int ;\n\tpatch:subject <ingen:/main/> ;\n\tpatch:body [\n\t\ta ingen:Arc ;\n"
+        "\t\tingen:tail <ingen:/main/in_l> ;\n\t\tingen:head <ingen:/main/m3/in>\n\t] .\n\n"
+        "_:b58\n\ta patch:Set ;\n\tpatch:sequenceNumber \"43\"^^xsd:int ;\n\tpatch:subject <ingen:/main> ;\n\tpatch:property <urn:pedalpi:ns#patchName> ;\n"
+        "\tpatch:value \"\"\"My \"patch\" \xc3\xa9\"\"\" .\n\n"
+        "_:b86\n\ta ingen:BundleEnd ;\n\tpatch:sequenceNumber \"46\"^^xsd:int .\n";
+    turtle::Reader reader;
+    std::vector<turtle::Triple> triples;
+    check(reader.parse(recorded, triples).empty(), "recorded engine output was not readable");
+    const auto messages = decode(triples);
+    check(messages.size() == 9 && messages[0].type == Message::Type::BundleStart && messages[8].type == Message::Type::BundleEnd, "recorded messages miscounted");
+    check(messages[1].type == Message::Type::Response && messages[1].sequence == 12 && messages[1].status == 0, "response not decoded");
+    check(messages[2].subject == "ingen:/main" && messages[3].body.empty(), "trailing slash or empty body mishandled");
+    const auto& made = messages[4];
+    check(made.type == Message::Type::Put && made.subject == "ingen:/main/m3" && has(made.body, rdf_type, full(uri::ingen, "Block")), "block not decoded");
+    check(find(made.body, full(uri::ingen, "canvasX"))->number == 300 && !find(made.body, full(uri::ingen, "enabled"))->boolean, "typed values not decoded");
+    check(find(made.body, full(uri::pedalpi, "displayName"))->text == "Amp", "project property not decoded");
+    check(has(messages[5].body, rdf_type, full(uri::atom, "AtomPort")) && has(messages[5].body, rdf_type, full(uri::lv2, "InputPort")), "repeated objects lost");
+    check(find(messages[6].body, full(uri::ingen, "head"))->text == "ingen:/main/m3/in", "arc not decoded");
+    check(messages[7].type == Message::Type::Set && messages[7].value.text == "My \"patch\" \xc3\xa9", "long string not decoded");
+    // Prefixes last for the connection; statement punctuation inside a string is text.
+    triples.clear();
+    check(reader.parse("_:x a patch:Set ; patch:value \"one. two ; [three] \\\"four\\\" \\u00e9\\n\" .", triples).empty(), "later message lost its prefixes");
+    check(decode(triples)[0].value.text == "one. two ; [three] \"four\" \xc3\xa9\n", "punctuation or escapes in a string misread");
+    triples.clear();
+    check(!reader.parse("_:y a patch:Set ; patch:value \"unterminated .", triples).empty() && triples.empty(), "truncated message accepted");
+    check(!reader.parse("_:z a unknown:Thing .", triples).empty(), "undeclared prefix accepted");
+    // What is written is what the engine was verified to accept.
+    check(set(7, "ingen:/main/m3/gain", "ingen:value", float_literal(3.5)) ==
+          "[]\n\ta patch:Set ;\n\tpatch:sequenceNumber \"7\"^^xsd:int ;\n\tpatch:subject <ingen:/main/m3/gain> ;\n\tpatch:property ingen:value ;\n\tpatch:value \"3.5\"^^xsd:float .\n",
+          "request text changed");
+    check(string_literal("a \"b\"\n\\") == "\"a \\\"b\\\"\\n\\\\\"" && !safe_iri("urn:x> ; ingen:enabled false") && !lv2_symbol("gain> .") && lv2_symbol("in_l"), "unsafe text could reach the engine");
+    check(float_literal(0.1) == "\"0.100000001\"^^xsd:float" && float_literal(-24) == "\"-24\"^^xsd:float", "float literal is not locale-independent or exact");
+}
+
+void adapter() {
+    register_definitions(ingen_development_catalogue());
+    FakeEngine fake;
+    Rig rig(fake);
+    auto& engine = *rig.engine;
+    check(engine.state() == EngineState::Disconnected && validate_graph(engine.snapshot()).empty(), "no usable graph before connecting");
+    engine.submit(RenamePatch{"Too early"});
+    check(!engine.advance(0)[0].accepted, "edit accepted without an engine");
+    engine.connect();
+    check(engine.state() == EngineState::Connecting, "connect skipped lifecycle");
+    engine.submit(RenamePatch{"Too early"});
+    auto events = rig.settle();
+    check(engine.state() == EngineState::Ready && !events.empty() && events.back().state == EngineState::Ready && events.back().snapshot, "did not become ready");
+    check(std::count_if(events.begin(), events.end(), [](const EngineEvent& e) { return e.request && !e.accepted; }) == 1 && rig.graph().name == "Untitled", "edit sent while connecting");
+    for (const char* port : {"in_l", "in_r", "out_l", "out_r"}) check(fake.objects.contains(std::string("ingen:/main/") + port), "audio endpoint not created");
+    check(rig.graph().modules.size() == 2 && rig.graph().connections.empty() && validate_graph(rig.graph()).empty(), "empty engine graph misread");
+    const auto caps = engine.capabilities();
+    check(!caps.simulation && caps.audio_processing && caps.session_save && !caps.persistent_save && !caps.plugin_state, "capabilities overstated");
+
+    // Add: nothing changes before the engine answers.
+    auto before = fake.requests;
+    const auto adding = engine.submit(AddModule{amp, 184, 132});
+    check(rig.graph().modules.size() == 2, "module appeared before acknowledgment");
+    events = rig.settle();
+    check(events.size() == 1 && events[0].request == adding && events[0].accepted, "add was not acknowledged exactly once");
+    check(rig.graph().modules.size() == 3 && rig.graph().dirty, "accepted module missing");
+    const auto first = rig.graph().modules[2];
+    check(first.id == 3 && first.uri == amp && first.name == "Amp" && first.x == 184 && first.y == 132 && !first.bypassed, "module identity or position wrong");
+    check(first.ports.size() == 2 && first.ports[0].symbol == "in" && first.ports[0].direction == Direction::Input && first.ports[1].type == PortType::Audio, "ports not taken from the engine");
+    check(first.parameters.size() == 1 && first.parameters[0].symbol == "gain" && first.parameters[0].minimum == -90 && first.parameters[0].maximum == 24 && first.parameters[0].unit == "dB",
+          "parameter not described by the catalogue");
+    check(validate_graph(rig.graph()).empty() && fake.objects.contains("ingen:/main/m3"), "engine and interface disagree after add");
+    before = fake.requests;
+    check(!rig.result(AddModule{"urn:pedalpi:demo:drive", 24, 24}).accepted && !rig.result(AddModule{"urn:missing", 24, 24}).accepted && fake.requests == before,
+          "a plugin the engine lacks was requested");
+
+    // Cables: the engine accepts feedback and duplicates differently, so both are refused here.
+    check(rig.result(Connect{{1, 3, "out", "in"}}).accepted && rig.result(Connect{{3, 2, "out", "in"}}).accepted, "cable refused");
+    check(fake.arcs.size() == 2 && fake.arcs[0] == std::pair<std::string, std::string>{"ingen:/main/in_l", "ingen:/main/m3/in"}, "cable not mapped to engine ports");
+    before = fake.requests;
+    check(!rig.result(Connect{{3, 2, "out", "in"}}).accepted && !rig.result(Connect{{3, 3, "out", "in"}}).accepted, "duplicate or feedback cable accepted");
+    check(!rig.result(Connect{{1, 3, "out", "gain"}}).accepted && !rig.result(Disconnect{{1, 3, "out_r", "in"}}).accepted && fake.requests == before, "invalid cable reached the engine");
+    check(rig.result(Connect{{1, 2, "out_r", "in_r"}}).accepted && rig.graph().connections.size() == 3, "endpoint-to-endpoint cable failed");
+
+    // Values: the engine stores anything, and does not tell the sender what it set.
+    check(rig.result(SetParameter{3, "gain", 6.5}).accepted && property(fake, "ingen:/main/m3/gain", full(uri::ingen, "value"))->number == 6.5, "value not set");
+    check(find_module(rig.graph(), 3)->parameters[0].value == 6.5, "accepted value missing from snapshot");
+    before = fake.requests;
+    for (double bad : {9999.0, -91.0, std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::infinity()})
+        check(!rig.result(SetParameter{3, "gain", bad}).accepted, "out-of-range value accepted");
+    check(!rig.result(SetParameter{3, "nope", 1}).accepted && !rig.result(SetParameter{1, "gain", 1}).accepted && !rig.result(SetParameter{99, "gain", 1}).accepted && fake.requests == before,
+          "invalid value reached the engine");
+    check(rig.result(SetBypass{3, true}).accepted && !property(fake, "ingen:/main/m3", full(uri::ingen, "enabled"))->boolean && find_module(rig.graph(), 3)->bypassed, "bypass not applied");
+    check(!rig.result(SetBypass{1, true}).accepted && !rig.result(RemoveModule{2}).accepted && !rig.result(MoveModule{1, 48, 48}).accepted, "endpoint was editable");
+    check(rig.result(MoveModule{3, -500, 9000}).accepted && find_module(rig.graph(), 3)->x == module_min_x && find_module(rig.graph(), 3)->y == module_max_y, "move not clamped");
+    check(property(fake, "ingen:/main/m3", full(uri::ingen, "canvasY"))->number == module_max_y, "position not stored in the engine");
+    check(rig.result(MoveModule{3, 312, 144}).accepted, "move failed");
+
+    // Duplicate: the engine copies; values and bypass come with it, cables do not.
+    const auto cables = rig.graph().connections;
+    check(rig.result(DuplicateModule{3, 456, 144}).accepted && rig.graph().modules.size() == 4, "duplicate failed");
+    const auto copy = rig.graph().modules[3];
+    check(copy.id == 4 && copy.uri == amp && copy.bypassed && copy.parameters[0].value == 6.5 && copy.x == 456 && copy.y == 144 && copy.ports.size() == 2, "duplicate lost state");
+    check(rig.graph().connections == cables && !rig.result(DuplicateModule{1, 24, 24}).accepted, "duplicate copied cables or an endpoint");
+    check(rig.result(SetParameter{4, "gain", -3}).accepted && find_module(rig.graph(), 3)->parameters[0].value == 6.5, "copy edits changed the original");
+
+    // Names survive quoting, and live in the engine.
+    const std::string awkward = "Friday's \"loud\" set \xc3\xa9 .";
+    check(rig.result(RenamePatch{awkward}).accepted && rig.graph().name == awkward && property(fake, "ingen:/main", full(uri::pedalpi, "patchName"))->text == awkward, "patch name mangled");
+    check(!rig.result(RenamePatch{"  "}).accepted && rig.graph().name == awkward, "blank name accepted");
+
+    // A second client, as a control daemon would be: both stay in step.
+    Rig other(fake, 4096);
+    other.engine->connect(); other.settle();
+    check(other.engine->state() == EngineState::Ready && other.graph().modules.size() == 4 && other.graph().name == awkward, "second client read a different graph");
+    check(find_module(other.graph(), 3)->parameters[0].value == 6.5 && find_module(other.graph(), 4)->bypassed && other.graph().connections == rig.graph().connections,
+          "second client lost values, bypass or cables");
+    check(other.result(SetParameter{3, "gain", 12}).accepted, "second client edit failed");
+    events = rig.settle();
+    check(events.size() == 1 && events[0].request == 0 && events[0].accepted && find_module(rig.graph(), 3)->parameters[0].value == 12, "another client's change was not reported once");
+    check(other.result(AddModule{amp, 600, 300}).accepted && other.result(Connect{{4, 5, "out", "in"}}).accepted, "second client add failed");
+    rig.settle();
+    check(rig.graph().modules.size() == 5 && rig.graph().modules[4].id == 5 && rig.graph().connections.size() == 4, "another client's module or cable missing");
+    check(rig.result(AddModule{amp, 24, 24}).accepted && rig.graph().modules.back().id == 6, "identity reused after another client's add");
+    other.settle();
+    check(other.result(RemoveModule{4}).accepted, "second client removal failed");
+    rig.settle();
+    check(!find_module(rig.graph(), 4) && rig.graph().connections.size() == 3 && !rig.result(SetParameter{4, "gain", 0}).accepted, "removed module or its cables survived");
+    // The engine does not check values: whatever another client stored is shown inside the range.
+    fake.objects["ingen:/main/m3/gain"] = {{full(uri::ingen, "value"), number_value(9999)}, {rdf_type, iri_value(full(uri::lv2, "ControlPort"))}, {rdf_type, iri_value(full(uri::lv2, "InputPort"))}};
+    fake.objects["ingen:/main/foreign"] = {{rdf_type, iri_value(full(uri::ingen, "Block"))}, {full(uri::lv2, "prototype"), iri_value("urn:some:unknown:plugin")}};
+    Rig late(fake);
+    late.engine->connect(); late.settle();
+    check(find_module(late.graph(), 3)->parameters[0].value == 24, "out-of-range engine value was shown as is");
+    const auto& foreign = late.graph().modules.back();
+    check(foreign.id >= 7 && foreign.name == "foreign" && !module_available(foreign) && validate_graph(late.graph()).empty(), "unknown block is not a repairable placeholder");
+    check(!late.result(SetBypass{foreign.id, true}).accepted && late.result(RemoveModule{foreign.id}).accepted && !fake.objects.contains("ingen:/main/foreign"), "placeholder rules wrong");
+    late.engine->disconnect(); rig.settle(); other.settle();
+    check(rig.result(SetParameter{3, "gain", 6.5}).accepted, "value could not be corrected");
+
+    // Session snapshot: kept by the interface, restored through the engine.
+    events.clear();
+    const auto saving = engine.submit(SaveGraph{});
+    for (auto& e : rig.settle()) if (e.request == saving) events.push_back(e);
+    check(events.size() == 1 && events[0].accepted && events[0].saved_session && !rig.graph().dirty && events[0].saved_session->modules.size() == rig.graph().modules.size(), "session save failed");
+    const auto saved = rig.graph();
+    check(!rig.result(SaveGraph{SaveScope::Persistent}).accepted && !rig.result(SaveGraph{SaveScope::Session, true}).accepted, "unsupported save pretended to succeed");
+    check(rig.result(NewPatch{"Blank"}).accepted && rig.graph().modules.size() == 2 && rig.graph().connections.size() == 2 && rig.graph().dirty && rig.graph().name == "Blank", "new patch wrong");
+    check(fake.arcs.size() == 2 && std::none_of(fake.objects.begin(), fake.objects.end(), [](const auto& o) { return o.first.starts_with("ingen:/main/m"); }), "engine kept old blocks");
+    check(rig.result(LoadSession{}).accepted && !rig.graph().dirty, "session restore failed");
+    check(rig.graph().name == saved.name && rig.graph().connections.size() == saved.connections.size() && rig.graph().modules.size() == saved.modules.size(), "restored graph differs");
+    for (const auto& m : saved.modules) {
+        const auto* restored = find_module(rig.graph(), m.id);
+        check(restored && restored->uri == m.uri && restored->x == m.x && restored->y == m.y && restored->bypassed == m.bypassed && restored->name == m.name, "restored module differs");
+        for (std::size_t i = 0; i < m.parameters.size(); ++i) check(restored->parameters[i].value == m.parameters[i].value, "restored value differs");
+    }
+    for (const auto& cable : saved.connections) check(std::find(rig.graph().connections.begin(), rig.graph().connections.end(), cable) != rig.graph().connections.end(), "restored cable missing");
+    other.settle();
+    check(other.graph().modules.size() == saved.modules.size() && other.graph().connections.size() == saved.connections.size() && other.graph().name == saved.name, "second client lost step during restore");
+    // A patch the engine cannot build is refused before anything is deleted.
+    before = fake.requests;
+    check(!rig.result(LoadGraph{parallel_demo_graph()}).accepted && fake.requests == before && rig.graph().modules.size() == saved.modules.size(), "unbuildable patch destroyed the current one");
+    auto cyclic = saved; cyclic.connections.push_back({3, 3, "out", "in"});
+    check(!rig.result(LoadGraph{cyclic}).accepted && fake.requests == before, "patch with feedback was sent");
+
+    // An unanswered edit fails, then the graph is read again, not guessed.
+    fake.mute = 1;
+    const auto silent = engine.submit(SetParameter{3, "gain", 1});
+    check(rig.settle(0).empty() && engine.advance(2999).empty(), "edit timed out early");
+    events = rig.settle();
+    check(!events.empty() && events[0].request == silent && !events[0].accepted && engine.state() == EngineState::Ready, "silent engine was not reported");
+    check(find_module(rig.graph(), 3)->parameters[0].value == 6.5 && rig.result(SetParameter{3, "gain", 2}).accepted, "adapter did not recover after a timeout");
+
+    // The engine goes away: pending edits fail, nothing stale is replayed, and
+    // the graph comes back from the engine when it does.
+    fake.mute = 1;
+    const auto lost = engine.submit(SetParameter{3, "gain", 20});
+    fake.reachable = false; fake.die();
+    events = rig.settle();
+    check(events.size() == 2 && events[0].request == lost && !events[0].accepted && events[1].state == EngineState::Connecting, "lost engine did not cancel pending edit");
+    check(!rig.result(SetParameter{3, "gain", 21}).accepted && rig.graph().modules.size() == saved.modules.size(), "edit accepted or graph dropped while away");
+    check(engine.advance(5000).empty() && engine.state() == EngineState::Connecting, "retrying was noisy or gave up");
+    fake.reachable = true; fake.mute = 0;
+    engine.advance(1000); events = rig.settle();
+    check(engine.state() == EngineState::Ready && rig.graph().modules.size() == saved.modules.size() && find_module(rig.graph(), 3)->parameters[0].value == 2, "graph not recovered after reconnect");
+    check(std::count_if(fake.objects.begin(), fake.objects.end(), [](const auto& o) { return has(o.second, rdf_type, full(uri::ingen, "Block")); }) == 3, "reconnect duplicated or lost blocks");
+
+    // Load arrives unasked, outside any reply, and is unknown again when the engine is away.
+    check(!engine.telemetry().cpu_percent && !engine.telemetry().tempo_bpm, "a reading was invented");
+    rig.transport->deliver(fake.put(1, "ingen:/engine", {{full(uri::ingen, "meanRunLoad"), number_value(0.07)}}));
+    check(rig.settle().empty() && engine.telemetry().cpu_percent && std::abs(*engine.telemetry().cpu_percent - 7) < 1e-4, "engine load misread or reported as a graph change");
+
+    // Unreadable input replaces the connection instead of corrupting the mirror.
+    rig.transport->deliver("_:broken a patch:Put ; patch:subject <ingen:/main/m3> ; patch:body [ ingen:canvasX \"1");
+    events = rig.settle();
+    check(!events.empty() && events[0].state == EngineState::Connecting && events[0].message.find("unreadable") != std::string::npos, "unreadable message was not reported");
+    engine.advance(1000); rig.settle();
+    check(engine.state() == EngineState::Ready && find_module(rig.graph(), 3)->x == saved.modules[2].x, "adapter did not resynchronize after bad input");
+
+    // An interface restart: a new adapter finds the same modules under the same identities.
+    const auto running = rig.graph();
+    engine.disconnect();
+    check(engine.state() == EngineState::Disconnected && !rig.result(RenamePatch{"Offline"}).accepted && !engine.telemetry().cpu_percent, "explicit disconnect not honoured");
+    check(engine.advance(5000).empty() && engine.state() == EngineState::Disconnected, "disconnected adapter reconnected by itself");
+    Rig restarted(fake);
+    restarted.engine->connect(); restarted.settle();
+    check(restarted.graph().modules.size() == running.modules.size() && restarted.graph().connections.size() == running.connections.size() && restarted.graph().name == running.name,
+          "restarted interface read a different graph");
+    for (const auto& m : running.modules) check(find_module(restarted.graph(), m.id) && find_module(restarted.graph(), m.id)->name == m.name, "identity changed across restart");
+    engine.connect(); rig.settle();
+    check(engine.state() == EngineState::Ready && rig.graph().modules.size() == running.modules.size(), "reconnect after explicit disconnect failed");
+}
+}
+int main() {
+    try {
+        turtle_and_protocol();
+        adapter();
+        std::cout << "Ingen protocol reading, command mapping, acknowledgment, second client, timeout, reconnect and restart passed.\n";
+    } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
+}

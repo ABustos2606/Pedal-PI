@@ -2,7 +2,7 @@
 
 Modular effects instrument for Raspberry Pi 5, with a new touchscreen interface inspired by Poly Effects' Beebo.
 
-**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine; audio and Pi integration remain unimplemented.
+**Status:** Windows LVGL desktop editor passes Phase 2 acceptance using a simulated engine, and can now drive a real Ingen engine running under WSL through the project's own adapter. Pi integration, audio hardware and patch storage remain unimplemented.
 **Date:** 12 October 2026 — revised 13 October 2026 (LVGL direction, Casette reference, and NAM evaluation)  
 **Project folder:** `C:\Pedal PI`
 
@@ -35,6 +35,8 @@ ctest --preset windows
 
 The first configure fetches LVGL at a pinned commit. After that the cached build and application work offline. See [Windows UI development](docs/11-windows-ui-foundation.md) for interactions, architecture, checks and current limits.
 
+To drive a real engine instead of the simulation, start Ingen under WSL and pass its address: `& '.\build\Debug\pedal_pi.exe' --engine tcp://127.0.0.1:16180`. See [the adapter record](docs/15-ingen-adapter.md) for setup and limits.
+
 Drag empty space to pan; **Home** restores the original view. Hold a module for parameters, software bypass, duplication or deletion. Tap a cable to select it, then use **Delete cable** in the footer. These editor features work entirely with the simulated engine.
 
 Clouds and Delay have their own parameter layouts; **All** opens the generic editor. **Patches → Parallel demo** loads an editable split/merge example: Drive feeds Clouds and Delay, then both connect to OUT. Loading it guards unsaved edits. This demonstrates routing and UI behavior; audio summing still requires Pi verification.
@@ -59,7 +61,8 @@ Global BPM and CPU readouts stay in the bottom-right footer on every page. The s
 | [Detailed technical implementation plan](docs/10-technical-implementation-plan.md) | Phases 0–11 with numbered tasks, PC/Pi work split, deliverables, exit checks, and requirements coverage |
 | [Windows UI development](docs/11-windows-ui-foundation.md) | Build/run instructions, shared UI and simulated engine, verification and remaining Phase 1–2 work |
 | [Desktop editor review](docs/12-desktop-editor-review.md) | Recorded Phase 2 desktop acceptance, screenshots and interaction/domain checks |
-| [Ingen engine evidence](docs/14-ingen-engine-evidence.md) | Engine built and measured on the PC under WSL2: protocol, routing, summing, reconnect, save/load, three defects and two patches |
+| [Ingen engine evidence](docs/14-ingen-engine-evidence.md) | Engine built and measured on the PC under WSL2: protocol, routing, summing, reconnect, save/load, six defects and three patches |
+| [Ingen engine adapter](docs/15-ingen-adapter.md) | The interface's real engine backend: mapping, threading, synchronization, reconnection, live results and limits |
 | [Domain and engine contracts](docs/13-domain-and-engine-contracts.md) | Identity, typed metadata, missing modules, mono/stereo routing, lifecycle, save and capability semantics |
 
 ## Retrieve the project and reference sources
@@ -104,7 +107,7 @@ Original application code and CMake build files now exist under `src/` and `conf
 
 ## Next step after documentation review
 
-1. Try the accepted Windows LVGL desktop editor; prepare/verify the debugger and decide the Linux platform build route once the Pi OS is identified.
+1. Try the accepted Windows LVGL desktop editor, with the simulation or against an engine under WSL; prepare/verify the debugger and decide the Linux platform build route once the Pi OS is identified.
 2. Identify the Pi OS, audio interface and touch controller, preserve the existing installation, and establish a minimal JACK/Ingen audio path early.
-3. Integrate the real engine and native touch interface, then implement coherent patch/state persistence and the Clouds milestone with physical controls.
+3. Repeat the engine adapter's checks on the Pi and add the native touch interface, then implement coherent patch/state persistence and the Clouds milestone with physical controls.
 4. Evaluate NAM and expand the tested catalogue before dedicated startup and complete validation. Follow the [detailed phase plan](docs/10-technical-implementation-plan.md); a UI foundation does not complete the hardware-dependent phases.

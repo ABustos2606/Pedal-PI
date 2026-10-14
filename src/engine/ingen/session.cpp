@@ -1,0 +1,574 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Pedal PI contributors
+#include "engine/ingen/session.hpp"
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <type_traits>
+
+namespace pedal::ingen {
+namespace {
+const std::string main_path = "ingen:/main";
+// The graph's own audio ports stand for the fixed IN and OUT modules. Seen from
+// inside the graph an engine input is a source, so it is one of IN's outputs.
+struct Endpoint { const char* symbol; InstanceId module; const char* port; };
+constexpr Endpoint endpoints[] = {{"in_l", 1, "out"}, {"in_r", 1, "out_r"}, {"out_l", 2, "in"}, {"out_r", 2, "in_r"}};
+std::string iri(std::string_view space, std::string_view local) { return std::string(space) + std::string(local); }
+const std::string type = std::string(uri::rdf_type);
+const std::string block_type = iri(uri::ingen, "Block"), arc_type = iri(uri::ingen, "Arc");
+const std::string value_key = iri(uri::ingen, "value"), enabled_key = iri(uri::ingen, "enabled");
+const std::string x_key = iri(uri::ingen, "canvasX"), y_key = iri(uri::ingen, "canvasY");
+const std::string name_key = iri(uri::pedalpi, "displayName"), patch_name_key = iri(uri::pedalpi, "patchName");
+std::string child(const std::string& parent, std::string_view symbol) { return parent + "/" + std::string(symbol); }
+std::string parent_of(const std::string& path) { return path.substr(0, path.rfind('/')); }
+std::string symbol_of(const std::string& path) { return path.substr(path.rfind('/') + 1); }
+bool under_main(const std::string& path) { return path == main_path || path.starts_with(main_path + "/"); }
+Value number(double value) { return {Value::Kind::Number, value, false, {}}; }
+std::optional<double> finite(const Value* value) {
+    if (value && value->kind == Value::Kind::Number && std::isfinite(value->number)) return value->number;
+    return std::nullopt;
+}
+std::string position(int x, int y) {
+    return "ingen:canvasX " + float_literal(std::clamp(x, module_min_x, module_max_x)) + " ;\n\t\tingen:canvasY " +
+           float_literal(std::clamp(y, module_min_y, module_max_y));
+}
+std::string block(const std::string& plugin, const std::string& name, int x, int y, bool bypassed) {
+    return "a ingen:Block ;\n\t\tlv2:prototype <" + plugin + "> ;\n\t\t" + position(x, y) + " ;\n\t\tpedalpi:displayName " + string_literal(name) +
+           (bypassed ? " ;\n\t\tingen:enabled false" : "");
+}
+}
+Session::Session(Options options) : options_(std::move(options)) { rebuild(); }
+std::vector<std::string> Session::take_outgoing() { auto out = std::move(outgoing_); outgoing_.clear(); return out; }
+std::optional<std::string> Session::take_fault() { auto fault = std::move(fault_); fault_.reset(); return fault; }
+
+void Session::opening() {
+    if (state_ == EngineState::Connecting) return;
+    state_ = EngineState::Connecting;
+    emit(0, true, "");
+}
+void Session::opened() {
+    state_ = EngineState::Connecting;
+    reader_ = {}; buffer_.clear(); depth_ = 0;
+    outgoing_.clear(); outgoing_.push_back(prefixes());
+    plugins_.clear();
+    // The engine sends nothing on connect; ask for everything. The mirrored
+    // graph is kept until the answer arrives, then replaced by it.
+    auto& sync = begin(0, Purpose::Sync);
+    send(sync, get, "ingen:/plugins");
+    sync.replaces = next_sequence_;
+    send(sync, get, main_path);
+}
+void Session::closed(std::string reason, bool retrying) {
+    state_ = retrying ? EngineState::Connecting : EngineState::Disconnected;
+    // A lost connection cancels requests; reconnecting never applies stale edits.
+    fail_edits("Engine disconnected");
+    transactions_.clear(); sequences_.clear(); outgoing_.clear(); buffer_.clear(); expected_copies_.clear();
+    depth_ = 0; cpu_.reset(); fault_.reset();
+    emit(0, true, std::move(reason));
+}
+void Session::fail_edits(const std::string& message) {
+    for (const auto& [id, pending] : transactions_) if (pending.purpose == Purpose::Edit) emit(pending.request, false, message);
+}
+void Session::emit(RequestId request, bool accepted, std::string message) {
+    if (mirror_changed_) rebuild();
+    unreported_ = false;
+    events_.push_back({request, accepted, std::move(message), state_, graph_, {}});
+}
+void Session::reject(RequestId request, std::string message) { events_.push_back({request, false, std::move(message), state_, graph_, {}}); }
+
+Session::Transaction& Session::begin(RequestId request, Purpose purpose) {
+    const auto id = next_transaction_++;
+    auto& created = transactions_[id];
+    created.id = id; created.request = request; created.purpose = purpose;
+    return created;
+}
+void Session::send(Transaction& to, std::string text, int number) {
+    outgoing_.push_back(std::move(text));
+    to.waiting.insert(number); to.sequences.push_back(number);
+    sequences_[number] = to.id;
+}
+void Session::send(Transaction& to, std::string (*writer)(int, std::string_view), std::string_view subject) {
+    const auto number = sequence();
+    send(to, writer(number, subject), number);
+}
+void Session::refresh(std::string path, bool replace) {
+    auto& pending = begin(0, Purpose::Refresh);
+    if (replace) pending.replaces = next_sequence_;
+    send(pending, get, path);
+}
+
+void Session::received(std::string_view bytes) {
+    if (state_ == EngineState::Disconnected || fault_) return;
+    buffer_.append(bytes);
+    std::size_t start = 0;
+    // One socket read is not one message: the engine ends each with a NUL.
+    for (auto end = buffer_.find('\0'); end != std::string::npos && !fault_; end = buffer_.find('\0', start)) {
+        std::vector<turtle::Triple> triples;
+        const auto issue = reader_.parse(std::string_view(buffer_).substr(start, end - start), triples);
+        start = end + 1;
+        if (!issue.empty()) { fault_ = "Engine sent an unreadable message (" + issue + ")"; break; }
+        for (const auto& message : decode(triples)) handle(message);
+        if (depth_ == 0) finish_ready();
+    }
+    buffer_.erase(0, start);
+    if (buffer_.size() > options_.max_message_bytes) fault_ = "Engine message exceeds the size limit";
+}
+void Session::handle(const Message& message) {
+    switch (message.type) {
+    case Message::Type::BundleStart: ++depth_; break;
+    case Message::Type::BundleEnd: depth_ = std::max(0, depth_ - 1); break;
+    case Message::Type::Response: {
+        const auto owner = sequences_.find(message.sequence);
+        if (owner == sequences_.end()) break;
+        auto& pending = transactions_.at(owner->second);
+        if (message.status != 0 && (pending.status == 0 || message.sequence < pending.failed)) {
+            pending.status = message.status; pending.failed = message.sequence;
+        }
+        pending.waiting.erase(message.sequence);
+        // The description follows its response inside the same bundle.
+        if (message.sequence == pending.replaces && message.status == 0) {
+            pending.replaces = 0;
+            objects_.clear(); arcs_.clear();
+            mirror_changed_ = unreported_ = true;
+        }
+        break;
+    }
+    default: apply(message);
+    }
+}
+void Session::merge(const std::string& path, const Properties& properties) {
+    auto& object = objects_[path];
+    // A Put or Set replaces every value of the predicates it names.
+    for (const auto& [key, ignored] : properties) std::erase_if(object, [&](const auto& entry) { return entry.first == key; });
+    for (const auto& entry : properties)
+        if (std::find(object.begin(), object.end(), entry) == object.end()) object.push_back(entry);
+    mirror_changed_ = unreported_ = true;
+}
+void Session::erase(const std::string& path) {
+    const auto prefix = path + "/";
+    std::erase_if(objects_, [&](const auto& entry) { return entry.first == path || entry.first.starts_with(prefix); });
+    // The engine drops a deleted block's cables without announcing each one.
+    std::erase_if(arcs_, [&](const auto& arc) {
+        return arc.first == path || arc.second == path || arc.first.starts_with(prefix) || arc.second.starts_with(prefix);
+    });
+    mirror_changed_ = unreported_ = true;
+}
+void Session::apply(const Message& message) {
+    auto arc_end = [&](const Properties& body, std::string_view local) {
+        const auto* end = find(body, iri(uri::ingen, local));
+        return end && end->kind == Value::Kind::Uri ? normal_path(end->text) : std::string();
+    };
+    switch (message.type) {
+    case Message::Type::Put:
+        if (message.subject == "ingen:/engine") {
+            // Mean share of the audio period spent processing since the engine started.
+            if (const auto load = finite(find(message.body, iri(uri::ingen, "meanRunLoad")))) cpu_ = *load * 100.0;
+        } else if (has(message.body, type, arc_type)) {
+            const std::pair arc{arc_end(message.body, "tail"), arc_end(message.body, "head")};
+            if (!arc.first.empty() && !arc.second.empty() && std::find(arcs_.begin(), arcs_.end(), arc) == arcs_.end()) {
+                arcs_.push_back(arc); mirror_changed_ = unreported_ = true;
+            }
+        } else if (under_main(message.subject)) merge(message.subject, message.body);
+        else if (has(message.body, type, iri(uri::lv2, "Plugin")) || has(message.body, type, iri(uri::ingen, "Internal"))) plugins_.insert(message.subject);
+        break;
+    case Message::Type::Set:
+        if (under_main(message.subject)) merge(message.subject, {{message.property, message.value}});
+        break;
+    case Message::Type::Patch:
+        if (!under_main(message.subject)) break;
+        for (const auto& removed : message.remove) {
+            const bool any = removed.second.kind == Value::Kind::Uri && removed.second.text == iri(uri::patch, "wildcard");
+            std::erase_if(objects_[message.subject], [&](const auto& entry) { return entry.first == removed.first && (any || entry.second == removed.second); });
+        }
+        merge(message.subject, message.body);
+        break;
+    case Message::Type::Delete:
+        if (!message.subject.empty()) {
+            if (under_main(message.subject) && message.subject != main_path) erase(message.subject);
+        } else if (has(message.body, type, arc_type)) {
+            const auto tail = arc_end(message.body, "tail"), head = arc_end(message.body, "head"), all = arc_end(message.body, "incidentTo");
+            const auto removed = std::erase_if(arcs_, [&](const auto& arc) {
+                return all.empty() ? arc.first == tail && arc.second == head : arc.first == all || arc.second == all;
+            });
+            if (removed) mirror_changed_ = unreported_ = true;
+        }
+        break;
+    case Message::Type::Copy:
+        // A copy is announced, but its contents are not sent: ask for them.
+        if (under_main(message.destination) && !expected_copies_.erase(message.destination)) refresh(message.destination, false);
+        break;
+    default: break;
+    }
+}
+void Session::finish_ready() {
+    std::vector<TransactionId> done;
+    for (const auto& [id, pending] : transactions_) if (pending.waiting.empty()) done.push_back(id);
+    for (const auto id : done) {
+        auto node = transactions_.extract(id);
+        for (const auto number : node.mapped().sequences) sequences_.erase(number);
+        finish(node.mapped());
+    }
+}
+void Session::finish(Transaction& done) {
+    const bool ok = done.status == 0;
+    switch (done.purpose) {
+    case Purpose::Edit:
+        if (ok) {
+            for (const auto& local : done.local) merge(local.path, {{local.predicate, local.value}});
+            if (done.dirty) dirty_ = *done.dirty;
+            mirror_changed_ = true;
+        } else if (done.sequences.size() > 1 && state_ == EngineState::Ready) {
+            // Some steps of a failed multi-step edit may have taken effect.
+            refresh(main_path, true);
+        }
+        emit(done.request, ok, ok ? done.message : status_text(done.status));
+        break;
+    case Purpose::Sync:
+        if (ok) ensure_endpoints();
+        else fault_ = std::string("Engine refused to describe its graph: ") + status_text(done.status);
+        break;
+    case Purpose::Endpoints:
+        if (ok) ready();
+        else { state_ = EngineState::Error; emit(0, false, std::string("Engine could not create the audio endpoints: ") + status_text(done.status)); }
+        break;
+    case Purpose::Refresh:
+        // A single object may have vanished again; only a failed full refresh matters.
+        if (!ok && done.replaces) fault_ = std::string("Engine refused to describe its graph: ") + status_text(done.status);
+        break;
+    }
+}
+void Session::ensure_endpoints() {
+    Transaction* creating = nullptr;
+    for (const auto& endpoint : endpoints) {
+        const auto path = child(main_path, endpoint.symbol);
+        const bool input = endpoint.module == 1;
+        const auto existing = objects_.find(path);
+        if (existing == objects_.end()) {
+            if (!creating) creating = &begin(0, Purpose::Endpoints);
+            const auto number = sequence();
+            send(*creating, put(number, path, input ? "a lv2:InputPort , lv2:AudioPort" : "a lv2:OutputPort , lv2:AudioPort"), number);
+        } else if (!has(existing->second, type, iri(uri::lv2, "AudioPort")) || !has(existing->second, type, iri(uri::lv2, input ? "InputPort" : "OutputPort"))) {
+            state_ = EngineState::Error;
+            emit(0, false, std::string("Engine port ") + endpoint.symbol + " is not the expected audio endpoint");
+            return;
+        }
+    }
+    if (!creating) ready();
+}
+void Session::ready() {
+    state_ = EngineState::Ready;
+    mirror_changed_ = true;
+    emit(0, true, "");
+}
+
+void Session::rebuild() {
+    mirror_changed_ = false;
+    Graph graph;
+    graph.name = "Untitled";
+    graph.dirty = dirty_;
+    if (const auto root = objects_.find(main_path); root != objects_.end())
+        if (const auto* name = find(root->second, patch_name_key); name && name->kind == Value::Kind::String && validate_patch_name(name->text).empty())
+            graph.name = name->text;
+    const auto& in = demo_catalogue()[0];
+    const auto& out = demo_catalogue()[1];
+    graph.modules.push_back({1, in.uri, in.name, 32, 132, true, false, {}, in.ports});
+    graph.modules.push_back({2, out.uri, out.name, 664, 132, true, false, {}, out.ports});
+
+    std::vector<std::string> blocks;
+    for (const auto& [path, properties] : objects_)
+        if (parent_of(path) == main_path && has(properties, type, block_type)) blocks.push_back(path);
+    // Identities last as long as the object does. A block the interface made is
+    // named after its ID; anything else gets a number nobody has used.
+    std::erase_if(ids_, [&](const auto& entry) { return std::find(blocks.begin(), blocks.end(), entry.first) == blocks.end(); });
+    std::set<InstanceId> used{1, 2};
+    for (const auto& [path, id] : ids_) used.insert(id);
+    auto own_id = [](const std::string& symbol) -> InstanceId {
+        const bool numbered = symbol.size() > 1 && symbol.size() < 17 && symbol[0] == 'm' && std::all_of(symbol.begin() + 1, symbol.end(), [](char c) { return c >= '0' && c <= '9'; });
+        return numbered ? std::stoull(symbol.substr(1)) : 0;
+    };
+    // Named blocks first, so that a stranger never takes one of their numbers.
+    for (const bool named : {true, false})
+        for (const auto& path : blocks) {
+            if (ids_.contains(path)) continue;
+            auto id = own_id(symbol_of(path));
+            if (named && (id < 3 || used.contains(id))) continue;
+            if (!named) { while (used.contains(next_instance_)) ++next_instance_; id = next_instance_; }
+            ids_[path] = id; used.insert(id);
+            next_instance_ = std::max(next_instance_, id + 1);
+        }
+    paths_.clear();
+    for (const auto& [path, id] : ids_) paths_[id] = path;
+
+    int unplaced = 0;
+    for (const auto& [id, path] : paths_) {
+        const auto& properties = objects_.at(path);
+        const auto* prototype = find(properties, iri(uri::lv2, "prototype"));
+        Module m{id, prototype && prototype->kind == Value::Kind::Uri ? prototype->text : std::string("urn:pedalpi:missing:unknown"), {}, 0, 0, false, false, {}, {}};
+        const auto* known = definition(m.uri);
+        const auto* name = find(properties, name_key);
+        m.name = name && name->kind == Value::Kind::String && !name->text.empty() ? name->text : known ? known->name : symbol_of(path);
+        const auto x = finite(find(properties, x_key)), y = finite(find(properties, y_key));
+        if (x && y) {
+            m.x = static_cast<int>(std::clamp(std::round(*x), double(module_min_x), double(module_max_x)));
+            m.y = static_cast<int>(std::clamp(std::round(*y), double(module_min_y), double(module_max_y)));
+        } else {
+            // Made by another client without a position: lay them out in a row.
+            m.x = std::min(module_max_x, 184 + 144 * unplaced++); m.y = 276;
+        }
+        if (const auto* enabled = find(properties, enabled_key); enabled && enabled->kind == Value::Kind::Boolean) m.bypassed = !enabled->boolean;
+
+        struct Child { double index; std::string symbol; const Properties* properties; };
+        std::vector<Child> children;
+        const auto prefix = path + "/";
+        for (auto it = objects_.lower_bound(prefix); it != objects_.end() && it->first.starts_with(prefix); ++it)
+            if (parent_of(it->first) == path) children.push_back({finite(find(it->second, iri(uri::lv2, "index"))).value_or(1e9), symbol_of(it->first), &it->second});
+        std::stable_sort(children.begin(), children.end(), [](const Child& a, const Child& b) { return a.index < b.index; });
+        for (const auto& port : children) {
+            auto is = [&](std::string_view space, std::string_view local) { return has(*port.properties, type, iri(space, local)); };
+            const bool input = is(uri::lv2, "InputPort");
+            if (!input && !is(uri::lv2, "OutputPort")) continue;
+            const auto direction = input ? Direction::Input : Direction::Output;
+            if (is(uri::lv2, "AudioPort")) m.ports.push_back({port.symbol, direction, 1, PortType::Audio, {}});
+            else if (is(uri::lv2, "CVPort")) m.ports.push_back({port.symbol, direction, 1, PortType::Cv, {}});
+            else if (is(uri::atom, "AtomPort")) m.ports.push_back({port.symbol, direction, 1, PortType::Midi, {}});
+            else if (input && is(uri::lv2, "ControlPort")) {
+                // Ranges, units and names come from the catalogue: the engine
+                // sends only the current value, and does not check it.
+                Parameter parameter{port.symbol, port.symbol, "", ParameterKind::Continuous, 0, 1, 0, false, {}};
+                bool described = false;
+                if (known) for (const auto& candidate : known->parameters) if (candidate.symbol == port.symbol) { parameter = candidate; described = true; }
+                auto value = finite(find(*port.properties, value_key)).value_or(parameter.value);
+                if (!described) { parameter.minimum = std::min(0.0, value); parameter.maximum = std::max(1.0, value); }
+                if (parameter.kind != ParameterKind::Continuous) value = std::round(value);
+                parameter.value = std::clamp(value, parameter.minimum, parameter.maximum);
+                m.parameters.push_back(std::move(parameter));
+            }
+        }
+        if (known) std::stable_sort(m.parameters.begin(), m.parameters.end(), [&](const Parameter& a, const Parameter& b) {
+            auto rank = [&](const Parameter& p) {
+                return std::find_if(known->parameters.begin(), known->parameters.end(), [&](const Parameter& k) { return k.symbol == p.symbol; }) - known->parameters.begin();
+            };
+            return rank(a) < rank(b);
+        });
+        graph.modules.push_back(std::move(m));
+    }
+    auto end = [&](const std::string& path, bool source) -> std::optional<std::pair<InstanceId, std::string>> {
+        const auto owner = parent_of(path);
+        if (owner == main_path) {
+            for (const auto& endpoint : endpoints)
+                if (symbol_of(path) == endpoint.symbol && (endpoint.module == 1) == source) return std::pair{endpoint.module, std::string(endpoint.port)};
+            return std::nullopt;
+        }
+        if (const auto id = ids_.find(owner); id != ids_.end()) return std::pair{id->second, symbol_of(path)};
+        return std::nullopt;
+    };
+    for (const auto& [tail, head] : arcs_) {
+        const auto from = end(tail, true), to = end(head, false);
+        if (!from || !to) continue;
+        Connection cable{from->first, to->first, from->second, to->second};
+        if (std::find(graph.connections.begin(), graph.connections.end(), cable) == graph.connections.end()) graph.connections.push_back(std::move(cable));
+    }
+    graph_ = std::move(graph);
+}
+
+std::string Session::address(InstanceId id, const std::string& symbol, Direction direction, bool current) const {
+    if (id == 1 || id == 2) {
+        for (const auto& endpoint : endpoints)
+            if (endpoint.module == id && symbol == endpoint.port && (id == 1) == (direction == Direction::Output)) return child(main_path, endpoint.symbol);
+        return {};
+    }
+    if (!lv2_symbol(symbol)) return {};
+    if (!current) return child(child(main_path, "m" + std::to_string(id)), symbol);
+    const auto path = paths_.find(id);
+    return path == paths_.end() ? std::string() : child(path->second, symbol);
+}
+void Session::name_patch(Transaction& to, const std::string& name) {
+    const auto number = sequence();
+    send(to, set_on_graph(number, main_path, "pedalpi:patchName", string_literal(name)), number);
+    to.local.push_back({main_path, patch_name_key, {Value::Kind::String, 0, false, name}});
+}
+std::string Session::clear_engine_graph(Transaction& to) {
+    for (const auto& [id, path] : paths_) send(to, remove, path);
+    // Cables between two endpoints outlive every block; the rest go with theirs.
+    for (const auto& [tail, head] : arcs_)
+        if (parent_of(tail) == main_path && parent_of(head) == main_path) {
+            const auto number = sequence();
+            send(to, remove_arc(number, tail, head), number);
+        }
+    return {};
+}
+std::string Session::create_graph(const Graph& graph, Transaction& to) {
+    // Everything is checked before the first request: a refused patch must
+    // leave the engine's current one untouched.
+    if (auto issue = validate_graph(graph); !issue.empty()) return issue;
+    for (const auto& m : graph.modules) {
+        if (m.fixed) {
+            if (!((m.id == 1 && m.uri == demo_catalogue()[0].uri) || (m.id == 2 && m.uri == demo_catalogue()[1].uri)))
+                return "Patch endpoints do not match the engine";
+            continue;
+        }
+        if (m.id < 3 || !safe_iri(m.uri) || !plugins_.contains(m.uri)) return std::string(status_text(22)) + ": " + m.name;
+        for (const auto& parameter : m.parameters) if (!lv2_symbol(parameter.symbol)) return "Invalid parameter symbol";
+    }
+    for (const auto& cable : graph.connections)
+        if (address(cable.from, cable.output, Direction::Output, false).empty() || address(cable.to, cable.input, Direction::Input, false).empty())
+            return "Cable uses a port the engine does not have";
+    clear_engine_graph(to);
+    auto set_local = [&](const std::string& path, std::string_view property, const std::string& key, std::string literal, Value value) {
+        const auto number = sequence();
+        send(to, set(number, path, property, literal), number);
+        to.local.push_back({path, key, std::move(value)});
+    };
+    for (const auto& m : graph.modules) {
+        if (m.fixed) continue;
+        const auto path = child(main_path, "m" + std::to_string(m.id));
+        const auto number = sequence();
+        send(to, put(number, path, block(m.uri, m.name, m.x, m.y, m.bypassed)), number);
+        for (const auto& parameter : m.parameters)
+            set_local(child(path, parameter.symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
+        next_instance_ = std::max(next_instance_, m.id + 1);
+    }
+    for (const auto& cable : graph.connections) {
+        const auto number = sequence();
+        send(to, put_arc(number, main_path + "/", address(cable.from, cable.output, Direction::Output, false),
+                         address(cable.to, cable.input, Direction::Input, false)), number);
+    }
+    name_patch(to, graph.name);
+    return {};
+}
+std::string Session::plan(const Command& command, Transaction& to) {
+    to.dirty = true;
+    auto set_local = [&](const std::string& path, std::string_view property, const std::string& key, std::string literal, Value value) {
+        const auto number = sequence();
+        send(to, set(number, path, property, literal), number);
+        to.local.push_back({path, key, std::move(value)});
+    };
+    return std::visit([&](const auto& c) -> std::string {
+        using T = std::decay_t<decltype(c)>;
+        std::string result;
+        if constexpr (std::is_same_v<T, AddModule>) {
+            const auto* known = definition(c.uri);
+            if (!known || known->category == "Endpoint" || known->availability != Availability::Available) return "Module is unavailable or untested";
+            if (!safe_iri(c.uri) || !plugins_.contains(c.uri)) return status_text(22);
+            if (next_instance_ == std::numeric_limits<InstanceId>::max()) return "Instance ID space exhausted";
+            const auto number = sequence();
+            send(to, put(number, child(main_path, "m" + std::to_string(next_instance_++)), block(c.uri, known->name, c.x, c.y, false)), number);
+        } else if constexpr (std::is_same_v<T, Connect>) {
+            if (auto issue = validate_connection(graph_, c.connection); !issue.empty()) return issue;
+            const auto tail = address(c.connection.from, c.connection.output, Direction::Output, true);
+            const auto head = address(c.connection.to, c.connection.input, Direction::Input, true);
+            if (tail.empty() || head.empty()) return "Cable uses a port the engine does not have";
+            const auto number = sequence();
+            send(to, put_arc(number, main_path + "/", tail, head), number);
+        } else if constexpr (std::is_same_v<T, Disconnect>) {
+            if (std::find(graph_.connections.begin(), graph_.connections.end(), c.connection) == graph_.connections.end()) return "Cable is missing";
+            const auto number = sequence();
+            send(to, remove_arc(number, address(c.connection.from, c.connection.output, Direction::Output, true),
+                                address(c.connection.to, c.connection.input, Direction::Input, true)), number);
+        } else if constexpr (std::is_same_v<T, LoadGraph>) {
+            to.dirty = c.graph.dirty;
+            result = create_graph(c.graph, to);
+        } else if constexpr (std::is_same_v<T, LoadSession>) {
+            if (!saved_session_) return "No session snapshot saved";
+            to.dirty = false;
+            result = create_graph(*saved_session_, to);
+        } else if constexpr (std::is_same_v<T, NewPatch>) {
+            if (auto issue = validate_patch_name(c.name); !issue.empty()) return issue;
+            clear_engine_graph(to);
+            for (const char* side : {"l", "r"}) {
+                const auto number = sequence();
+                send(to, put_arc(number, main_path + "/", main_path + "/in_" + side, main_path + "/out_" + side), number);
+            }
+            name_patch(to, c.name);
+        } else if constexpr (std::is_same_v<T, RenamePatch>) {
+            if (auto issue = validate_patch_name(c.name); !issue.empty()) return issue;
+            name_patch(to, c.name);
+        } else if constexpr (std::is_same_v<T, SaveGraph>) {
+            result = "Unsupported capability";
+        } else {
+            const auto* m = find_module(graph_, c.id);
+            const auto found = paths_.find(c.id);
+            if (!m || (!m->fixed && found == paths_.end())) return "Module is missing";
+            if constexpr (std::is_same_v<T, RemoveModule>) {
+                if (m->fixed) return "Endpoints cannot be deleted";
+                send(to, remove, found->second);
+            } else if constexpr (std::is_same_v<T, MoveModule>) {
+                if (m->fixed) return "Endpoints are fixed";
+                const auto number = sequence();
+                send(to, put(number, found->second, position(c.x, c.y)), number);
+                to.local.push_back({found->second, x_key, ingen::number(std::clamp(c.x, module_min_x, module_max_x))});
+                to.local.push_back({found->second, y_key, ingen::number(std::clamp(c.y, module_min_y, module_max_y))});
+            } else if constexpr (std::is_same_v<T, DuplicateModule>) {
+                if (m->fixed) return "Endpoints cannot be duplicated";
+                if (!module_available(*m)) return "Unavailable m cannot be duplicated";
+                if (next_instance_ == std::numeric_limits<InstanceId>::max()) return "Instance ID space exhausted";
+                // The engine copies the block with its values,
+                // announces the copy without its contents, and leaves it in place.
+                const auto copy_path = child(main_path, "m" + std::to_string(next_instance_++));
+                expected_copies_.insert(copy_path);
+                auto number = sequence();
+                send(to, copy(number, found->second, copy_path), number);
+                number = sequence();
+                send(to, put(number, copy_path, position(c.x, c.y) + " ;\n\t\tpedalpi:displayName " + string_literal(m->name)), number);
+                send(to, get, copy_path);
+            } else if constexpr (std::is_same_v<T, SetBypass>) {
+                if (m->fixed) return "Endpoints cannot be bypassed";
+                if (!module_available(*m)) return "Module is unavailable";
+                set_local(found->second, "ingen:enabled", enabled_key, c.value ? "false" : "true", {Value::Kind::Boolean, 0, !c.value, {}});
+            } else if constexpr (std::is_same_v<T, SetParameter>) {
+                if (m->fixed || !module_available(*m)) return "Module is unavailable";
+                const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == c.symbol; });
+                if (it == m->parameters.end() || !lv2_symbol(c.symbol)) return "Parameter is missing";
+                // The engine stores whatever it is sent, so the range is enforced here.
+                if (!std::isfinite(c.value) || c.value < it->minimum || c.value > it->maximum) return "Value is outside the parameter range";
+                if (it->kind != ParameterKind::Continuous && c.value != std::round(c.value)) return "Parameter requires a discrete value";
+                set_local(child(found->second, c.symbol), "ingen:value", value_key, float_literal(c.value), ingen::number(c.value));
+            }
+        }
+        return result;
+    }, command);
+}
+RequestId Session::submit(Command command) {
+    const auto id = next_request_++;
+    if (state_ != EngineState::Ready) { reject(id, "Engine is unavailable"); return id; }
+    if (mirror_changed_ && depth_ == 0) rebuild();
+    if (const auto* save = std::get_if<SaveGraph>(&command)) {
+        if (save->scope != SaveScope::Session) reject(id, "Unsupported capability: persistent patch storage");
+        else if (save->include_plugin_state) reject(id, "Unsupported capability: plugin state capture");
+        else {
+            // Kept by the interface, not by the engine: routing, values and layout only.
+            dirty_ = false; graph_.dirty = false;
+            saved_session_ = graph_;
+            events_.push_back({id, true, "Session snapshot saved in memory. Closing the app clears it; plugin state is not captured.", state_, graph_, saved_session_});
+        }
+        return id;
+    }
+    if (transactions_.size() >= options_.max_pending) { reject(id, "Engine is busy; the edit was not sent"); return id; }
+    const auto mark = outgoing_.size();
+    auto& pending = begin(id, Purpose::Edit);
+    if (auto issue = plan(command, pending); !issue.empty()) {
+        for (const auto number : pending.sequences) sequences_.erase(number);
+        outgoing_.resize(mark);
+        transactions_.erase(pending.id);
+        reject(id, std::move(issue));
+    }
+    return id;
+}
+std::vector<EngineEvent> Session::advance(unsigned milliseconds) {
+    std::vector<TransactionId> late;
+    for (auto& [id, pending] : transactions_) if ((pending.age += milliseconds) >= options_.request_timeout_ms) late.push_back(id);
+    bool resynchronize = false;
+    for (const auto id : late) {
+        auto node = transactions_.extract(id);
+        for (const auto number : node.mapped().sequences) sequences_.erase(number);
+        if (node.mapped().purpose == Purpose::Edit) { emit(node.mapped().request, false, "Engine did not answer in time"); resynchronize = true; }
+        else fault_ = "Engine did not answer while synchronizing";
+    }
+    // What a late edit did is unknown; read the graph again instead of guessing.
+    if (resynchronize && !fault_ && state_ == EngineState::Ready) refresh(main_path, true);
+    // Changes made by another client, or by the engine itself.
+    if (unreported_ && depth_ == 0 && state_ == EngineState::Ready) emit(0, true, "");
+    auto out = std::move(events_); events_.clear();
+    return out;
+}
+}

@@ -1,0 +1,45 @@
+Ingen protocol reading, command mapping, acknowledgment, second client, timeout, reconnect and restart passed.
+PASS  connect, read the graph and create the audio endpoints -- unix:///tmp/pedalpi-ingen.sock
+PASS  new patch replaces what the engine held
+PASS  new patch is IN wired to OUT on both sides
+PASS  add a plugin
+PASS  the new module carries the engine's ports and value -- id 3, 2 ports
+PASS  a plugin the engine lacks is refused
+PASS  remove the direct left cable
+PASS  cable IN to the module
+PASS  cable the module to OUT
+PASS  feedback is refused before it reaches the engine
+PASS  cables read back from the engine
+PASS  set a value
+PASS  value applied; out-of-range value refused
+PASS  bypass
+PASS  move
+PASS  duplicate keeps value and bypass at the new position
+PASS  rename the patch
+PASS  a second client reads the same graph
+PASS  values, bypass and positions were in the engine, not only in the first client
+PASS  second client sets a value
+PASS  the first client hears the second client's change
+PASS  second client removes a module
+PASS  the first client sees the removal
+PASS  bypass off
+PASS  session snapshot
+PASS  new patch
+PASS  engine graph emptied
+PASS  session snapshot rebuilt in the engine
+PASS  the second client followed the rebuild, including values it was never sent directly
+PASS  restore the value
+INFO  edit round trip through the adapter -- median 5.78907 ms, p95 6.17615 ms, max 6.86431 ms (200 edits)
+PASS  a restarted interface recovers the graph under the same identities
+INFO  engine load reading -- none yet (none at connect)
+PASS  the restarted interface can edit
+SUMMARY all adapter checks passed
+SUMMARY all adapter checks passed
+PASS  the patch the adapter built is what is heard -- left through the amp at +6.02 dB 0.5000 (expected 0.5000), right direct 0.2500 (expected 0.2500); JACK ports ingen:control, ingen:in_l, ingen:in_r, ingen:notify, ingen:out_l, ingen:out_r
+PASS  edit before the engine goes away
+PASS  a stopped engine is noticed and reported -- Engine closed the connection
+PASS  edits are refused and the last graph kept while the engine is away
+PASS  the adapter reconnects by itself when the engine returns
+PASS  the graph shown is the new engine's, not the old one remembered
+PASS  edits work again
+SUMMARY engine restart survived

@@ -8,6 +8,8 @@
 # Nothing under reference/ is modified; sources are cloned fresh.
 set -euo pipefail
 
+# Resolved before any cd, so the script also works when called by a relative path.
+HERE="$(dirname "$(readlink -f "$0")")"
 PREFIX=/opt/pedalpi
 SRC=$PREFIX/src
 # Poly's main (8dae7404) is upstream Ingen 13a045d0 plus three commits. Two of
@@ -45,8 +47,8 @@ if ! git -C ingen rev-parse -q --verify pedalpi-spike >/dev/null; then
     git -C ingen -c user.name=pedalpi -c user.email=pedalpi@localhost cherry-pick "$INGEN_PICK"
 fi
 
-# Our two small changes to the engine (AGPL-3.0-or-later, like the file they touch).
-for patch in "$(dirname "$(readlink -f "$0")")"/patches/*.patch; do
+# Our small changes to the engine (AGPL-3.0-or-later, like the files they touch).
+for patch in "$HERE"/patches/*.patch; do
     git -C ingen apply --check "$patch" 2>/dev/null && git -C ingen apply "$patch" && echo "applied $(basename "$patch")"
 done
 

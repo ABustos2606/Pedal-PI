@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Pedal PI contributors
 #pragma once
 #include <cstdint>
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -75,8 +76,11 @@ struct PhysicalConnection {
 struct RoutingPlan { std::vector<PhysicalConnection> connections; std::string error; };
 const std::vector<ModuleDefinition>& demo_catalogue();
 const std::vector<ModuleDefinition>& reference_catalogue();
-// Demo fixtures followed by the generated reference entries.
-const std::vector<ModuleDefinition>& catalogue();
+// Demo fixtures, the generated reference entries, then registered ones.
+const std::deque<ModuleDefinition>& catalogue();
+// Add entries an engine adapter can vouch for. Call before the interface
+// starts; an entry whose URI is already known is ignored.
+void register_definitions(std::vector<ModuleDefinition>);
 const ModuleDefinition* definition(const std::string& uri);
 const Module* find_module(const Graph&, InstanceId);
 Module* find_module(Graph&, InstanceId);
