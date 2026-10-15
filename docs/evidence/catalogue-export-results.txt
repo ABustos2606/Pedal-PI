@@ -1,8 +1,8 @@
-==== export (LV2_PATH=/usr/lib/lv2:/opt/pedalpi/lib/x86_64-linux-gnu/lv2:/opt/pedalpi/lib/lv2)
-skipped file:///opt/pedalpi/lib/x86_64-linux-gnu/lv2/ingen.lv2/MonoEffect.ttl (machine-local address)
-skipped file:///opt/pedalpi/lib/x86_64-linux-gnu/lv2/ingen.lv2/MonoInstrument.ttl (machine-local address)
-skipped file:///opt/pedalpi/lib/x86_64-linux-gnu/lv2/ingen.lv2/StereoEffect.ttl (machine-local address)
-skipped file:///opt/pedalpi/lib/x86_64-linux-gnu/lv2/ingen.lv2/StereoInstrument.ttl (machine-local address)
+==== export (LV2_PATH=/usr/lib/lv2:/opt/peepo/lib/x86_64-linux-gnu/lv2:/opt/peepo/lib/lv2)
+skipped file:///opt/peepo/lib/x86_64-linux-gnu/lv2/ingen.lv2/MonoEffect.ttl (machine-local address)
+skipped file:///opt/peepo/lib/x86_64-linux-gnu/lv2/ingen.lv2/MonoInstrument.ttl (machine-local address)
+skipped file:///opt/peepo/lib/x86_64-linux-gnu/lv2/ingen.lv2/StereoEffect.ttl (machine-local address)
+skipped file:///opt/peepo/lib/x86_64-linux-gnu/lv2/ingen.lv2/StereoInstrument.ttl (machine-local address)
 withheld http://drobilla.net/plugins/mda/DX10: Played by MIDI notes, which cannot be routed yet.
 withheld http://drobilla.net/plugins/mda/EPiano: Played by MIDI notes, which cannot be routed yet.
 withheld http://drobilla.net/plugins/mda/JX10: Played by MIDI notes, which cannot be routed yet.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 // Runs only against an isolated test engine. A JACK tone generator reads
 // the frequency file; see tools/ingen-spike/17-tuner.sh.
 #include "catalogue/catalogue.hpp"
@@ -10,7 +10,7 @@
 #include <iostream>
 #include <thread>
 #include <stdexcept>
-using namespace pedal;
+using namespace peepo;
 int main(int argc, char** argv) {
     try {
         if (argc != 4) throw std::runtime_error("Expected engine address, catalogue and tone-control file");

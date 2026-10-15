@@ -1,6 +1,6 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 # Keep the engine's IN and OUT wired to the audio interface. The engine's ports
 # exist once the interface has connected to it, and are new after the engine
 # or JACK restarts, so this keeps watching: every two seconds, any connection

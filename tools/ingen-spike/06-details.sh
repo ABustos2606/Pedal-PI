@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 # Details behind three surprises: reply cadence, dead clients, save and reload.
 . "$(dirname "$0")/env.sh"
 cd "$(dirname "$0")"
@@ -27,8 +27,8 @@ c.put("ingen:/main/in", "a lv2:InputPort , lv2:AudioPort"); c.put("ingen:/main/o
 c.put("ingen:/main/amp", "a ingen:Block ;\n\t\tlv2:prototype <http://lv2plug.in/plugins/eg-amp>")
 c.connect("ingen:/main/in", "ingen:/main/amp/in"); c.connect("ingen:/main/amp/out", "ingen:/main/out")
 time.sleep(0.3); m.client.connect("probe:dc", "ingen:in"); m.client.connect("ingen:out", "probe:cap")
-c.set("ingen:/main/amp", "ingen:canvasX", "312.0"); c.set("ingen:/main/amp", "pedalpi:displayName", "\"Clean boost\"")
-c.set("ingen:/main/amp/gain", "pedalpi:assignedControl", "\"knob-1\"")
+c.set("ingen:/main/amp", "ingen:canvasX", "312.0"); c.set("ingen:/main/amp", "peepo:displayName", "\"Clean boost\"")
+c.set("ingen:/main/amp/gain", "peepo:assignedControl", "\"knob-1\"")
 
 def phase(name, seconds, work=None):
     before = m.xruns; start = time.time()
@@ -54,7 +54,7 @@ print("its reply arrives after       median %.1f ms, max %.1f ms" % (sorted(repl
 phase("200 control changes, one live client", 0, lambda: [c.set("ingen:/main/amp/gain", "ingen:value", "0.0") for _ in range(40)])
 
 def log_errors():
-    return open("/tmp/pedalpi-spike/ingen.log").read().count("write error")
+    return open("/tmp/peepo-spike/ingen.log").read().count("write error")
 dead = []
 for _ in range(10):
     d = Client(); d.get("ingen:/main"); d.close()
@@ -65,7 +65,7 @@ phase("40 control changes after 10 clients left", 2, lambda: [c.set("ingen:/main
 print("engine 'write error' lines for those 40 changes: %d  (dead clients are %s)" % (log_errors() - base, "still written to" if log_errors() > base else "dropped"))
 
 # Save: is there ever a reply? When is the bundle complete on disk?
-bundle = "/tmp/pedalpi-spike/detail.ingen"; subprocess.run(["rm", "-rf", bundle])
+bundle = "/tmp/peepo-spike/detail.ingen"; subprocess.run(["rm", "-rf", bundle])
 start = time.time(); status = c.copy("ingen:/main", "file://" + bundle, timeout=4)[0]
 print("save reply status: %s after %.1f s; bundle files: %s" % (status, time.time() - start, sorted(os.listdir(bundle)) if os.path.isdir(bundle) else "none"))
 print("engine still answers after save:", c.get("ingen:/main/amp", timeout=3)[0])

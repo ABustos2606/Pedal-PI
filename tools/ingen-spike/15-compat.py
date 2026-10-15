@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """One compatibility record per inventory entry (P9.1, P9.3).
 
 For every plugin in config/catalogue/inventory.txt: where it came from, whether
 it is installed, its binary and libraries, the LV2 features it requires, its
 ports, what the catalogue export decided, whether it loads and matches in the
-engine (the output of pedal_catalogue_live), and for offered entries a signal
+engine (the output of peepo_catalogue_live), and for offered entries a signal
 check and a save and reload of a changed control through a bundle. Writes
 docs/evidence/compatibility.json and docs/evidence/compatibility-matrix.md.
 Needs a running engine (see env.sh) and python3-lilv.
@@ -151,7 +151,7 @@ def origin_of(uri, bundle, data_sources):
         return "Poly: " + ", ".join(data_sources[uri])
     path = bundle.replace("file://", "")
     # Built from source into the prefix; Debian's own guitarix bundles share names.
-    if path.startswith("/opt/pedalpi/"):
+    if path.startswith("/opt/peepo/"):
         for key, source in SOURCES.items():
             if key in os.path.basename(path.rstrip("/")):
                 return source

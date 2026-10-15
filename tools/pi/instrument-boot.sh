@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 # Switch an installed Pi to direct DRM instrument startup. No packages or
 # patches are removed. --restore restores the saved boot policy; then reboot.
 set -euo pipefail
-STATE=/etc/pedalpi/instrument-boot-state
-PATCHES=/var/lib/pedalpi/patches
+STATE=/etc/peepo/instrument-boot-state
+PATCHES=/var/lib/peepo/patches
 dry=0; restore=0; startup=
 while [ $# -gt 0 ]; do
     case $1 in
@@ -20,13 +20,13 @@ run() { printf '+ '; printf '%q ' "$@"; printf '\n'; [ "$dry" = 1 ] || "$@"; }
 [ "$dry" = 1 ] || [ "$(id -u)" = 0 ] || { echo 'Run as root (sudo).' >&2; exit 1; }
 [ "$restore" = 0 ] || [ -z "$startup" ] || { echo '--restore cannot select a startup patch.' >&2; exit 2; }
 if [ "$dry" = 0 ]; then
-    exec 9>/run/pedalpi-boot.lock
+    exec 9>/run/peepo-boot.lock
     flock -n 9 || { echo 'Another boot-policy change is running.' >&2; exit 1; }
 fi
 
 if [ "$restore" = 1 ]; then
     [ -f "$STATE/units" ] && [ -f "$STATE/default-target" ] || { echo "No saved boot policy in $STATE." >&2; exit 1; }
-    run systemctl stop pedalpi.target
+    run systemctl stop peepo.target
     while read -r unit policy; do
         run systemctl unmask "$unit"
         case $policy in
@@ -45,11 +45,11 @@ if [ "$restore" = 1 ]; then
     exit 0
 fi
 
-[ "$(systemctl show -p LoadState --value pedalpi.target)" = loaded ] || { echo 'Install Pedal PI first.' >&2; exit 1; }
-[ -x /opt/pedalpi/bin/pedal_pi ] && [ -r /etc/pedalpi/pedalpi.conf ] || { echo 'Pedal PI installation is incomplete.' >&2; exit 1; }
+[ "$(systemctl show -p LoadState --value peepo.target)" = loaded ] || { echo 'Install Peepo first.' >&2; exit 1; }
+[ -x /opt/peepo/bin/peepo ] && [ -r /etc/peepo/peepo.conf ] || { echo 'Peepo installation is incomplete.' >&2; exit 1; }
 # A direct display is essential: a desktop/SDL service cannot be an instrument.
-grep -Eq '^UI_OPTIONS=.*--display[[:space:]]+(drm|fbdev)([[:space:]]|$)' /etc/pedalpi/pedalpi.conf || {
-    echo 'Set UI_OPTIONS=--display drm (or fbdev) in /etc/pedalpi/pedalpi.conf first.' >&2; exit 1;
+grep -Eq '^UI_OPTIONS=.*--display[[:space:]]+(drm|fbdev)([[:space:]]|$)' /etc/peepo/peepo.conf || {
+    echo 'Set UI_OPTIONS=--display drm (or fbdev) in /etc/peepo/peepo.conf first.' >&2; exit 1;
 }
 if [ -n "$startup" ]; then
     [[ "$startup" =~ ^[a-z0-9-]+$ ]] && [ "${#startup}" -le 64 ] || { echo 'Invalid saved patch identity.' >&2; exit 1; }
@@ -65,10 +65,10 @@ if ! printf '%s\n' "${competitors[@]}" | grep -qx getty@tty1.service; then compe
 if [ ! -f "$STATE/units" ]; then
     echo "Saving previous boot policy in $STATE"
     if [ "$dry" = 0 ]; then
-        install -d -m 0755 /etc/pedalpi
+        install -d -m 0755 /etc/peepo
         temporary=$(mktemp -d "$STATE.tmp.XXXXXX")
         systemctl get-default > "$temporary/default-target"
-        for unit in pedalpi.target "${competitors[@]}"; do
+        for unit in peepo.target "${competitors[@]}"; do
             policy=$(systemctl is-enabled "$unit" 2>/dev/null || true)
             case $policy in
                 enabled|enabled-runtime|disabled|masked|masked-runtime|static|indirect|alias) ;;
@@ -84,18 +84,18 @@ if [ -n "$startup" ]; then
     if [ "$dry" = 0 ]; then
         temporary=$(mktemp "$PATCHES/.startup-boot.XXXXXX")
         printf '%s\n' "$startup" > "$temporary"
-        chown pedalpi:pedalpi "$temporary"
+        chown peepo:peepo "$temporary"
         chmod 0644 "$temporary"
         mv "$temporary" "$PATCHES/startup"
     fi
 fi
 # Masking also prevents another enabled unit from pulling MODEP or LightDM in.
-# Stop the helpers before JACK. Pedal PI's existing audio services are untouched.
+# Stop the helpers before JACK. Peepo's existing audio services are untouched.
 for unit in "${competitors[@]}"; do run systemctl disable --now "$unit"; run systemctl mask "$unit"; done
 run systemctl set-default multi-user.target
-run systemctl enable pedalpi.target
-run systemctl reset-failed pedalpi-jack.service pedalpi-engine.service pedalpi-ui.service
-run systemctl start pedalpi.target
-if [ "$dry" = 1 ]; then echo 'Dry run: direct Pedal PI boot would be enabled.'
-else echo 'Direct Pedal PI boot enabled. SSH remains available. Reboot to verify unattended startup.'; fi
-echo 'Restore: sudo /opt/pedalpi/bin/pedalpi-instrument-boot --restore; sudo reboot'
+run systemctl enable peepo.target
+run systemctl reset-failed peepo-jack.service peepo-engine.service peepo-ui.service
+run systemctl start peepo.target
+if [ "$dry" = 1 ]; then echo 'Dry run: direct Peepo boot would be enabled.'
+else echo 'Direct Peepo boot enabled. SSH remains available. Reboot to verify unattended startup.'; fi
+echo 'Restore: sudo /opt/peepo/bin/peepo-instrument-boot --restore; sudo reboot'

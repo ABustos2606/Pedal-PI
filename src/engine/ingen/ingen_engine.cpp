@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "engine/ingen/ingen_engine.hpp"
 
-namespace pedal {
+namespace peepo {
 IngenEngine::IngenEngine(ingen::Options options, std::unique_ptr<ingen::Transport> transport)
     : options_(options), session_(options),
       transport_(transport ? std::move(transport) : ingen::socket_transport(options.address, options.max_message_bytes * 2)) {}

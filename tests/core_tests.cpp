@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "engine/simulated_engine.hpp"
 #include <cmath>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 
-using namespace pedal;
+using namespace peepo;
 void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
 int main() {
     try {
@@ -101,7 +101,7 @@ int main() {
         check(validate_graph(engine.snapshot()).empty() && !expand_connection(engine.snapshot(), {3, 4}).error.empty(), "missing cable was routed or graph lost recoverability");
         engine.submit(SetParameter{4, "mix", 80}); check(!engine.advance(100)[0].accepted, "missing-module parameter accepted");
         engine.submit(DuplicateModule{4, 24, 24}); check(!engine.advance(100)[0].accepted, "missing module duplicated");
-        engine.submit(AddModule{"urn:pedalpi:demo:nam", 24, 24}); check(!engine.advance(100)[0].accepted, "untested module added");
+        engine.submit(AddModule{"urn:peepo:demo:nam", 24, 24}); check(!engine.advance(100)[0].accepted, "untested module added");
         engine.submit(RemoveModule{4}); engine.advance(100); check(engine.snapshot().connections.size() == 4, "missing-module deletion left dangling cables");
 
         // All four channel-count combinations, using actual per-channel symbols.

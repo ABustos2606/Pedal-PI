@@ -29,7 +29,7 @@ Our interface is new and has no need for Poly's JSON, so the engine built here i
 | Value checking | **None.** A string sent to a float control returns success and is stored; a gain of 9999 dB returns success and the output becomes `inf`. The client must type-check and clamp every value. |
 | Reconnect (P3.8, R13) | Twenty orderly reconnects, a client that died mid-message and a `SIGKILL`ed client: the engine stayed up and the audio level never moved (568 consecutive blocks at 0.5000). A new client reads back the complete live graph. |
 | Second client | A second connected client is told about the first one's changes. A separate control daemon and the interface can therefore both stay in sync. |
-| Layout and custom data | `ingen:canvasX/Y` and arbitrary project properties (`urn:pedalpi:ns#displayName` on a block, `#assignedControl` on a port) are accepted, returned to a new client **before any save**, written into the saved bundle, and restored on load. |
+| Layout and custom data | `ingen:canvasX/Y` and arbitrary project properties (`urn:peepo:ns#displayName` on a block, `#assignedControl` on a port) are accepted, returned to a new client **before any save**, written into the saved bundle, and restored on load. |
 | Save format (P5.2) | `patch:Copy` to `file:///…/name.ingen` writes a directory with `main.ttl`, `manifest.ttl` and `plugins.ttl`, and replies with status 0. |
 | Load | Starting a new engine with that bundle restores blocks, cables, values, positions, custom properties and the JACK ports; audio passes at the expected level. |
 | Load while running (14 October 2026) | `patch:Copy` from the bundle into `ingen:/main` loads it into a running engine, plugin state included. It answers before announcing the content, reports success for bundles it cannot read, and loads nothing if one plugin is missing. Recorded with the other storage findings, including a client that never reads stalling the engine and a TCP port that does not reopen right after a kill, in [patch storage](17-patch-storage.md). |
@@ -68,7 +68,7 @@ All four patches change AGPL-3.0-or-later files and stay under that license. The
 
 | Path | Purpose |
 | --- | --- |
-| `tools/ingen-spike/01-build.sh` | Reproducible build into `/opt/pedalpi` |
+| `tools/ingen-spike/01-build.sh` | Reproducible build into `/opt/peepo` |
 | `tools/ingen-spike/patches/` | The three engine patches |
 | `tools/ingen-spike/07-adapter.sh` | Builds the project's adapter and runs it against the live engine |
 | `tools/ingen-spike/ingenprobe.py` | Minimal raw-socket protocol client |

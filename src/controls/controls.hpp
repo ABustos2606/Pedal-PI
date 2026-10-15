@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include "core/model.hpp"
 #include <map>
@@ -11,7 +11,7 @@
 // simulator's keyboard now, the Pi's GPIO through Linux input later. Every
 // source produces the same raw events; everything after that is shared.
 // See docs/18-physical-controls.md.
-namespace pedal {
+namespace peepo {
 // The instrument's surface: push encoders enc1..encN, stomp switches stomp1..stompN.
 struct ControlLayout {
     unsigned encoders = 4, stomps = 3;

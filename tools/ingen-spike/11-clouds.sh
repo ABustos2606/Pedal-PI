@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 # Clouds' build record, binary and host checks, and test-signal checks
 # (P6.1, P6.2, P6.4 in part). Run as root inside Debian, after 02-plugins.sh:
 #   bash 11-clouds.sh
-# With PEDALPI_ARM64_ROOT set to an arm64 root built by tools/pi, the binary
+# With PEEPO_ARM64_ROOT set to an arm64 root built by tools/pi, the binary
 # record covers that root's build as well.
 D="$(dirname "$(readlink -f "$0")")"
 . "$D/env.sh"
 SRC=$PREFIX/src/lenticular_lv2
 BUNDLE=$PREFIX/lib/lv2/polylenticular.lv2
-ARM=${PEDALPI_ARM64_ROOT:-/opt/pedalpi-arm64}
+ARM=${PEEPO_ARM64_ROOT:-/opt/peepo-arm64}
 
 echo "==== build record"
 echo "lenticular_lv2 $(git -C "$SRC" rev-parse HEAD)"

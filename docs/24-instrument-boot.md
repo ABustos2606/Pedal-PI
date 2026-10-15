@@ -1,10 +1,10 @@
 # Direct instrument boot
 
-**Verified on the Raspberry Pi, 14 October 2026.** The Pi now boots directly into Pedal PI on its 800 x 480 touchscreen, restoring the saved **Clouds guitar** patch through the Tascam US-100. The user confirmed after reboot: "Yes, Pedal PI appears and touch works". No desktop login or MODEP launch is required.
+**Verified on the Raspberry Pi, 14 October 2026.** The Pi now boots directly into Peepo on its 800 x 480 touchscreen, restoring the saved **Clouds guitar** patch through the Tascam US-100. The user confirmed after reboot: "Yes, Peepo appears and touch works". No desktop login or MODEP launch is required.
 
 ## Installed boot policy
 
-- Default target: `multi-user.target`; `pedalpi.target` enabled.
+- Default target: `multi-user.target`; `peepo.target` enabled.
 - LightDM, MODEP's JACK, every installed `modep-*` service and its update path are disabled and masked. Masking prevents dependency activation as well as ordinary boot activation.
 - The automatic login on `tty1` is disabled and masked, so it cannot write a console over the instrument. Serial console and SSH remain available.
 - UI uses `--display drm`; no desktop or browser is involved. No firmware configuration or kernel command line was changed.
@@ -17,25 +17,25 @@ Before reboot, the newer unsaved **wendy** patch was saved as `p20261014-224640-
 
 ## Repeatable setup and recovery
 
-Packages include `instrument-boot.sh`, installed as `/opt/pedalpi/bin/pedalpi-instrument-boot`. An ordinary installation preserves existing boot policy; `sudo ./install.sh --instrument` explicitly selects instrument mode. For an existing installation:
+Packages include `instrument-boot.sh`, installed as `/opt/peepo/bin/peepo-instrument-boot`. An ordinary installation preserves existing boot policy; `sudo ./install.sh --instrument` explicitly selects instrument mode. For an existing installation:
 
 ```bash
-sudo /opt/pedalpi/bin/pedalpi-instrument-boot --dry-run
-sudo /opt/pedalpi/bin/pedalpi-instrument-boot --startup p20261014-222121-f9e0
+sudo /opt/peepo/bin/peepo-instrument-boot --dry-run
+sudo /opt/peepo/bin/peepo-instrument-boot --startup p20261014-222121-f9e0
 sudo reboot
 ```
 
-The script saves the previous default target and each affected unit's enable/mask policy in `/etc/pedalpi/instrument-boot-state` before changing them. Repeating the command preserves that original snapshot. It never deletes MODEP, a saved patch, settings or plugins. A startup identity is checked before any boot-policy mutation; the UI performs its existing bundle/plugin/asset validation at restoration.
+The script saves the previous default target and each affected unit's enable/mask policy in `/etc/peepo/instrument-boot-state` before changing them. Repeating the command preserves that original snapshot. It never deletes MODEP, a saved patch, settings or plugins. A startup identity is checked before any boot-policy mutation; the UI performs its existing bundle/plugin/asset validation at restoration.
 
 To return to the previous desktop/MODEP boot policy:
 
 ```bash
-sudo /opt/pedalpi/bin/pedalpi-instrument-boot --restore --dry-run
-sudo /opt/pedalpi/bin/pedalpi-instrument-boot --restore
+sudo /opt/peepo/bin/peepo-instrument-boot --restore --dry-run
+sudo /opt/peepo/bin/peepo-instrument-boot --restore
 sudo reboot
 ```
 
-Restoring stops Pedal PI and restores the original unit policy and default target. Patches and the startup choice remain. Package removal also restores the saved boot policy before deleting Pedal PI's service units. The original Pedal PI unit files from this deployment are retained separately in `/etc/pedalpi/instrument-unit-backup`.
+Restoring stops Peepo and restores the original unit policy and default target. Patches and the startup choice remain. Package removal also restores the saved boot policy before deleting Peepo's service units. The original Peepo unit files from this deployment are retained separately in `/etc/peepo/instrument-unit-backup`.
 
 ## Verification and limits
 

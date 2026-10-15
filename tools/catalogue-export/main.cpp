@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
-// Export the installed LV2 plugins as a Pedal PI catalogue file. Linux only.
+// Copyright (C) 2026 Peepo contributors
+// Export the installed LV2 plugins as a Peepo catalogue file. Linux only.
 // Uses Lilv, as the engine does, so discovery follows the same LV2_PATH,
 // manifests and plugin classes. Metadata only: no plugin is loaded or run.
 //
-//   LV2_PATH=/usr/lib/lv2 pedal_catalogue_export -o catalogue.json
-//   pedal_catalogue_export --exclude eg-scope --sample-rate 48000 > catalogue.json
-//   pedal_catalogue_export --only inventory.txt -o catalogue.json
+//   LV2_PATH=/usr/lib/lv2 peepo_catalogue_export -o catalogue.json
+//   peepo_catalogue_export --exclude eg-scope --sample-rate 48000 > catalogue.json
+//   peepo_catalogue_export --only inventory.txt -o catalogue.json
 #include "catalogue/catalogue.hpp"
 #include <lilv/lilv.h>
 #include <algorithm>
@@ -19,7 +19,7 @@
 #include <set>
 #include <sys/utsname.h>
 
-using namespace pedal;
+using namespace peepo;
 namespace {
 constexpr char lv2[] = "http://lv2plug.in/ns/lv2core#";
 constexpr char pprops[] = "http://lv2plug.in/ns/ext/port-props#";
@@ -128,8 +128,11 @@ Exported export_plugin(const Terms& terms, const LilvPlugin* plugin, double rate
     auto label = text_of(lilv_plugin_class_get_label(lilv_plugin_get_class(plugin)));
     if (label.ends_with(" Plugin")) label.resize(label.size() - 7);
     const Node author(lilv_plugin_get_author_name(plugin));
-    d.description = tidy((label.empty() || label == "Plugin" ? std::string("LV2 plugin") : label) + (author ? " by " + text_of(author.get()) : ""), 200);
-    out.origin = tidy("class " + (label.empty() ? std::string("Plugin") : label) + "; bundle " + text_of(lilv_plugin_get_bundle_uri(plugin)), 2000);
+    // The description says what a module does; the overlay writes it. Who made
+    // the plugin belongs in the provenance, not on the Add screen.
+    if (!label.empty() && label != "Plugin") d.description = tidy(label, 200);
+    out.origin = tidy("class " + (label.empty() ? std::string("Plugin") : label) + (author ? "; author " + text_of(author.get()) : "") +
+                      "; bundle " + text_of(lilv_plugin_get_bundle_uri(plugin)), 2000);
 
     std::string blocked;
     const Nodes required(lilv_plugin_get_required_features(plugin));
@@ -241,7 +244,7 @@ int main(int argc, char** argv) {
                 line.erase(line.find_last_not_of(" \t\r") + 1);
                 if (!line.empty()) only.insert(line);
             }
-        } else { std::cerr << "usage: pedal_catalogue_export [-o file] [--exclude uri-substring]... [--sample-rate hz] [--only uri-list]\n"; return 2; }
+        } else { std::cerr << "usage: peepo_catalogue_export [-o file] [--exclude uri-substring]... [--sample-rate hz] [--only uri-list]\n"; return 2; }
     }
     if (!(rate >= 8000 && rate <= 768000)) { std::cerr << "sample rate out of range\n"; return 2; }
     std::unique_ptr<LilvWorld, void (*)(LilvWorld*)> world(lilv_world_new(), lilv_world_free);
@@ -273,7 +276,7 @@ int main(int argc, char** argv) {
     utsname machine{};
     uname(&machine);
     const char* path = std::getenv("LV2_PATH");
-    document.provenance = {{"tool", "pedal_catalogue_export"}, {"lilv", PEDAL_LILV_VERSION}, {"machine", machine.machine},
+    document.provenance = {{"tool", "peepo_catalogue_export"}, {"lilv", PEEPO_LILV_VERSION}, {"machine", machine.machine},
                            {"lv2_path", path ? path : "(Lilv default)"}, {"sample_rate", std::to_string(static_cast<long>(rate))}};
     const auto text = write_catalogue(document);
     // What is written must be what the interface will accept.

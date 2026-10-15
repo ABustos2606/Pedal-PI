@@ -42,7 +42,7 @@ for compatibility evidence and its limits.
 
 The three x42 identities are `tuna#mod`, `tuna#one` and `tuna#two`: the MOD
 build, standard build, and a variant with a spectrum view in its original
-plugin interface. Pedal PI supplies its own LVGL interface, so the spectrum
+plugin interface. Peepo supplies its own LVGL interface, so the spectrum
 variant adds no spectrum view here. Only `#mod` appears in Add. The others
 remain recognized and usable in saved patches, with the dedicated tuner screen.
 
@@ -74,6 +74,6 @@ Catalogue tests check exactly one offered tuner and three retained identities.
 
 `tools/ingen-spike/17-tuner.sh` runs an isolated WSL JACK/Ingen session with a
 generated harmonic tone. It refuses to replace an existing audio session.
-`pedal_tuner_live` checks A4, −23 cents, +19 cents, E2, A=442 Hz and silence
+`peepo_tuner_live` checks A4, −23 cents, +19 cents, E2, A=442 Hz and silence
 through the real plugin and adapter. All six cases passed on x86-64. Guitar
 listening on the Pi remains a separate check.

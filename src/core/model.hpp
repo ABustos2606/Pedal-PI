@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include <cstdint>
 #include <deque>
 #include <string>
 #include <vector>
 
-namespace pedal {
+namespace peepo {
 using InstanceId = std::uint64_t;
 // Logical canvas extent; viewport movement never changes module positions.
 inline constexpr int canvas_width = 4096, canvas_height = 2048;
@@ -41,7 +41,8 @@ struct ModuleDefinition {
     // Generated from upstream LV2 metadata, rather than an invented demo fixture.
     bool reference = false;
     // The plugin's own on/off control, when it has one. Such a module is
-    // silent until that control is set, and bypass means clearing it.
+    // silent until that control is set, so it stays set; bypass is the
+    // engine's, which passes the input through.
     std::string enable_symbol;
     // Controls whose default the project chose over the plugin's own. The
     // plugin starts at its own value, so adding the module sets these.

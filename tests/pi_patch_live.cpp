@@ -12,14 +12,14 @@
 #include <stdexcept>
 #include <thread>
 #include <tuple>
-using namespace pedal;
+using namespace peepo;
 using Clock = std::chrono::steady_clock;
 void require(bool ok, const std::string& message) {
     if (!ok) throw std::runtime_error(message);
     std::cout << "PASS " << message << std::endl;
 }
 struct Client {
-    IngenEngine engine{ingen::Options{"unix:///run/pedalpi/ingen.sock"}};
+    IngenEngine engine{ingen::Options{"unix:///run/peepo/ingen.sock"}};
     Client() {
         engine.connect();
         const auto until = Clock::now() + std::chrono::seconds(10);
@@ -70,9 +70,9 @@ std::string canonical(Graph graph) {
 }
 int main(int argc, char** argv) try {
     const std::string mode = argc > 1 ? argv[1] : "inspect";
-    if (mode != "inspect" && mode != "save" && mode != "save-load" && mode != "verify" && mode != "audit" && mode != "resume") throw std::runtime_error("usage: pedal_pi_patch_live [inspect|save|save-load|verify|audit|resume]");
+    if (mode != "inspect" && mode != "save" && mode != "save-load" && mode != "verify" && mode != "audit" && mode != "resume") throw std::runtime_error("usage: peepo_patch_live [inspect|save|save-load|verify|audit|resume]");
     std::vector<ModuleDefinition> definitions;
-    const auto issue = load_catalogue("/opt/pedalpi/share/pedalpi/catalogue.json", "/opt/pedalpi/share/pedalpi/catalogue-overlay.json", definitions);
+    const auto issue = load_catalogue("/opt/peepo/share/peepo/catalogue.json", "/opt/peepo/share/peepo/catalogue-overlay.json", definitions);
     require(issue.empty(), "load the installed catalogue and overlay" + (issue.empty() ? "" : ": " + issue));
     replace_catalogue(std::move(definitions));
     Client client;
@@ -81,9 +81,9 @@ int main(int argc, char** argv) try {
     for (const auto& module : original.modules) if (!module.fixed)
         for (const auto& p : module.parameters) std::cout << "CONTROL " << module.name << '/' << p.symbol << '=' << p.value << '\n';
     if (mode == "inspect") return 0;
-    PatchStore store("/var/lib/pedalpi/patches");
+    PatchStore store("/var/lib/peepo/patches");
     require(store.open().empty(), "open the Pi's real patch store");
-    const std::string baseline = "/tmp/pedalpi-patch-restart-baseline.ttl";
+    const std::string baseline = "/tmp/peepo-patch-restart-baseline.ttl";
     if (mode == "audit") {
         const auto stored = store.find(original.patch_id);
         require(stored.has_value(), "find the patch saved in this session");

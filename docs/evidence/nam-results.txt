@@ -20,8 +20,8 @@ extension http://lv2plug.in/ns/ext/options#interface
 ==== current, engine at 48000 Hz, 128 frames
 PASS  the plugin loads in Ingen (it requires urid:map and work:schedule)
 NOTE  without a model: 0.2121 RMS out for 0.2121 in, 0.0% not the input tone
-PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-current/models/a1 standard.nam'
-PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-current/models/a1 standard.nam'
+PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-current/models/a1 standard.nam'
+PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-current/models/a1 standard.nam'
 NOTE  continuing with the file URI form
 PASS  A1 standard model runs -- 0.1362 RMS, 6.7% of the output is not the input tone, peak 0.205
 PASS  A2 model runs -- 0.0793 RMS, 17.1% of the output is not the input tone, peak 0.209
@@ -31,7 +31,7 @@ NOTE  after 30 model switches: engine RSS 120 MiB (was 118), 0 xruns on the PC's
 NOTE  after 60 model switches: engine RSS 120 MiB (was 118), 0 xruns on the PC's dummy backend
 PASS  still processing after 60 switches -- 0.0793 RMS
 PASS  A2 quality 1 -> 0 -> 0.5 -> 1: the sound changes between 1 and 0 and returns at 1; 0 xruns while switching
-PASS  saved to /tmp/pedalpi-nam-current/nam.ingen
+PASS  saved to /tmp/peepo-nam-current/nam.ingen
 NOTE  bundle files: main.ttl, manifest.ttl, nam/a1 standard.nam, nam/manifest.ttl, nam/state.ttl, plugins.ttl
 NOTE  nam/state.ttl: <http://github.com/mikeoliphant/neural-amp-modeler-lv2#model> <a1%20standard.nam>
 PASS  loaded back into the running engine
@@ -43,20 +43,20 @@ NOTE  bundle moved and the original model file renamed: the plugin still runs th
       1 error: :0:0: write error (Connection reset by peer)
       1 /nam: Unable to load model from: ''
       2 /nam: Unable to load model from: '/nonexistent-reset.nam'
-      1 /nam: Unable to load model from: '/tmp/pedalpi-nam-current/models/absent.nam'
-      1 /nam: Unable to load model from: '/tmp/pedalpi-nam-current/models/corrupt.nam'
+      1 /nam: Unable to load model from: '/tmp/peepo-nam-current/models/absent.nam'
+      1 /nam: Unable to load model from: '/tmp/peepo-nam-current/models/corrupt.nam'
       4 warning: Relative path but base is not a file URI.
       4 warning: Writing ambiguous atom:Path literal.
-==== current, restoring /tmp/pedalpi-nam-current/nam.ingen into a fresh engine
+==== current, restoring /tmp/peepo-nam-current/nam.ingen into a fresh engine
 PASS  the bundle loads
-NOTE  the restored patch: 0.1362 RMS, 6.7% of the output is not the input tone; plugin reports '/tmp/pedalpi-nam-current/nam.ingen/nam/a1 standard.nam'
+NOTE  the restored patch: 0.1362 RMS, 6.7% of the output is not the input tone; plugin reports '/tmp/peepo-nam-current/nam.ingen/nam/a1 standard.nam'
 ==== all passed
 PASS  the engine is still running
 ==== current, engine at 48000 Hz, 64 frames
 PASS  the plugin loads in Ingen (it requires urid:map and work:schedule)
 NOTE  without a model: 0.2123 RMS out for 0.2121 in, 1.5% not the input tone
-PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-current-64/models/a1 standard.nam'
-PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-current-64/models/a1 standard.nam'
+PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-current-64/models/a1 standard.nam'
+PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-current-64/models/a1 standard.nam'
 NOTE  continuing with the file URI form
 PASS  A1 standard model runs -- 0.1362 RMS, 6.7% of the output is not the input tone, peak 0.205
 PASS  A2 model runs -- 0.0793 RMS, 17.1% of the output is not the input tone, peak 0.209
@@ -82,7 +82,7 @@ needs libc.so.6
 size 0.3 MB
 lilv_world_add_plugin(): warning: Duplicate plugin <http://moddevices.com/plugins/mod-devel/logic-operators>
 lilv_world_add_plugin(): warning: ... found in file:///usr/lib/lv2/logic-operators.lv2/
-lilv_world_add_plugin(): warning: ... and      file:///opt/pedalpi/lib/lv2/logic-operators.lv2/ (ignored)
+lilv_world_add_plugin(): warning: ... and      file:///opt/peepo/lib/lv2/logic-operators.lv2/ (ignored)
 requires http://lv2plug.in/ns/ext/worker#schedule
 requires http://lv2plug.in/ns/ext/urid#map
 optional http://lv2plug.in/ns/lv2core#hardRTCapable
@@ -91,8 +91,8 @@ extension http://lv2plug.in/ns/ext/worker#interface
 ==== poly, engine at 48000 Hz, 128 frames
 PASS  the plugin loads in Ingen (it requires urid:map and work:schedule)
 NOTE  without a model: 0.2121 RMS out for 0.2121 in, 0.0% not the input tone
-PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-poly/models/a1 standard.nam'
-PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-poly/models/a1 standard.nam'
+PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-poly/models/a1 standard.nam'
+PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-poly/models/a1 standard.nam'
 NOTE  continuing with the file URI form
 PASS  A1 standard model runs -- 0.1360 RMS, 6.8% of the output is not the input tone, peak 0.206
 FAIL  A2 model runs -- 0.1360 RMS, 6.8% of the output is not the input tone, peak 0.206
@@ -102,7 +102,7 @@ NOTE  after 30 model switches: engine RSS 177 MiB (was 239), 0 xruns on the PC's
 NOTE  after 60 model switches: engine RSS 177 MiB (was 239), 0 xruns on the PC's dummy backend
 PASS  still processing after 60 switches -- 0.1360 RMS
 NOTE  no quality control on this candidate
-PASS  saved to /tmp/pedalpi-nam-poly/nam.ingen
+PASS  saved to /tmp/peepo-nam-poly/nam.ingen
 NOTE  bundle files: main.ttl, manifest.ttl, nam/a1 standard.nam, nam/manifest.ttl, nam/state.ttl, plugins.ttl
 NOTE  nam/state.ttl: <http://github.com/mikeoliphant/neural-amp-modeler-lv2#model> <a1%20standard.nam>
 PASS  loaded back into the running engine
@@ -112,15 +112,15 @@ NOTE  bundle moved and the original model file renamed: the plugin still runs th
       2 error: :0:0: write error (Broken pipe)
       1 error: :0:0: write error (Connection reset by peer)
      36 Error calling /nam work method
-      1 lilv_world_add_plugin(): warning: ... and      file:///opt/pedalpi/lib/lv2/logic-operators.lv2/ (ignored)
+      1 lilv_world_add_plugin(): warning: ... and      file:///opt/peepo/lib/lv2/logic-operators.lv2/ (ignored)
       1 lilv_world_add_plugin(): warning: Duplicate plugin <http://moddevices.com/plugins/mod-devel/logic-operators>
       1 lilv_world_add_plugin(): warning: ... found in file:///usr/lib/lv2/logic-operators.lv2/
       2 /nam: Unable to load model from: '/nonexistent-reset.nam'
-      1 /nam: Unable to load model from: '/opt/pedalpi/nam/poly/neural_amp_modeler.lv2/click.wav'
-     31 /nam: Unable to load model from: '/tmp/pedalpi-nam-poly/models/a2.nam'
-      1 /nam: Unable to load model from: '/tmp/pedalpi-nam-poly/models/absent.nam'
-      1 /nam: Unable to load model from: '/tmp/pedalpi-nam-poly/models/corrupt.nam'
-==== poly, restoring /tmp/pedalpi-nam-poly/nam.ingen into a fresh engine
+      1 /nam: Unable to load model from: '/opt/peepo/nam/poly/neural_amp_modeler.lv2/click.wav'
+     31 /nam: Unable to load model from: '/tmp/peepo-nam-poly/models/a2.nam'
+      1 /nam: Unable to load model from: '/tmp/peepo-nam-poly/models/absent.nam'
+      1 /nam: Unable to load model from: '/tmp/peepo-nam-poly/models/corrupt.nam'
+==== poly, restoring /tmp/peepo-nam-poly/nam.ingen into a fresh engine
 PASS  the bundle loads
 NOTE  the restored patch: 0.1360 RMS, 6.8% of the output is not the input tone; plugin reports None
 ==== all passed
@@ -128,19 +128,19 @@ PASS  the engine is still running
 ==== poly, engine at 48000 Hz, 64 frames
 PASS  the plugin loads in Ingen (it requires urid:map and work:schedule)
 NOTE  without a model: 0.2121 RMS out for 0.2121 in, 0.0% not the input tone
-PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-poly-64/models/a1 standard.nam'
-PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-poly-64/models/a1 standard.nam'
+PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-poly-64/models/a1 standard.nam'
+PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-poly-64/models/a1 standard.nam'
 NOTE  continuing with the file URI form
 PASS  A1 standard model runs -- 0.1360 RMS, 6.8% of the output is not the input tone, peak 0.206
 FAIL  A2 model runs -- 0.1359 RMS, 7.2% of the output is not the input tone, peak 0.267
 ==== 1 failed
 PASS  the engine is still running
-tools/ingen-spike/env.sh: line 27:  3685 Segmentation fault      nohup ingen -e -f -S /tmp/pedalpi-ingen.sock "$@" > "$RUN/ingen.log" 2>&1
+tools/ingen-spike/env.sh: line 27:  3685 Segmentation fault      nohup ingen -e -f -S /tmp/peepo-ingen.sock "$@" > "$RUN/ingen.log" 2>&1
 ==== poly, engine at 48000 Hz, 1024 frames
 PASS  the plugin loads in Ingen (it requires urid:map and work:schedule)
 NOTE  without a model: 0.2121 RMS out for 0.2121 in, 0.0% not the input tone
 PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports None
-PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/pedalpi-nam-poly-1024/models/a1 standard.nam'
+PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-nam-poly-1024/models/a1 standard.nam'
 NOTE  continuing with the file URI form
 PASS  A1 standard model runs -- 0.1359 RMS, 6.8% of the output is not the input tone, peak 0.206
 FAIL  A2 model runs -- 0.1359 RMS, 6.8% of the output is not the input tone, peak 0.206

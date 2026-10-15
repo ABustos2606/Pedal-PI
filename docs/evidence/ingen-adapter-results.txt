@@ -1,7 +1,7 @@
 Ingen protocol reading, command mapping, acknowledgment, second client, timeout, reconnect and restart passed.
 Bundles, revisions, interrupted saves, fallback, startup choice, foreign bundles, missing files and simulated save/load passed.
 Control gestures, mapping rules, soft takeover and stored assignments passed.
-PASS  connect, read the graph and create the audio endpoints -- unix:///tmp/pedalpi-ingen.sock
+PASS  connect, read the graph and create the audio endpoints -- unix:///tmp/peepo-ingen.sock
 PASS  new patch replaces what the engine held
 PASS  new patch is IN wired to OUT on both sides
 PASS  add a plugin
@@ -30,7 +30,7 @@ PASS  new patch
 PASS  engine graph emptied
 PASS  session snapshot rebuilt in the engine
 PASS  the second client followed the rebuild, including values it was never sent directly
-PASS  patch store opens -- /tmp/pedalpi-live-patches
+PASS  patch store opens -- /tmp/peepo-live-patches
 PASS  add a Mutable-derived module to the patch
 PASS  turn one of its controls
 PASS  pin encoder 1 to it
@@ -46,7 +46,7 @@ PASS  the second client followed the load
 PASS  edit after loading
 PASS  a second save becomes revision 2
 PASS  a patch needing a missing plugin is refused before anything changes
-PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/pedalpi-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
+PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/peepo-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
 PASS  the newest revision loads -- Loaded Live "check" é ..
 PASS  a bundle without project properties is offered
 PASS  it loads with default names and layout, its values, and the folder's identity -- Loaded Untitled.

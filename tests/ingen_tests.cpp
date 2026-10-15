@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 // The Ingen adapter against a stand-in engine that speaks the recorded
 // protocol, including the awkward parts: replies split across reads, values
 // that are not echoed to their sender, copies announced without contents and
 // notification numbers that collide with request numbers. What the real
-// engine does is checked separately by pedal_ingen_live.
+// engine does is checked separately by peepo_ingen_live.
 #include "engine/ingen/ingen_engine.hpp"
 #include <algorithm>
 #include <cmath>
@@ -12,8 +12,8 @@
 #include <limits>
 #include <stdexcept>
 
-using namespace pedal;
-using namespace pedal::ingen;
+using namespace peepo;
+using namespace peepo::ingen;
 namespace {
 void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
 const std::string amp = "http://lv2plug.in/plugins/eg-amp";
@@ -310,13 +310,13 @@ void turtle_and_protocol() {
         "_:b64\n\ta patch:Put ;\n\tpatch:sequenceNumber \"1\"^^xsd:int ;\n\tpatch:context ingen:externalContext ;\n\tpatch:subject <ingen:/main/> ;\n\tpatch:body [] .\n\n"
         "_:b66\n\ta patch:Put ;\n\tpatch:sequenceNumber \"2\"^^xsd:int ;\n\tpatch:subject <ingen:/main/m3> ;\n\tpatch:body [\n\t\tingen:canvasX \"300.0\"^^xsd:float ;\n"
         "\t\tingen:canvasY \"132.0\"^^xsd:float ;\n\t\tingen:enabled false ;\n\t\tlv2:prototype <http://lv2plug.in/plugins/eg-amp> ;\n\t\ta ingen:Block ;\n"
-        "\t\t<urn:pedalpi:ns#displayName> \"Amp\"\n\t] .\n\n"
+        "\t\t<urn:peepo:ns#displayName> \"Amp\"\n\t] .\n\n"
         "_:b68\n\ta patch:Put ;\n\tpatch:sequenceNumber \"3\"^^xsd:int ;\n\tpatch:subject <ingen:/main/control> ;\n\tpatch:body [\n\t\tatom:bufferType atom:Sequence ,\n"
         "\t\t\tatom:Sequence ;\n\t\tatom:supports patch:Message ;\n\t\t<http://lv2plug.in/ns/ext/resize-port#minimumSize> \"4096\"^^xsd:int ;\n"
         "\t\tlv2:index \"0\"^^xsd:int ,\n\t\t\t\"0\"^^xsd:int ;\n\t\tlv2:name \"Control\" ;\n\t\ta atom:AtomPort ,\n\t\t\tatom:AtomPort ,\n\t\t\tlv2:InputPort\n\t\t] .\n\n"
         "_:b82\n\ta patch:Put ;\n\tpatch:sequenceNumber \"10\"^^xsd:int ;\n\tpatch:subject <ingen:/main/> ;\n\tpatch:body [\n\t\ta ingen:Arc ;\n"
         "\t\tingen:tail <ingen:/main/in_l> ;\n\t\tingen:head <ingen:/main/m3/in>\n\t] .\n\n"
-        "_:b58\n\ta patch:Set ;\n\tpatch:sequenceNumber \"43\"^^xsd:int ;\n\tpatch:subject <ingen:/main> ;\n\tpatch:property <urn:pedalpi:ns#patchName> ;\n"
+        "_:b58\n\ta patch:Set ;\n\tpatch:sequenceNumber \"43\"^^xsd:int ;\n\tpatch:subject <ingen:/main> ;\n\tpatch:property <urn:peepo:ns#patchName> ;\n"
         "\tpatch:value \"\"\"My \"patch\" \xc3\xa9\"\"\" .\n\n"
         "_:b86\n\ta ingen:BundleEnd ;\n\tpatch:sequenceNumber \"46\"^^xsd:int .\n";
     turtle::Reader reader;
@@ -329,7 +329,7 @@ void turtle_and_protocol() {
     const auto& made = messages[4];
     check(made.type == Message::Type::Put && made.subject == "ingen:/main/m3" && has(made.body, rdf_type, full(uri::ingen, "Block")), "block not decoded");
     check(find(made.body, full(uri::ingen, "canvasX"))->number == 300 && !find(made.body, full(uri::ingen, "enabled"))->boolean, "typed values not decoded");
-    check(find(made.body, full(uri::pedalpi, "displayName"))->text == "Amp", "project property not decoded");
+    check(find(made.body, full(uri::peepo, "displayName"))->text == "Amp", "project property not decoded");
     check(has(messages[5].body, rdf_type, full(uri::atom, "AtomPort")) && has(messages[5].body, rdf_type, full(uri::lv2, "InputPort")), "repeated objects lost");
     check(find(messages[6].body, full(uri::ingen, "head"))->text == "ingen:/main/m3/in", "arc not decoded");
     check(messages[7].type == Message::Type::Set && messages[7].value.text == "My \"patch\" \xc3\xa9", "long string not decoded");
@@ -383,7 +383,7 @@ void adapter() {
           "parameter not described by the catalogue");
     check(validate_graph(rig.graph()).empty() && fake.objects.contains("ingen:/main/m3"), "engine and interface disagree after add");
     before = fake.requests;
-    check(!rig.result(AddModule{"urn:pedalpi:demo:drive", 24, 24}).accepted && !rig.result(AddModule{"urn:missing", 24, 24}).accepted && fake.requests == before,
+    check(!rig.result(AddModule{"urn:peepo:demo:drive", 24, 24}).accepted && !rig.result(AddModule{"urn:missing", 24, 24}).accepted && fake.requests == before,
           "a plugin the engine lacks was requested");
 
     // Cables: the engine accepts feedback and duplicates differently, so both are refused here.
@@ -418,7 +418,7 @@ void adapter() {
 
     // Names survive quoting, and live in the engine.
     const std::string awkward = "Friday's \"loud\" set \xc3\xa9 .";
-    check(rig.result(RenamePatch{awkward}).accepted && rig.graph().name == awkward && property(fake, "ingen:/main", full(uri::pedalpi, "patchName"))->text == awkward, "patch name mangled");
+    check(rig.result(RenamePatch{awkward}).accepted && rig.graph().name == awkward && property(fake, "ingen:/main", full(uri::peepo, "patchName"))->text == awkward, "patch name mangled");
     check(!rig.result(RenamePatch{"  "}).accepted && rig.graph().name == awkward, "blank name accepted");
 
     // A second client, as a control daemon would be: both stay in step.
@@ -450,8 +450,9 @@ void adapter() {
     late.engine->disconnect(); rig.settle(); other.settle();
     check(rig.result(SetParameter{3, "gain", 6.5}).accepted, "value could not be corrected");
 
-    // A plugin with its own on/off control: adding it switches it on, bypass
-    // clears that control, and the control never appears as a parameter.
+    // A plugin with its own on/off control: adding it switches it on, and it
+    // stays on, since off it writes silence. Bypass is the engine's, which
+    // passes the input through. The control never appears as a parameter.
     // Its gain has a default the catalogue chose over the plugin's 0, which
     // adding it must set.
     {
@@ -467,10 +468,22 @@ void adapter() {
         check(property(fake, "ingen:/main/m" + std::to_string(id) + "/gain", full(uri::ingen, "value"))->number == -6 &&
               rig.graph().modules.back().parameters[0].value == -6, "the catalogue's chosen default was not set on the new module");
         check(rig.graph().modules.back().parameters.size() == 1, "the on/off control was shown as a parameter");
-        check(rig.result(SetBypass{id, true}).accepted && property(fake, port, full(uri::ingen, "value"))->number == 0 && find_module(rig.graph(), id)->bypassed, "bypass did not clear the plugin's switch");
-        check(!property(fake, "ingen:/main/m" + std::to_string(id), full(uri::ingen, "enabled")), "the engine's own bypass was used as well");
-        check(rig.result(DuplicateModule{id, 600, 144}).accepted && rig.graph().modules.back().bypassed, "copy lost the switch state");
-        check(rig.result(RemoveModule{rig.graph().modules.back().id}).accepted && rig.result(SetBypass{id, false}).accepted && !find_module(rig.graph(), id)->bypassed, "switch could not be set again");
+        const auto block = "ingen:/main/m" + std::to_string(id);
+        check(rig.result(SetBypass{id, true}).accepted && find_module(rig.graph(), id)->bypassed, "bypass refused");
+        check(property(fake, port, full(uri::ingen, "value"))->number == 1, "bypass muted the plugin through its own switch");
+        check(!property(fake, block, full(uri::ingen, "enabled"))->boolean, "bypass did not use the engine's pass-through");
+        check(rig.result(DuplicateModule{id, 600, 144}).accepted && rig.graph().modules.back().bypassed, "copy lost the bypass");
+        check(rig.result(RemoveModule{rig.graph().modules.back().id}).accepted && rig.result(SetBypass{id, false}).accepted && !find_module(rig.graph(), id)->bypassed &&
+              property(fake, block, full(uri::ingen, "enabled"))->boolean, "bypass could not be switched off");
+        // Earlier versions bypassed by clearing the switch: such a module reads
+        // as bypassed, and enabling it switches the plugin back on.
+        for (auto& [key, value] : fake.objects[port]) if (key == full(uri::ingen, "value")) value = number_value(0);
+        Rig legacy(fake);
+        legacy.engine->connect(); legacy.settle();
+        check(find_module(legacy.graph(), id)->bypassed, "a cleared switch did not read as bypassed");
+        check(legacy.result(SetBypass{id, false}).accepted && property(fake, port, full(uri::ingen, "value"))->number == 1 && !find_module(legacy.graph(), id)->bypassed,
+              "enabling did not switch the plugin back on");
+        legacy.engine->disconnect(); rig.settle();
         check(rig.result(RemoveModule{id}).accepted, "switched module could not be removed");
     }
 
@@ -497,7 +510,7 @@ void adapter() {
     other.settle();
     check(other.graph().modules.size() == saved.modules.size() && other.graph().connections.size() == saved.connections.size() && other.graph().name == saved.name, "second client lost step during restore");
     // The unsaved-changes marker lives in the engine, so every client sees it.
-    const auto modified = full(uri::pedalpi, "modified"), identity = full(uri::pedalpi, "patchId");
+    const auto modified = full(uri::peepo, "modified"), identity = full(uri::peepo, "patchId");
     check(rig.result(SetParameter{3, "gain", 3}).accepted && rig.graph().dirty && property(fake, "ingen:/main", modified)->boolean, "edit did not mark the engine's graph");
     before = fake.requests;
     check(rig.result(SetParameter{3, "gain", 3}).accepted && fake.requests == before + 1, "an already marked graph was marked again");
@@ -508,7 +521,7 @@ void adapter() {
     auto outcome = rig.result(SaveGraph{SaveScope::Persistent, true, first_bundle, "p-one"});
     check(outcome.accepted && !rig.graph().dirty && rig.graph().patch_id == "p-one" && fake.files.contains(first_bundle), "persistent save failed");
     const auto& written = fake.files.at(first_bundle).first.at("ingen:/main");
-    check(find(written, identity)->text == "p-one" && find(written, full(uri::pedalpi, "schemaVersion"))->number == 1, "bundle lacks its identity or schema");
+    check(find(written, identity)->text == "p-one" && find(written, full(uri::peepo, "schemaVersion"))->number == 1, "bundle lacks its identity or schema");
     check(!property(fake, "ingen:/main", modified)->boolean && property(fake, "ingen:/main", identity)->text == "p-one", "engine not told the save completed");
     other.settle();
     check(!other.graph().dirty && other.graph().patch_id == "p-one", "another client did not see the save");
@@ -559,7 +572,7 @@ void adapter() {
     // Control assignments are graph properties: every client sees them, a restart keeps them, a save carries them.
     Assignment knob;
     knob.control = "enc1"; knob.module = 3; knob.parameter = "gain"; knob.minimum = -12; knob.maximum = 12;
-    const auto control_key = full(uri::pedalpi, "control-enc1");
+    const auto control_key = full(uri::peepo, "control-enc1");
     check(rig.result(Assign{knob}).accepted && rig.graph().assignments.size() == 1 && rig.graph().assignments[0].plugin == amp &&
           property(fake, "ingen:/main", control_key)->text.starts_with("parameter|m3|"), "assignment not stored on the engine's graph");
     other.settle();
@@ -672,8 +685,8 @@ void relative_paths() {
     check(rig.result(NewPatch{"Again"}).accepted && rig.graph().modules.size() == 2 && rig.graph().connections.size() == 2, "replacing a patch on a relative engine failed");
 }
 void tuner_monitor() {
-    using namespace pedal;
-    using namespace pedal::ingen;
+    using namespace peepo;
+    using namespace peepo::ingen;
     FakeEngine fake;
     const std::string path = "ingen:/main/m3", plugin = "http://gareus.org/oss/lv2/tuna#mod";
     fake.plugins.insert(plugin);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include "engine/ingen/turtle.hpp"
 #include <optional>
@@ -11,13 +11,13 @@
 // Ingen's socket protocol as verified in docs/14-ingen-engine-evidence.md:
 // LV2 patch messages written as Turtle. Requests end with one newline and no
 // NUL; everything the engine sends is NUL-terminated.
-namespace pedal::ingen {
+namespace peepo::ingen {
 namespace uri {
 inline constexpr std::string_view ingen = "http://drobilla.net/ns/ingen#";
 inline constexpr std::string_view lv2 = "http://lv2plug.in/ns/lv2core#";
 inline constexpr std::string_view patch = "http://lv2plug.in/ns/ext/patch#";
 inline constexpr std::string_view atom = "http://lv2plug.in/ns/ext/atom#";
-inline constexpr std::string_view pedalpi = "urn:pedalpi:ns#";
+inline constexpr std::string_view peepo = "urn:peepo:ns#";
 inline constexpr std::string_view rdf_type = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 }
 struct Value {

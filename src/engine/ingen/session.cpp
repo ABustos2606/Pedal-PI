@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "engine/ingen/session.hpp"
 #include "core/tuning.hpp"
 #include <algorithm>
@@ -7,7 +7,7 @@
 #include <limits>
 #include <type_traits>
 
-namespace pedal::ingen {
+namespace peepo::ingen {
 namespace {
 const std::string main_path = "ingen:/main";
 // The graph's own audio ports stand for the fixed IN and OUT modules. Seen from
@@ -19,10 +19,10 @@ const std::string type = std::string(uri::rdf_type);
 const std::string block_type = iri(uri::ingen, "Block"), arc_type = iri(uri::ingen, "Arc");
 const std::string value_key = iri(uri::ingen, "value"), enabled_key = iri(uri::ingen, "enabled");
 const std::string x_key = iri(uri::ingen, "canvasX"), y_key = iri(uri::ingen, "canvasY");
-const std::string name_key = iri(uri::pedalpi, "displayName"), patch_name_key = iri(uri::pedalpi, "patchName");
-const std::string patch_id_key = iri(uri::pedalpi, "patchId"), modified_key = iri(uri::pedalpi, "modified");
-// One graph property per pinned control: pedalpi:control-enc1 "parameter|m3|...".
-const std::string control_prefix = iri(uri::pedalpi, "control-");
+const std::string name_key = iri(uri::peepo, "displayName"), patch_name_key = iri(uri::peepo, "patchName");
+const std::string patch_id_key = iri(uri::peepo, "patchId"), modified_key = iri(uri::peepo, "modified");
+// One graph property per pinned control: peepo:control-enc1 "parameter|m3|...".
+const std::string control_prefix = iri(uri::peepo, "control-");
 // Where the engine may write or read a bundle: a plain file URI to a .ingen
 // directory. Ingen does not decode escaped characters consistently.
 bool bundle_location(const std::string& location) {
@@ -48,7 +48,7 @@ std::string position(int x, int y) {
            float_literal(std::clamp(y, module_min_y, module_max_y));
 }
 std::string block(const std::string& plugin, const std::string& name, int x, int y, bool bypassed) {
-    return "a ingen:Block ;\n\t\tlv2:prototype <" + plugin + "> ;\n\t\t" + position(x, y) + " ;\n\t\tpedalpi:displayName " + string_literal(name) +
+    return "a ingen:Block ;\n\t\tlv2:prototype <" + plugin + "> ;\n\t\t" + position(x, y) + " ;\n\t\tpeepo:displayName " + string_literal(name) +
            (bypassed ? " ;\n\t\tingen:enabled false" : "");
 }
 }
@@ -274,7 +274,7 @@ void Session::finish(Transaction& done) {
             // nothing on disk has. Sent before the re-read below, which then sees it.
             auto& back = begin(0, Purpose::Refresh);
             const auto number = sequence();
-            send(back, set_on_graph(number, main_path, "pedalpi:patchId", string_literal(*done.restore_id)), number);
+            send(back, set_on_graph(number, main_path, "peepo:patchId", string_literal(*done.restore_id)), number);
         }
         if (ok) {
             for (const auto& local : done.local) merge(local.path, {{local.predicate, local.value}});
@@ -384,7 +384,7 @@ void Session::rebuild() {
     for (const auto& [id, path] : paths_) {
         const auto& properties = objects_.at(path);
         const auto* prototype = find(properties, iri(uri::lv2, "prototype"));
-        Module m{id, prototype && prototype->kind == Value::Kind::Uri ? prototype->text : std::string("urn:pedalpi:missing:unknown"), {}, 0, 0, false, false, {}, {}};
+        Module m{id, prototype && prototype->kind == Value::Kind::Uri ? prototype->text : std::string("urn:peepo:missing:unknown"), {}, 0, 0, false, false, {}, {}};
         const auto* known = definition(m.uri);
         const auto* name = find(properties, name_key);
         m.name = name && name->kind == Value::Kind::String && !name->text.empty() ? name->text : known ? known->name : symbol_of(path);
@@ -397,9 +397,10 @@ void Session::rebuild() {
             m.x = std::min(module_max_x, 184 + 144 * unplaced++); m.y = 276;
         }
         if (const auto* enabled = find(properties, enabled_key); enabled && enabled->kind == Value::Kind::Boolean) m.bypassed = !enabled->boolean;
-        // A plugin with its own on/off control is as bypassed as that control says.
+        // A plugin's own on/off control stays on: off, it writes silence. Earlier
+        // versions bypassed by clearing it, so a cleared one still reads as bypassed.
         if (known && !known->enable_symbol.empty())
-            if (const auto own = objects_.find(child(path, known->enable_symbol)); own != objects_.end()) m.bypassed = finite(find(own->second, value_key)).value_or(0) < 0.5;
+            if (const auto own = objects_.find(child(path, known->enable_symbol)); own != objects_.end() && finite(find(own->second, value_key)).value_or(0) < 0.5) m.bypassed = true;
 
         struct Child { double index; std::string symbol; const Properties* properties; };
         std::vector<Child> children;
@@ -481,24 +482,24 @@ std::string Session::address(InstanceId id, const std::string& symbol, Direction
 }
 void Session::name_patch(Transaction& to, const std::string& name) {
     const auto number = sequence();
-    send(to, set_on_graph(number, main_path, "pedalpi:patchName", string_literal(name)), number);
+    send(to, set_on_graph(number, main_path, "peepo:patchName", string_literal(name)), number);
     to.local.push_back({main_path, patch_name_key, {Value::Kind::String, 0, false, name}});
 }
 void Session::identify(Transaction& to, const std::string& id) {
     const auto number = sequence();
-    send(to, set_on_graph(number, main_path, "pedalpi:patchId", string_literal(id)), number);
+    send(to, set_on_graph(number, main_path, "peepo:patchId", string_literal(id)), number);
     to.local.push_back({main_path, patch_id_key, {Value::Kind::String, 0, false, id}});
 }
 void Session::mark(Transaction& to, bool modified) {
     const auto number = sequence();
-    send(to, set_on_graph(number, main_path, "pedalpi:modified", modified ? "true" : "false"), number);
+    send(to, set_on_graph(number, main_path, "peepo:modified", modified ? "true" : "false"), number);
     to.local.push_back({main_path, modified_key, {Value::Kind::Boolean, 0, modified, {}}});
     sent_modified_ = modified;
 }
 void Session::control_property(Transaction& to, const std::string& control, const std::string& text) {
     // An empty value is an unpinned control; the engine has no way to remove a property.
     const auto number = sequence();
-    send(to, set_on_graph(number, main_path, "pedalpi:control-" + control, string_literal(text)), number);
+    send(to, set_on_graph(number, main_path, "peepo:control-" + control, string_literal(text)), number);
     to.local.push_back({main_path, control_prefix + control, {Value::Kind::String, 0, false, text}});
 }
 void Session::proceed(Transaction& done) {
@@ -573,8 +574,8 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
         const auto number = sequence();
         const auto* known = definition(m.uri);
         const bool own_switch = known && !known->enable_symbol.empty();
-        send(to, put(number, path, block(m.uri, m.name, m.x, m.y, m.bypassed && !own_switch)), number);
-        if (own_switch) set_local(child(path, known->enable_symbol), "ingen:value", value_key, float_literal(m.bypassed ? 0 : 1), ingen::number(m.bypassed ? 0 : 1));
+        send(to, put(number, path, block(m.uri, m.name, m.x, m.y, m.bypassed)), number);
+        if (own_switch) set_local(child(path, known->enable_symbol), "ingen:value", value_key, float_literal(1), ingen::number(1));
         for (const auto& parameter : m.parameters)
             set_local(child(path, parameter.symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
         next_instance_ = std::max(next_instance_, m.id + 1);
@@ -658,7 +659,7 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 to.restore_id = graph_.patch_id;
                 identify(to, c.patch_id);
                 const auto number = sequence();
-                send(to, set_on_graph(number, main_path, "pedalpi:schemaVersion", "\"1\"^^xsd:int"), number);
+                send(to, set_on_graph(number, main_path, "peepo:schemaVersion", "\"1\"^^xsd:int"), number);
                 const auto saving = sequence();
                 send(to, copy(saving, main_path, c.location), saving);
                 to.next = Transaction::Next::Saved;
@@ -727,14 +728,16 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 auto number = sequence();
                 send(to, copy(number, found->second, copy_path), number);
                 number = sequence();
-                send(to, put(number, copy_path, position(c.x, c.y) + " ;\n\t\tpedalpi:displayName " + string_literal(m->name)), number);
+                send(to, put(number, copy_path, position(c.x, c.y) + " ;\n\t\tpeepo:displayName " + string_literal(m->name)), number);
                 send(to, get, copy_path);
             } else if constexpr (std::is_same_v<T, SetBypass>) {
                 if (m->fixed) return "Endpoints cannot be bypassed";
                 if (!module_available(*m)) return "Module is unavailable";
+                // The engine's bypass passes each input to its output. A plugin's
+                // own switch would only mute it, so that stays on.
                 if (const auto* known = definition(m->uri); known && !known->enable_symbol.empty())
-                    set_local(child(found->second, known->enable_symbol), "ingen:value", value_key, float_literal(c.value ? 0 : 1), ingen::number(c.value ? 0 : 1));
-                else set_local(found->second, "ingen:enabled", enabled_key, c.value ? "false" : "true", {Value::Kind::Boolean, 0, !c.value, {}});
+                    set_local(child(found->second, known->enable_symbol), "ingen:value", value_key, float_literal(1), ingen::number(1));
+                set_local(found->second, "ingen:enabled", enabled_key, c.value ? "false" : "true", {Value::Kind::Boolean, 0, !c.value, {}});
             } else if constexpr (std::is_same_v<T, SetParameter>) {
                 if (m->fixed || !module_available(*m)) return "Module is unavailable";
                 const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == c.symbol; });

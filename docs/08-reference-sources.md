@@ -21,7 +21,7 @@ See [the reference index](../reference/README.md) for the inventory and [the sou
 
 ## Storage and provenance
 
-Ordinary repositories are Git checkouts in `C:\Pedal PI\reference\upstream`. The hardware-specific kernel is a complete source archive plus a Git reference repository because Windows rejects some source filenames. The archive was checked against all 63,993 tracked source paths at its recorded revision.
+Ordinary repositories are Git checkouts in `C:\Peepo\reference\upstream`. The hardware-specific kernel is a complete source archive plus a Git reference repository because Windows rejects some source filenames. The archive was checked against all 63,993 tracked source paths at its recorded revision.
 
 The collection is a set of default-branch source snapshots, not every historical release and not a complete firmware image. Other third-party effects referenced by the Beebo UI and Linux distribution libraries still require separate inventory work. Only Poly's unrelated inventory/manufacturing integration repository was excluded from its public repository list.
 

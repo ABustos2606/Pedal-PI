@@ -1,5 +1,5 @@
-Pedal PI direct instrument boot — native Pi evidence, 14 October 2026
-User selected saved Clouds guitar; confirmed after reboot: Yes, Pedal PI appears and touch works.
+Peepo direct instrument boot — native Pi evidence, 14 October 2026
+User selected saved Clouds guitar; confirmed after reboot: Yes, Peepo appears and touch works.
 
 SOURCE: build/pi/pi-instrument-preflight.log
 PASS load the installed catalogue and overlay
@@ -23,8 +23,8 @@ PASS publish the saved live patch atomically
 PASS saving preserves all modules, cables, controls, layout and assignments
 PASS saved live patch is complete and readable
 PASS saved bundle matches the live graph (controls to 1e-6)
-SAVED wendy id=p20261014-224640-727c path="/var/lib/pedalpi/patches/p20261014-224640-727c/r000001.ingen"
-Saving previous boot policy in /etc/pedalpi/instrument-boot-state
+SAVED wendy id=p20261014-224640-727c path="/var/lib/peepo/patches/p20261014-224640-727c/r000001.ingen"
+Saving previous boot policy in /etc/peepo/instrument-boot-state
 + systemctl disable --now modep-update.path 
 + systemctl mask modep-update.path 
 + systemctl disable --now jack.service 
@@ -50,14 +50,14 @@ Saving previous boot policy in /etc/pedalpi/instrument-boot-state
 + systemctl disable --now getty@tty1.service 
 + systemctl mask getty@tty1.service 
 + systemctl set-default multi-user.target 
-+ systemctl enable pedalpi.target 
-+ systemctl reset-failed pedalpi-jack.service pedalpi-engine.service pedalpi-ui.service 
-+ systemctl start pedalpi.target 
-Direct Pedal PI boot enabled. SSH remains available. Reboot to verify unattended startup.
-Restore: sudo /opt/pedalpi/bin/pedalpi-instrument-boot --restore; sudo reboot
++ systemctl enable peepo.target
++ systemctl reset-failed peepo-jack.service peepo-engine.service peepo-ui.service
++ systemctl start peepo.target
+Direct Peepo boot enabled. SSH remains available. Reboot to verify unattended startup.
+Restore: sudo /opt/peepo/bin/peepo-instrument-boot --restore; sudo reboot
 
 SOURCE: build/pi/pi-instrument-reboot-request.log
-pedalpi.target disabled
+peepo.target disabled
 modep-update.path enabled
 jack.service enabled
 lightdm.service enabled
@@ -142,7 +142,7 @@ ingen:out_l
    system:playback_1
 ingen:out_r
    system:playback_2
-[    7.087142] patchbox systemd[1]: Starting pedalpi-jack.service - Pedal PI audio server (JACK)...
+[    7.087142] patchbox systemd[1]: Starting peepo-jack.service - Peepo audio server (JACK)...
 [    7.846072] patchbox jackd[736]: jackdmp 1.9.21
 [    7.846072] patchbox jackd[736]: Copyright 2001-2005 Paul Davis and others.
 [    7.846072] patchbox jackd[736]: Copyright 2004-2016 Grame.
@@ -158,48 +158,48 @@ ingen:out_r
 [    7.944881] patchbox jackd[736]: ALSA: use 3 periods for capture
 [    7.954606] patchbox jackd[736]: ALSA: final selected sample format for playback: 16bit little-endian
 [    7.954606] patchbox jackd[736]: ALSA: use 3 periods for playback
-[    8.027414] patchbox systemd[1]: Started pedalpi-jack.service - Pedal PI audio server (JACK).
-[    8.061317] patchbox systemd[1]: Starting pedalpi-engine.service - Pedal PI audio engine (Ingen)...
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#Mono>
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: ... found in file:///opt/pedalpi/lib/lv2/convo.lv2/
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#MonoToStereo>
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: ... found in file:///opt/pedalpi/lib/lv2/convo.lv2/
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#Stereo>
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: ... found in file:///opt/pedalpi/lib/lv2/convo.lv2/
-[    9.283438] patchbox pedalpi-engine[894]: lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
-[    9.350176] patchbox pedalpi-engine[894]: Loading module "/opt/pedalpi/lib/aarch64-linux-gnu/libingen_server.so"
-[    9.365387] patchbox pedalpi-engine[894]: Loading module "/opt/pedalpi/lib/aarch64-linux-gnu/libingen_jack.so"
-[    9.365387] patchbox pedalpi-engine[894]: Listening on unix:///run/pedalpi/ingen.sock
-[    9.365387] patchbox pedalpi-engine[894]: TCP socket disabled
-[    9.371582] patchbox systemd[1]: Started pedalpi-engine.service - Pedal PI audio engine (Ingen).
-[    9.383246] patchbox pedalpi-engine[894]: Connected to default Jack server
-[    9.407535] patchbox systemd[1]: Started pedalpi-ui.service - Pedal PI touch interface.
-[    9.412386] patchbox pedalpi-engine[894]: Activated Jack client `ingen'
-[    9.708581] patchbox pedalpi-engine[894]: Registering client <unix:///run/pedalpi/ingen.sock.894>
-[    9.850713] patchbox pedalpi-engine[894]: lilv_plugin_load_ports_if_necessary(): error: Plugin <file:///opt/pedalpi/lib/aarch64-linux-gnu/lv2/ingen.lv2/MonoInstrument.ttl> is missing port 2/4
-[    9.850713] patchbox pedalpi-engine[894]: Ignoring <file:///opt/pedalpi/lib/aarch64-linux-gnu/lv2/ingen.lv2/MonoInstrument.ttl>; missing or corrupt ports
-[    9.851935] patchbox pedalpi-engine[894]: lilv_plugin_load_ports_if_necessary(): error: Plugin <file:///opt/pedalpi/lib/aarch64-linux-gnu/lv2/ingen.lv2/StereoInstrument.ttl> is missing port 2/6
-[    9.851972] patchbox pedalpi-engine[894]: Ignoring <file:///opt/pedalpi/lib/aarch64-linux-gnu/lv2/ingen.lv2/StereoInstrument.ttl>; missing or corrupt ports
-[    9.868807] patchbox pedalpi-engine[894]: error: failed to expand CURIE `opts:interface'
-[    9.868807] patchbox pedalpi-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/avw.lv2/scope.ttl'
-[    9.868895] patchbox pedalpi-engine[894]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/scope>; missing or corrupt ports
-[    9.872644] patchbox pedalpi-engine[894]: error: failed to expand CURIE `param:OscillatorControls'
-[    9.872644] patchbox pedalpi-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/avw.lv2/vco2_audio.ttl'
-[    9.872694] patchbox pedalpi-engine[894]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/vco2_audio>; missing or corrupt ports
-[    9.873080] patchbox pedalpi-engine[894]: error: failed to expand CURIE `param:OscillatorControls'
-[    9.873080] patchbox pedalpi-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/avw.lv2/vco2_cv.ttl'
-[    9.873115] patchbox pedalpi-engine[894]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/vco2_cv>; missing or corrupt ports
-[   10.191960] patchbox pedalpi-engine[894]: error: /opt/pedalpi/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl:16:66: line end in short string
-[   10.191960] patchbox pedalpi-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl'
-[   10.192093] patchbox pedalpi-engine[894]: Ignoring <http://moddevices.com/plugins/mod-devel/mod-cv-meter>; missing or corrupt ports
-[   10.197908] patchbox pedalpi-engine[894]: error: failed to open file /opt/pedalpi/lib/lv2/mod-cv-transport.lv2/modgui.ttl (No such file or directory)
-[   10.197908] patchbox pedalpi-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/mod-cv-transport.lv2/modgui.ttl'
-[   10.274562] patchbox pedalpi-engine[894]: Loaded 439 plugins
-[   10.328452] patchbox pedalpi-engine[894]: Loading file:///var/lib/pedalpi/patches/p20261014-222121-f9e0/r000002.ingen/main.ttl from "/var/lib/pedalpi/patches/p20261014-222121-f9e0/r000002.ingen/main.ttl"
-[   25.786988] patchbox pedalpi-engine[894]: Registering client <unix:///run/pedalpi/ingen.sock.894>
-[   25.835279] patchbox pedalpi-engine[894]: Unregistering client <unix:///run/pedalpi/ingen.sock.894>
+[    8.027414] patchbox systemd[1]: Started peepo-jack.service - Peepo audio server (JACK).
+[    8.061317] patchbox systemd[1]: Starting peepo-engine.service - Peepo audio engine (Ingen)...
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#Mono>
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: ... found in file:///opt/peepo/lib/lv2/convo.lv2/
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#MonoToStereo>
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: ... found in file:///opt/peepo/lib/lv2/convo.lv2/
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#Stereo>
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: ... found in file:///opt/peepo/lib/lv2/convo.lv2/
+[    9.283438] patchbox peepo-engine[894]: lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
+[    9.350176] patchbox peepo-engine[894]: Loading module "/opt/peepo/lib/aarch64-linux-gnu/libingen_server.so"
+[    9.365387] patchbox peepo-engine[894]: Loading module "/opt/peepo/lib/aarch64-linux-gnu/libingen_jack.so"
+[    9.365387] patchbox peepo-engine[894]: Listening on unix:///run/peepo/ingen.sock
+[    9.365387] patchbox peepo-engine[894]: TCP socket disabled
+[    9.371582] patchbox systemd[1]: Started peepo-engine.service - Peepo audio engine (Ingen).
+[    9.383246] patchbox peepo-engine[894]: Connected to default Jack server
+[    9.407535] patchbox systemd[1]: Started peepo-ui.service - Peepo touch interface.
+[    9.412386] patchbox peepo-engine[894]: Activated Jack client `ingen'
+[    9.708581] patchbox peepo-engine[894]: Registering client <unix:///run/peepo/ingen.sock.894>
+[    9.850713] patchbox peepo-engine[894]: lilv_plugin_load_ports_if_necessary(): error: Plugin <file:///opt/peepo/lib/aarch64-linux-gnu/lv2/ingen.lv2/MonoInstrument.ttl> is missing port 2/4
+[    9.850713] patchbox peepo-engine[894]: Ignoring <file:///opt/peepo/lib/aarch64-linux-gnu/lv2/ingen.lv2/MonoInstrument.ttl>; missing or corrupt ports
+[    9.851935] patchbox peepo-engine[894]: lilv_plugin_load_ports_if_necessary(): error: Plugin <file:///opt/peepo/lib/aarch64-linux-gnu/lv2/ingen.lv2/StereoInstrument.ttl> is missing port 2/6
+[    9.851972] patchbox peepo-engine[894]: Ignoring <file:///opt/peepo/lib/aarch64-linux-gnu/lv2/ingen.lv2/StereoInstrument.ttl>; missing or corrupt ports
+[    9.868807] patchbox peepo-engine[894]: error: failed to expand CURIE `opts:interface'
+[    9.868807] patchbox peepo-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/avw.lv2/scope.ttl'
+[    9.868895] patchbox peepo-engine[894]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/scope>; missing or corrupt ports
+[    9.872644] patchbox peepo-engine[894]: error: failed to expand CURIE `param:OscillatorControls'
+[    9.872644] patchbox peepo-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/avw.lv2/vco2_audio.ttl'
+[    9.872694] patchbox peepo-engine[894]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/vco2_audio>; missing or corrupt ports
+[    9.873080] patchbox peepo-engine[894]: error: failed to expand CURIE `param:OscillatorControls'
+[    9.873080] patchbox peepo-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/avw.lv2/vco2_cv.ttl'
+[    9.873115] patchbox peepo-engine[894]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/vco2_cv>; missing or corrupt ports
+[   10.191960] patchbox peepo-engine[894]: error: /opt/peepo/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl:16:66: line end in short string
+[   10.191960] patchbox peepo-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl'
+[   10.192093] patchbox peepo-engine[894]: Ignoring <http://moddevices.com/plugins/mod-devel/mod-cv-meter>; missing or corrupt ports
+[   10.197908] patchbox peepo-engine[894]: error: failed to open file /opt/peepo/lib/lv2/mod-cv-transport.lv2/modgui.ttl (No such file or directory)
+[   10.197908] patchbox peepo-engine[894]: lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/mod-cv-transport.lv2/modgui.ttl'
+[   10.274562] patchbox peepo-engine[894]: Loaded 439 plugins
+[   10.328452] patchbox peepo-engine[894]: Loading file:///var/lib/peepo/patches/p20261014-222121-f9e0/r000002.ingen/main.ttl from "/var/lib/peepo/patches/p20261014-222121-f9e0/r000002.ingen/main.ttl"
+[   25.786988] patchbox peepo-engine[894]: Registering client <unix:///run/peepo/ingen.sock.894>
+[   25.835279] patchbox peepo-engine[894]: Unregistering client <unix:///run/peepo/ingen.sock.894>
 Startup finished in 3.735s (kernel) + 12.265s (userspace) = 16.001s 
 multi-user.target reached after 12.253s in userspace.
 ExecMainStartTimestampMonotonic=7085480
@@ -220,22 +220,22 @@ active
 active
 active
 active
-Wants=pedalpi-ui.service pedalpi-route.service pedalpi-engine.service pedalpi-jack.service
-After=pedalpi-jack.service pedalpi-engine.service pedalpi-route.service pedalpi-ui.service
+Wants=peepo-ui.service peepo-route.service peepo-engine.service peepo-jack.service
+After=peepo-jack.service peepo-engine.service peepo-route.service peepo-ui.service
 
-Wants=pedalpi-engine.service
+Wants=peepo-engine.service
 After=sysinit.target basic.target systemd-journald.socket system.slice
 
 Wants=
-After=pedalpi-jack.service system.slice -.mount basic.target sysinit.target systemd-remount-fs.service systemd-journald.socket
+After=peepo-jack.service system.slice -.mount basic.target sysinit.target systemd-remount-fs.service systemd-journald.socket
 
-Wants=pedalpi-engine.service
-After=system.slice basic.target systemd-journald.socket -.mount sysinit.target pedalpi-engine.service systemd-remount-fs.service
-[    9.397085] patchbox systemd[1]: Started pedalpi-route.service - Pedal PI audio connections.
-[   11.703578] patchbox pedalpi-route[974]: connected system:capture_1 -> ingen:in_l
-[   11.778537] patchbox pedalpi-route[974]: connected system:capture_2 -> ingen:in_r
-[   11.847538] patchbox pedalpi-route[974]: connected ingen:out_l -> system:playback_1
-[   11.924637] patchbox pedalpi-route[974]: connected ingen:out_r -> system:playback_2
+Wants=peepo-engine.service
+After=system.slice basic.target systemd-journald.socket -.mount sysinit.target peepo-engine.service systemd-remount-fs.service
+[    9.397085] patchbox systemd[1]: Started peepo-route.service - Peepo audio connections.
+[   11.703578] patchbox peepo-route[974]: connected system:capture_1 -> ingen:in_l
+[   11.778537] patchbox peepo-route[974]: connected system:capture_2 -> ingen:in_r
+[   11.847538] patchbox peepo-route[974]: connected ingen:out_l -> system:playback_1
+[   11.924637] patchbox peepo-route[974]: connected ingen:out_r -> system:playback_2
 agetty
 amidiminder
 avahi-daemon
@@ -376,8 +376,8 @@ migration/3
 ModemManager
 NetworkManager
 oom_reaper
-pedal_pi
-pedalpi-route
+peepo
+peepo-route
 pipewire
 pipewire-pulse
 pisound-btn
@@ -532,14 +532,14 @@ Startup patch: p20261014-222121-f9e0 (latest saved revision)
 + systemctl disable --now modep-update.service 
 + systemctl mask modep-update.service 
 + systemctl set-default multi-user.target 
-+ systemctl enable pedalpi.target 
-+ systemctl reset-failed pedalpi-jack.service pedalpi-engine.service pedalpi-ui.service 
-+ systemctl start pedalpi.target 
-Dry run: direct Pedal PI boot would be enabled.
-Restore: sudo /opt/pedalpi/bin/pedalpi-instrument-boot --restore; sudo reboot
-+ systemctl stop pedalpi.target 
-+ systemctl unmask pedalpi.target 
-+ systemctl disable pedalpi.target 
++ systemctl enable peepo.target
++ systemctl reset-failed peepo-jack.service peepo-engine.service peepo-ui.service
++ systemctl start peepo.target
+Dry run: direct Peepo boot would be enabled.
+Restore: sudo /opt/peepo/bin/peepo-instrument-boot --restore; sudo reboot
++ systemctl stop peepo.target
++ systemctl unmask peepo.target
++ systemctl disable peepo.target
 + systemctl unmask modep-update.path 
 + systemctl enable modep-update.path 
 + systemctl unmask jack.service 
@@ -575,7 +575,7 @@ multi-user.target
 enabled
   UNIT LOAD ACTIVE SUB DESCRIPTION
 0 loaded units listed.
-4592910dde1e8b1e1696dc6c942cdd7ea53e7c9bfd6ffd8e826effa34cc7e0ab  /etc/pedalpi/instrument-boot-state/units
+4592910dde1e8b1e1696dc6c942cdd7ea53e7c9bfd6ffd8e826effa34cc7e0ab  /etc/peepo/instrument-boot-state/units
 PASS load the installed catalogue and overlay
 PASS connect to the running Pi engine
 CURRENT Clouds guitar, id=p20261014-222121-f9e0, modules=3, cables=4, dirty=1

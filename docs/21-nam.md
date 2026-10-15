@@ -19,7 +19,7 @@
 | Controls | Input and output level (±20 dB), Quality (0–1) | Input and output level |
 | Model types (`mod:fileTypes`) | nam, nammodel, json, aidax, aidadspmodel | nammodel |
 
-**Both declare the same plugin URI.** Only one can be installed where the engine looks, so `12-nam.sh` puts each in its own folder (`/opt/pedalpi/nam/current`, `/opt/pedalpi/nam/poly`). The engine is started with one of them on `LV2_PATH`. The catalogue export uses the current one.
+**Both declare the same plugin URI.** Only one can be installed where the engine looks, so `12-nam.sh` puts each in its own folder (`/opt/peepo/nam/current`, `/opt/peepo/nam/poly`). The engine is started with one of them on `LV2_PATH`. The catalogue export uses the current one.
 
 | Model | Architecture | sha256 (first 16) |
 | --- | --- | --- |

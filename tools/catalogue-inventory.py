@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """Write config/catalogue/inventory.txt, the plugins the catalogue may offer.
 
 The selected inventory (P9.1) is every plugin identity in Beebo's module map

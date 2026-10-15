@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
-"""Controlled JACK tone for pedal_tuner_live; no hardware input is used."""
+# Copyright (C) 2026 Peepo contributors
+"""Controlled JACK tone for peepo_tuner_live; no hardware input is used."""
 import math
 import pathlib
 import subprocess
@@ -13,7 +13,7 @@ control = pathlib.Path(sys.argv[2])
 control.write_text("0")
 frequency = 0.0
 phase = 0.0
-client = jack.Client("pedalpi-tuner-tone")
+client = jack.Client("peepo-tuner-tone")
 port = client.outports.register("out")
 
 def process(frames):
@@ -27,7 +27,7 @@ def process(frames):
 
 client.set_process_callback(process)
 client.activate()
-test = subprocess.Popen([sys.argv[1], "unix:///tmp/pedalpi-tuner.sock", sys.argv[3], str(control)])
+test = subprocess.Popen([sys.argv[1], "unix:///tmp/peepo-tuner.sock", sys.argv[3], str(control)])
 connected = False
 try:
     while test.poll() is None:

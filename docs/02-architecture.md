@@ -9,7 +9,7 @@ Beebo's published `digit_ui` repository is a Qt/QML touchscreen interface wrappe
 - **New interface:** the touchscreen application is written from scratch for this project. Beebo is a reference for concepts and workflow, not a codebase to adapt.
 - **Reused audio side:** Poly's Ingen fork and published LV2 modules remain the intended engine and module collection, extended with compatible MODEP LV2 effects.
 
-The interface and the engine are separate programs connected by the engine's documented protocol. Original Pedal PI interface code and documentation use GPL-3.0-or-later, selected by the user on 13 October 2026. Ingen retains AGPL-3.0-or-later. Keep upstream notices with any reused code; see [third-party notices](../THIRD_PARTY_NOTICES.md).
+The interface and the engine are separate programs connected by the engine's documented protocol. Original Peepo interface code and documentation use GPL-3.0-or-later, selected by the user on 13 October 2026. Ingen retains AGPL-3.0-or-later. Keep upstream notices with any reused code; see [third-party notices](../THIRD_PARTY_NOTICES.md).
 
 Casette is an additional reference for native LVGL and NAM integration. It runs its UI and custom JACK effects chain in one executable; that structure does not meet our independent-interface requirement (R13). Retain the proposed separate interface and Ingen processes. [Casette findings](09-casette-and-nam.md) distinguish reusable lessons from hardware and implementation assumptions.
 
@@ -111,7 +111,7 @@ Interface and control data are stored **in the engine, as properties** on the th
 - Physical control assignments: project properties on the target port (control identity, range, pickup/mode, inversion). Assignments to actions that are not a port, such as patch change or tap tempo, go on the graph itself.
 - Patch-level view settings: project properties on the graph.
 
-Project properties use the `urn:pedalpi:ns#` namespace.
+Project properties use the `urn:peepo:ns#` namespace.
 
 **Rationale (measured, not assumed):**
 - The engine accepts these properties, returns them to a newly connected client before any save, writes them into the bundle and restores them on load.

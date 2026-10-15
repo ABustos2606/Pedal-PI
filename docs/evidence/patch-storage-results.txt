@@ -7,7 +7,7 @@
 (Full output in ingen-adapter-results.txt. The storage checks, run over the Unix socket:)
 
 Bundles, revisions, interrupted saves, fallback, startup choice, foreign bundles, missing files and simulated save/load passed.
-PASS  patch store opens -- /tmp/pedalpi-live-patches
+PASS  patch store opens -- /tmp/peepo-live-patches
 PASS  add a Mutable-derived module to the patch
 PASS  turn one of its controls
 PASS  the unsaved-changes marker is in the engine: both clients see it
@@ -21,7 +21,7 @@ PASS  the second client followed the load
 PASS  edit after loading
 PASS  a second save becomes revision 2
 PASS  a patch needing a missing plugin is refused before anything changes
-PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/pedalpi-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
+PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/peepo-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
 PASS  the newest revision loads -- Loaded Live "check" é ..
 PASS  a bundle without project properties is offered
 PASS  it loads with default names and layout, its values, and the folder's identity -- Loaded Untitled.
@@ -29,9 +29,9 @@ PASS  back to the stored patch -- Loaded Live "check" é ..
 PASS  remove the granular module again
 PASS  it also knows which stored patch is playing, and whether it has unsaved edits -- p20261014-111902-0d64, unsaved edits
 
-## build\Debug\pedal_ingen_live.exe tcp://127.0.0.1:16180  (Windows build; patches in %TEMP%, seen by the engine under /mnt/c)
+## build\Debug\peepo_ingen_live.exe tcp://127.0.0.1:16180  (Windows build; patches in %TEMP%, seen by the engine under /mnt/c)
 
-PASS  patch store opens -- C:\Users\abust\AppData\Local\Temp\pedalpi-live-patches
+PASS  patch store opens -- C:\Users\abust\AppData\Local\Temp\peepo-live-patches
 PASS  the engine saves the patch to disk -- 126.293100 ms; Saved Live "check" é ..
 PASS  what it wrote reads back with the right identity and is published
 PASS  the stored patch lists its name and modules -- 2 blocks
@@ -41,7 +41,7 @@ PASS  the second client followed the load
 PASS  edit after loading
 PASS  a second save becomes revision 2
 PASS  a patch needing a missing plugin is refused before anything changes
-PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/pedalpi-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
+PASS  a bundle the engine cannot read is a failure, not a silent empty patch -- The engine restored nothing from file:///tmp/peepo-live-nowhere/r000001.ingen. Can the engine see the patch folder at that path?
 PASS  the newest revision loads -- Loaded Live "check" é ..
 PASS  a bundle without project properties is offered
 PASS  it loads with default names and layout, its values, and the folder's identity -- Loaded Untitled.
@@ -59,11 +59,11 @@ put amp m3 with name, position                             0
 put params m4 (has LV2 state)                              0
 set gain 6                                                 0
 cables                                                     (0, 0)
-graph property pedalpi:patchName                           0
-graph property pedalpi:patchId                             0
-graph property pedalpi:schemaVersion                       0
+graph property peepo:patchName                           0
+graph property peepo:patchId                             0
+graph property peepo:schemaVersion                       0
 assignment property on a port                              0
-save to /tmp/pedalpi-spike/bundles/one.ingen               (0, '0.01 s')
+save to /tmp/peepo-spike/bundles/one.ingen               (0, '0.01 s')
 files                                                      ['m4', 'main.ttl', 'manifest.ttl', 'plugins.ttl']
 ---- m4/ ['manifest.ttl', 'params.ttl', 'state.ttl']
 ---- main.ttl
@@ -119,14 +119,14 @@ next request answered while that client is idle            None after 5.0 s
       1 Connected to default Jack server
       6 error: :0:0: unexpected end of anonymous node
       1 error: :0:0: write error (Connection reset by peer)
-      1 error: failed to open file /tmp/pedalpi-spike/bundles/nothing.ingen (No such file or directory)
-      1 error: /tmp/pedalpi-spike/bundles/garbage.ingen/manifest.ttl:1:8: bad verb
-      1 Loading file:///tmp/pedalpi-spike/bundles/missing.ingen/main.ttl from "/tmp/pedalpi-spike/bundles/missing.ingen/main.ttl"
-      1 Loading file:///tmp/pedalpi-spike/bundles/moved/elsewhere.ingen/main.ttl from "/tmp/pedalpi-spike/bundles/moved/elsewhere.ingen/main.ttl"
-      3 Loading file:///tmp/pedalpi-spike/bundles/one.ingen/main.ttl from "/tmp/pedalpi-spike/bundles/one.ingen/main.ttl"
-      1 No graphs found in "/tmp/pedalpi-spike/bundles/garbage.ingen"
-      1 No graphs found in "/tmp/pedalpi-spike/bundles/nothing.ingen"
-      1 Writing bundle "/tmp/pedalpi-spike/bundles/absent/x.ingen"
-      1 Writing bundle "/tmp/pedalpi-spike/bundles/moved/again.ingen"
-      1 Writing bundle "/tmp/pedalpi-spike/bundles/one.ingen"
-      1 Writing bundle "/tmp/pedalpi-spike/bundles/with space/two.ingen"
+      1 error: failed to open file /tmp/peepo-spike/bundles/nothing.ingen (No such file or directory)
+      1 error: /tmp/peepo-spike/bundles/garbage.ingen/manifest.ttl:1:8: bad verb
+      1 Loading file:///tmp/peepo-spike/bundles/missing.ingen/main.ttl from "/tmp/peepo-spike/bundles/missing.ingen/main.ttl"
+      1 Loading file:///tmp/peepo-spike/bundles/moved/elsewhere.ingen/main.ttl from "/tmp/peepo-spike/bundles/moved/elsewhere.ingen/main.ttl"
+      3 Loading file:///tmp/peepo-spike/bundles/one.ingen/main.ttl from "/tmp/peepo-spike/bundles/one.ingen/main.ttl"
+      1 No graphs found in "/tmp/peepo-spike/bundles/garbage.ingen"
+      1 No graphs found in "/tmp/peepo-spike/bundles/nothing.ingen"
+      1 Writing bundle "/tmp/peepo-spike/bundles/absent/x.ingen"
+      1 Writing bundle "/tmp/peepo-spike/bundles/moved/again.ingen"
+      1 Writing bundle "/tmp/peepo-spike/bundles/one.ingen"
+      1 Writing bundle "/tmp/peepo-spike/bundles/with space/two.ingen"

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "core/model.hpp"
 #include <algorithm>
 #include <charconv>
@@ -9,19 +9,19 @@
 #include <unordered_set>
 #include <limits>
 
-namespace pedal {
+namespace peepo {
 const std::vector<ModuleDefinition>& demo_catalogue() {
     static const std::vector<ModuleDefinition> catalogue = {
-        {"urn:pedalpi:demo:input", "IN", "Endpoint", "Audio input", 0x93a4b5,
+        {"urn:peepo:demo:input", "IN", "Endpoint", "Audio input", 0x93a4b5,
          {{"out", Direction::Output}, {"out_r", Direction::Output}}, {}},
-        {"urn:pedalpi:demo:output", "OUT", "Endpoint", "Audio output", 0x93a4b5,
+        {"urn:peepo:demo:output", "OUT", "Endpoint", "Audio output", 0x93a4b5,
          {{"in", Direction::Input}, {"in_r", Direction::Input}}, {}},
-        {"urn:pedalpi:demo:drive", "Drive", "Drive", "Warm saturation and tone", 0xf0aa72,
+        {"urn:peepo:demo:drive", "Drive", "Drive", "Warm saturation and tone", 0xf0aa72,
          {{"in", Direction::Input}, {"in_r", Direction::Input}, {"out", Direction::Output}, {"out_r", Direction::Output}},
          {{"drive", "Drive", "%", ParameterKind::Continuous, 0, 100, 32},
           {"tone", "Tone", "Hz", ParameterKind::Continuous, 200, 8000, 2400, true},
           {"level", "Level", "dB", ParameterKind::Continuous, -24, 12, -3}}},
-        {"urn:pedalpi:demo:clouds", "Clouds", "Texture", "Granular texture playground", 0xbfa1ed,
+        {"urn:peepo:demo:clouds", "Clouds", "Texture", "Granular texture playground", 0xbfa1ed,
          {{"in", Direction::Input}, {"in_r", Direction::Input}, {"out", Direction::Output}, {"out_r", Direction::Output}},
          {{"position", "Position", "%", ParameterKind::Continuous, 0, 100, 45},
           {"size", "Size", "ms", ParameterKind::Continuous, 10, 1000, 180, true},
@@ -29,24 +29,24 @@ const std::vector<ModuleDefinition>& demo_catalogue() {
           {"freeze", "Freeze", "", ParameterKind::Toggle, 0, 1, 0},
           {"density", "Density", "%", ParameterKind::Continuous, 0, 100, 50},
           {"pitch", "Pitch", "st", ParameterKind::Integer, -24, 24, 0}}},
-        {"urn:pedalpi:demo:delay", "Delay", "Delay", "Echoes with space to breathe", 0x7bbaed,
+        {"urn:peepo:demo:delay", "Delay", "Delay", "Echoes with space to breathe", 0x7bbaed,
          {{"in", Direction::Input}, {"in_r", Direction::Input}, {"out", Direction::Output}, {"out_r", Direction::Output}},
          {{"time", "Time", "ms", ParameterKind::Continuous, 20, 2000, 380, true},
           {"feedback", "Feedback", "%", ParameterKind::Continuous, 0, 95, 35},
           {"mix", "Mix", "%", ParameterKind::Continuous, 0, 100, 28},
           {"mode", "Mode", "", ParameterKind::Enumeration, 0, 2, 0, false, {"Clean", "Tape", "Ping pong"}}}},
-        {"urn:pedalpi:demo:reverb", "Reverb", "Reverb", "Room, hall and a little shimmer", 0x81c9b8,
+        {"urn:peepo:demo:reverb", "Reverb", "Reverb", "Room, hall and a little shimmer", 0x81c9b8,
          {{"in", Direction::Input}, {"in_r", Direction::Input}, {"out", Direction::Output}, {"out_r", Direction::Output}},
          {{"decay", "Decay", "s", ParameterKind::Continuous, 0.1, 15, 3.2, true},
           {"mix", "Mix", "%", ParameterKind::Continuous, 0, 100, 25},
           {"predelay", "Pre-delay", "ms", ParameterKind::Integer, 0, 200, 20}}},
-        {"urn:pedalpi:demo:mono", "Mono utility", "Utility", "Mono routing fixture / no audio", 0xa6c8ec,
+        {"urn:peepo:demo:mono", "Mono utility", "Utility", "Mono routing fixture / no audio", 0xa6c8ec,
          {{"in", Direction::Input, 1}, {"out", Direction::Output, 1}},
          {{"gain", "Gain", "dB", ParameterKind::Continuous, -24, 12, 0}}},
-        {"urn:pedalpi:demo:nam", "NAM fixture", "Amp", "Untested catalogue example", 0xf0aa72,
+        {"urn:peepo:demo:nam", "NAM fixture", "Amp", "Untested catalogue example", 0xf0aa72,
          {{"in", Direction::Input, 1}, {"out", Direction::Output, 1}}, {}, Availability::Untested,
          "Simulator fixture: compatibility has not been established."},
-        {"urn:pedalpi:demo:cabinet", "Cabinet fixture", "Cabinet", "Unavailable catalogue example", 0x93a4b5,
+        {"urn:peepo:demo:cabinet", "Cabinet fixture", "Cabinet", "Unavailable catalogue example", 0x93a4b5,
          {{"in", Direction::Input, 1}, {"out", Direction::Output, 1}}, {}, Availability::Unavailable,
          "Simulator fixture: required cabinet asset is unavailable."}
     };
@@ -115,7 +115,7 @@ Graph parallel_demo_graph() {
 }
 Graph missing_module_graph() {
     auto g = demo_graph();
-    auto* m = find_module(g, 4); m->uri = "urn:pedalpi:missing:texture"; m->name = "Missing texture";
+    auto* m = find_module(g, 4); m->uri = "urn:peepo:missing:texture"; m->name = "Missing texture";
     g.name = "Missing module example";
     return g;
 }
@@ -245,8 +245,8 @@ std::string validate_graph(const Graph& g) {
         const auto* d = definition(m.uri);
         const bool endpoint = d && d->category == "Endpoint";
         if (m.fixed != endpoint || (m.fixed && m.bypassed)) return "Invalid fixed endpoint";
-        if (m.uri == "urn:pedalpi:demo:input") ++inputs;
-        if (m.uri == "urn:pedalpi:demo:output") ++outputs;
+        if (m.uri == "urn:peepo:demo:input") ++inputs;
+        if (m.uri == "urn:peepo:demo:output") ++outputs;
         if (m.x < 0 || m.x > canvas_width - module_size || m.y < 0 || m.y > canvas_height - module_size) return "Module outside canvas";
         std::unordered_set<std::string> symbols;
         for (const auto& p : module_ports(m)) {

@@ -1,10 +1,10 @@
-# Pedal PI
+# Peepo
 
 Modular effects instrument for Raspberry Pi 5, with a new touchscreen interface inspired by Poly Effects' Beebo.
 
 **Status:** The engine, touchscreen interface and Tascam audio path run on the Pi. Today's arm64 package includes Clouds, NAM and the full buildable selected catalogue; the catalogue generated on the Pi holds 226 inventory entries. Six offered Clouds modes pass native load/control checks, and granular Clouds processes stereo test audio. The user has confirmed guitar listening through Clouds on the Pi: the first musical milestone. The Clouds patch saves and reloads on the Pi, and an interface-only restart during guitar playing caused no heard interruption or measured audio gap. NAM loads on the Pi but its model selector remains pending. The Windows editor, patch storage and simulated physical controls remain available; GPIO controls are not wired yet. See [Pi bring-up and update](docs/23-pi-bring-up.md).
 **Date:** 12 October 2026 — revised 13 October 2026 (LVGL direction, Casette reference, and NAM evaluation) and 14 October 2026 (patch storage, physical controls)  
-**Project folder:** `C:\Pedal PI`
+**Project folder:** `C:\Peepo`
 
 ## Purpose
 
@@ -18,7 +18,7 @@ The existing MODEP interface is unsuitable for the user's 800 × 480 display. Op
 
 ## Licensing
 
-Original Pedal PI code and documentation are licensed under **GNU GPL version 3 or later** (`GPL-3.0-or-later`); see [LICENSE](LICENSE). Pedal PI is free software: you may redistribute and modify these files under those terms. It is provided without warranty, including any implied warranty of merchantability or fitness for a particular purpose.
+Original Peepo code and documentation are licensed under **GNU GPL version 3 or later** (`GPL-3.0-or-later`); see [LICENSE](LICENSE). Peepo is free software: you may redistribute and modify these files under those terms. It is provided without warranty, including any implied warranty of merchantability or fitness for a particular purpose.
 
 Upstream reference sources and third-party assets retain their own licenses and copyright notices. In particular, Poly's Ingen engine is **AGPL-3.0-or-later**, and other Poly repositories include GPL, LGPL and permissive components. See [third-party notices](THIRD_PARTY_NOTICES.md) for the inspected evidence and implementation/release requirements.
 
@@ -30,12 +30,12 @@ The simulator uses actual LVGL at 800 × 480 and a simulated engine. It needs no
 cmake --preset windows
 cmake --build --preset windows --parallel 6
 ctest --preset windows
-& '.\build\Debug\pedal_pi.exe'
+& '.\build\Debug\peepo.exe'
 ```
 
 The first configure fetches LVGL at a pinned commit. After that the cached build and application work offline. See [Windows UI development](docs/11-windows-ui-foundation.md) for interactions, architecture, checks and current limits.
 
-To drive a real engine instead of the simulation, start Ingen under WSL and pass its address: `& '.\build\Debug\pedal_pi.exe' --engine tcp://127.0.0.1:16180`. See [the adapter record](docs/15-ingen-adapter.md) for setup and limits. Without `--engine`, **+ Add** lists the demo modules followed by the exported plugins; in the simulation they can be patched and edited, but nothing is heard.
+To drive a real engine instead of the simulation, start Ingen under WSL and pass its address: `& '.\build\Debug\peepo.exe' --engine tcp://127.0.0.1:16180`. See [the adapter record](docs/15-ingen-adapter.md) for setup and limits. Without `--engine`, **+ Add** lists the demo modules followed by the exported plugins; in the simulation they can be patched and edited, but nothing is heard.
 
 Drag empty space to pan; **Home** restores the original view. Hold a module for parameters, software bypass, duplication or deletion. Tap a cable to select it, then use **Delete cable** in the footer. These editor features work entirely with the simulated engine.
 
@@ -43,7 +43,7 @@ Clouds and Delay have their own parameter layouts; the Tuner has a live note, ce
 
 Global BPM and CPU readouts stay in the bottom-right footer on every page. The simulator displays 120 BPM / 12% CPU SIM as fixed display fixtures; real tempo synchronization and processor measurements await engine integration. CPU is shown as `--` when the simulator is unavailable.
 
-**Patches** saves patches to disk (`%LOCALAPPDATA%PedalPIpatches`, or `--patches DIR`) and provides **Save**, **Save as**, **Load**, **Startup**, **Delete**, **New patch** and **Rename**; see [patch storage](docs/17-patch-storage.md). Names can be entered with the on-screen keyboard; replacing unsaved edits has a cancel option. Clouds' demo controls span two parameter pages. The catalogue distinguishes available, untested and unavailable demo entries; **Settings → Missing module** exercises placeholder recovery.
+**Patches** saves patches to disk (`%LOCALAPPDATA%/Peepo/patches`, or `--patches DIR`) and provides **Save**, **Save as**, **Load**, **Startup**, **Delete**, **New patch** and **Rename**; see [patch storage](docs/17-patch-storage.md). Names can be entered with the on-screen keyboard; replacing unsaved edits has a cancel option. Clouds' demo controls span two parameter pages. The catalogue distinguishes available, untested and unavailable demo entries; **Settings → Missing module** exercises placeholder recovery.
 
 Keys stand in for the physical controls: **Q/A, W/S, E/D, R/F** turn encoders 1–4, **1–4** push them, **Z, X, C** are the stomps. On a parameter page the encoders follow the four tiles; **Settings → Controls** assigns them and the stomps. See [physical controls](docs/18-physical-controls.md).
 
@@ -51,7 +51,7 @@ Keys stand in for the physical controls: **Q/A, W/S, E/D, R/F** turn encoders 1�
 
 Inside Debian under WSL2, as root: `bash tools/pi/build-arm64.sh` builds the engine, plugins and interface for arm64 under emulation, tests them and leaves a package in `build/pi/`. On the Pi, unpack it and run `sudo ./install.sh`. See [Linux build, Pi packaging and services](docs/19-linux-and-pi.md).
 
-**Direct instrument boot is now verified on the Pi.** It powers up into Pedal PI and the saved Clouds guitar patch; LightDM, MODEP and automatic console login are disabled/masked. The user confirmed the screen and touch after reboot. For a new package use `sudo ./install.sh --instrument`; for an installed Pi use `sudo /opt/pedalpi/bin/pedalpi-instrument-boot`. [Setup, results and restoration](docs/24-instrument-boot.md).
+**Direct instrument boot is now verified on the Pi.** It powers up into Peepo and the saved Clouds guitar patch; LightDM, MODEP and automatic console login are disabled/masked. The user confirmed the screen and touch after reboot. For a new package use `sudo ./install.sh --instrument`; for an installed Pi use `sudo /opt/peepo/bin/peepo-instrument-boot`. [Setup, results and restoration](docs/24-instrument-boot.md).
 
 ## Documentation
 
@@ -79,7 +79,7 @@ Inside Debian under WSL2, as root: `bash tools/pi/build-arm64.sh` builds the eng
 | [Clouds](docs/20-clouds.md) | Clouds' build record for x86-64 and arm64, its seven modes checked in Ingen with test signals, and the per-control overlay |
 | [NAM in Ingen](docs/21-nam.md) | The two NAM plugins compared in the engine: model loading, worker and state, errors and the selected candidate |
 | [Plugin catalogue](docs/22-plugin-catalogue.md) | The selected inventory, how the rest of Poly's and Beebo's plugins are built, and a compatibility record for every entry |
-| [Pi bring-up](docs/23-pi-bring-up.md) | The Pi as found, and the first sound through the Pedal PI engine and interface on it |
+| [Pi bring-up](docs/23-pi-bring-up.md) | The Pi as found, and the first sound through the Peepo engine and interface on it |
 
 ## Retrieve the project and reference sources
 
@@ -88,8 +88,8 @@ Project documentation is tracked in the main repository. The ordinary upstream r
 With Git and Git LFS installed:
 
 ```powershell
-git clone https://github.com/ABustos2606/Pedal-PI.git
-cd Pedal-PI
+git clone https://github.com/ABustos2606/Peepo.git
+cd Peepo
 git lfs install --local
 git lfs pull
 git submodule update --init
@@ -119,7 +119,7 @@ Initialize the top-level references first, then the three repositories with decl
 - NAM is a candidate for evaluation on the Pi 5, 2 GB. An optimized runtime is promising, but CPU headroom, memory use, simultaneous model count, and operation alongside Clouds remain unverified. The older downloaded Poly NAM fork and current NeuralAudio-based LV2 implementations need comparison.
 - Beebo's interface repository (`digit_ui`) is **reference material only**. No code, QML, icons, fonts, or other assets from it will be copied into the new interface.
 
-Original application code and CMake build files now exist under `src/` and `config/`. The simulator is a UI development foundation; it does not process audio. On 14 October 2026 the Pi was profiled and first played guitar through the Pedal PI engine and interface ([Pi bring-up](docs/23-pi-bring-up.md)); hardware measurements wait for an adequate power supply. Upstream reference repositories remain unchanged.
+Original application code and CMake build files now exist under `src/` and `config/`. The simulator is a UI development foundation; it does not process audio. On 14 October 2026 the Pi was profiled and first played guitar through the Peepo engine and interface ([Pi bring-up](docs/23-pi-bring-up.md)); hardware measurements wait for an adequate power supply. Upstream reference repositories remain unchanged.
 
 ## Next step after documentation review
 

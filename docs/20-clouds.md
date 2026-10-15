@@ -30,7 +30,7 @@ All seven modes declare 4 audio ports, 12 CV inputs and 13 controls. Each requir
 
 | Finding | Evidence | Consequence |
 | --- | --- | --- |
-| Silent until switched on | Its `enabled` control at 0 writes silence; 0.000000 RMS measured | The adapter sets it when adding the module, and bypass clears it ([catalogue export](16-catalogue-export.md)). Bypass mutes; it does not pass the dry signal. |
+| Silent until switched on | Its `enabled` control at 0 writes silence; 0.000000 RMS measured | The adapter sets it when adding the module and keeps it set ([catalogue export](16-catalogue-export.md)). Bypass is the engine's own block bypass, which passes the input through unchanged (measured equal to a direct cable). A patch saved when bypass cleared the control still loads as bypassed, and enabling it turns the control back on. |
 | **In gain does nothing** | `in_gain_param` is read, but its use is commented out upstream; 0.0624 RMS out at 0 and at 1 | Hidden by the overlay |
 | Freeze and reverse are switches | The plugin acts only at 1.0 (or a CV above 0.4); 0.6 did not hold | Shown as switches |
 | Blend 0 is dry, but 9 dB down | 100% of the output is the input tone, at 0.0624 RMS for 0.1768 in (−9.1 dB). A full-scale input peaks at 0.338. | Expect Clouds to sit lower than the modules around it. Not compensated in the overlay. |
@@ -59,7 +59,7 @@ Spread acts between the two channels, which the screen measures only weakly.
 
 ## Parameter overlay (P6.3)
 
-The overlay (`config/catalogue/overlay.json`) can now present individual controls. The rules are in [catalogue.hpp](../src/catalogue/catalogue.hpp) and tested in `pedal_catalogue_tests`. A per-module rule may list controls, each by symbol, and give it:
+The overlay (`config/catalogue/overlay.json`) can now present individual controls. The rules are in [catalogue.hpp](../src/catalogue/catalogue.hpp) and tested in `peepo_catalogue_tests`. A per-module rule may list controls, each by symbol, and give it:
 
 - a name;
 - a unit;
@@ -99,7 +99,7 @@ Inside Debian (WSL), as root, after `02-plugins.sh`:
 bash tools/ingen-spike/11-clouds.sh
 ```
 
-It prints the build record and both binaries (with `PEDALPI_ARM64_ROOT` naming the arm64 root, default `/opt/pedalpi-arm64`), then runs `11-clouds.py` against a fresh engine. That takes about 15 minutes, most of it the per-mode screen.
+It prints the build record and both binaries (with `PEEPO_ARM64_ROOT` naming the arm64 root, default `/opt/peepo-arm64`), then runs `11-clouds.py` against a fresh engine. That takes about 15 minutes, most of it the per-mode screen.
 
 ## Still open
 

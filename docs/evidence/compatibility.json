@@ -3,7 +3,7 @@
   "generated_by": "tools/ingen-spike/15-compat.py",
   "date": "2026-10-14",
   "machine": "x86_64",
-  "lv2_path": "/usr/lib/lv2:/opt/pedalpi/lib/x86_64-linux-gnu/lv2:/opt/pedalpi/lib/lv2:/opt/pedalpi/nam/current",
+  "lv2_path": "/usr/lib/lv2:/opt/peepo/lib/x86_64-linux-gnu/lv2:/opt/peepo/lib/lv2:/opt/peepo/nam/current",
   "counts": {
    "supported-pc": 91,
    "not-tested": 25,
@@ -27,7 +27,7 @@
    "installed": true,
    "name": "abs",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -44,7 +44,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -75,7 +75,7 @@
    "installed": true,
    "name": "VCA",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -92,7 +92,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/basic_modular.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/basic_modular.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -123,7 +123,7 @@
    "installed": true,
    "name": "boost",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -140,7 +140,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/basic_modular.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/basic_modular.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -171,7 +171,7 @@
    "installed": true,
    "name": "clock_divider",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -188,7 +188,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/clock_divider.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/clock_divider.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -218,7 +218,7 @@
    "installed": true,
    "name": "difference",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -235,7 +235,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -266,7 +266,7 @@
    "installed": true,
    "name": "max",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -283,7 +283,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -314,7 +314,7 @@
    "installed": true,
    "name": "min",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -331,7 +331,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -362,7 +362,7 @@
    "installed": true,
    "name": "product",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -379,7 +379,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -410,7 +410,7 @@
    "installed": true,
    "name": "ratio",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -427,7 +427,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -458,7 +458,7 @@
    "installed": true,
    "name": "schmitt",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -475,7 +475,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -506,7 +506,7 @@
    "installed": true,
    "name": "sum",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -523,7 +523,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -554,7 +554,7 @@
    "installed": true,
    "name": "tempo_ratio",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -571,7 +571,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -597,7 +597,7 @@
    "installed": true,
    "name": "toggle",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -614,7 +614,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -645,7 +645,7 @@
    "installed": true,
    "name": "trigger_to_gate",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_modular.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -662,7 +662,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_modular.lv2/maths.so",
+   "binary": "/opt/peepo/lib/lv2/basic_modular.lv2/maths.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -693,7 +693,7 @@
    "installed": true,
    "name": "quantizer",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/basic_quantizer.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/basic_quantizer.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -710,7 +710,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/basic_quantizer.lv2/basic_quantizer.so",
+   "binary": "/opt/peepo/lib/lv2/basic_quantizer.lv2/basic_quantizer.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -740,7 +740,7 @@
    "installed": true,
    "name": "bitcrushed_delay",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/bitcrushed_delay.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/bitcrushed_delay.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -757,7 +757,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/bitcrushed_delay.lv2/bitcrushed_delay.so",
+   "binary": "/opt/peepo/lib/lv2/bitcrushed_delay.lv2/bitcrushed_delay.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -785,7 +785,7 @@
    "installed": true,
    "name": "chorus",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/chorus.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/chorus.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -802,7 +802,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/chorus.lv2/chorus.so",
+   "binary": "/opt/peepo/lib/lv2/chorus.lv2/chorus.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -826,7 +826,7 @@
    "installed": true,
    "name": "chorus_ext",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/chorus_ext.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/chorus_ext.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -843,7 +843,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/chorus_ext.lv2/chorus_ext.so",
+   "binary": "/opt/peepo/lib/lv2/chorus_ext.lv2/chorus_ext.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -867,7 +867,7 @@
    "installed": true,
    "name": "CV to MIDI CC",
    "class": "Generator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/cv_to_cc.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/cv_to_cc.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -886,7 +886,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/cv_to_cc.lv2/cv_to_cc.so",
+   "binary": "/opt/peepo/lib/lv2/cv_to_cc.lv2/cv_to_cc.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -907,7 +907,7 @@
    "installed": true,
    "name": "Poly Euclidean Sequencer",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/poly_euclidean.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/poly_euclidean.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -924,7 +924,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/poly_euclidean.lv2/poly_euclidean.so",
+   "binary": "/opt/peepo/lib/lv2/poly_euclidean.lv2/poly_euclidean.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -945,7 +945,7 @@
    "installed": true,
    "name": "flanger",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/flanger.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/flanger.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -962,7 +962,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/flanger.lv2/flanger.so",
+   "binary": "/opt/peepo/lib/lv2/flanger.lv2/flanger.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -986,7 +986,7 @@
    "installed": true,
    "name": "flanger_ext",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/flanger_ext.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/flanger_ext.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1003,7 +1003,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/flanger_ext.lv2/flanger_ext.so",
+   "binary": "/opt/peepo/lib/lv2/flanger_ext.lv2/flanger_ext.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1027,7 +1027,7 @@
    "installed": true,
    "name": "harm_trem",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/harm_trem.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/harm_trem.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1044,7 +1044,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/harm_trem.lv2/harm_trem.so",
+   "binary": "/opt/peepo/lib/lv2/harm_trem.lv2/harm_trem.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1068,7 +1068,7 @@
    "installed": true,
    "name": "harm_trem_ext",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/harm_trem_ext.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/harm_trem_ext.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1085,7 +1085,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/harm_trem_ext.lv2/harm_trem_ext.so",
+   "binary": "/opt/peepo/lib/lv2/harm_trem_ext.lv2/harm_trem_ext.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1109,7 +1109,7 @@
    "installed": true,
    "name": "16 Step Note Sequencer",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/note_sequencer.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/note_sequencer.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1126,7 +1126,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/note_sequencer.lv2/note_sequencer.so",
+   "binary": "/opt/peepo/lib/lv2/note_sequencer.lv2/note_sequencer.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -1147,7 +1147,7 @@
    "installed": true,
    "name": "16 Step Note Sequencer BPM",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/note_sequencer_bpm.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/note_sequencer_bpm.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1164,7 +1164,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/note_sequencer_bpm.lv2/note_sequencer_bpm.so",
+   "binary": "/opt/peepo/lib/lv2/note_sequencer_bpm.lv2/note_sequencer_bpm.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -1186,7 +1186,7 @@
    "installed": true,
    "name": "pitch_cal_in",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/pitch_cal.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/pitch_cal.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1203,7 +1203,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/pitch_cal.lv2/pitch_cal.so",
+   "binary": "/opt/peepo/lib/lv2/pitch_cal.lv2/pitch_cal.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -1224,7 +1224,7 @@
    "installed": true,
    "name": "pitch_cal_in",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/pitch_cal.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/pitch_cal.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1241,7 +1241,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/pitch_cal.lv2/pitch_cal.so",
+   "binary": "/opt/peepo/lib/lv2/pitch_cal.lv2/pitch_cal.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -1262,7 +1262,7 @@
    "installed": true,
    "name": "16 Step Sequencer",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/step_sequencer.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/step_sequencer.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1279,7 +1279,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/step_sequencer.lv2/step_sequencer.so",
+   "binary": "/opt/peepo/lib/lv2/step_sequencer.lv2/step_sequencer.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -1301,7 +1301,7 @@
    "installed": true,
    "name": "16 Step Sequencer BPM",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/step_sequencer_bpm.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/step_sequencer_bpm.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1318,7 +1318,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/step_sequencer_bpm.lv2/step_sequencer_bpm.so",
+   "binary": "/opt/peepo/lib/lv2/step_sequencer_bpm.lv2/step_sequencer_bpm.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -1340,7 +1340,7 @@
    "installed": true,
    "name": "strum",
    "class": "Generator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/strum.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/strum.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -1359,7 +1359,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/strum.lv2/strum.so",
+   "binary": "/opt/peepo/lib/lv2/strum.lv2/strum.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -1380,7 +1380,7 @@
    "installed": true,
    "name": "vibrato",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/vibrato.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/vibrato.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1397,7 +1397,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/vibrato.lv2/vibrato.so",
+   "binary": "/opt/peepo/lib/lv2/vibrato.lv2/vibrato.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1421,7 +1421,7 @@
    "installed": true,
    "name": "vibrato_ext",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/vibrato_ext.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/vibrato_ext.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1438,7 +1438,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2",
-   "binary": "/opt/pedalpi/lib/lv2/vibrato_ext.lv2/vibrato_ext.so",
+   "binary": "/opt/peepo/lib/lv2/vibrato_ext.lv2/vibrato_ext.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1462,7 +1462,7 @@
    "installed": true,
    "name": "CV to MIDI Note",
    "class": "Generator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/cv_to_note.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/cv_to_note.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -1481,7 +1481,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyLV2, cv_to_cc.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/cv_to_note.lv2/cv_to_note.so",
+   "binary": "/opt/peepo/lib/lv2/cv_to_note.lv2/cv_to_note.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -1502,7 +1502,7 @@
    "installed": true,
    "name": "Poly MIDI Clock in",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/poly_mclk_in.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/poly_mclk_in.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -1521,7 +1521,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: PolyMclkIn.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/poly_mclk_in.lv2/mclk_in.so",
+   "binary": "/opt/peepo/lib/lv2/poly_mclk_in.lv2/mclk_in.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -1540,7 +1540,7 @@
    "installed": true,
    "name": "Signal Absolute Value",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1557,7 +1557,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/absolute.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/absolute.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1587,7 +1587,7 @@
    "installed": true,
    "name": "AMS Analog Driver",
    "class": "Simulator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1604,7 +1604,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/ad.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/ad.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1635,7 +1635,7 @@
    "installed": true,
    "name": "AMS Advanced Envelope",
    "class": "Envelope Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1652,7 +1652,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/advenv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/advenv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1682,7 +1682,7 @@
    "installed": true,
    "name": "AMS Amp",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1699,7 +1699,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/amp.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/amp.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1729,7 +1729,7 @@
    "installed": true,
    "name": "Amplitude Modifier",
    "class": "Converter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1746,7 +1746,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/amplitude.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/amplitude.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1776,7 +1776,7 @@
    "installed": true,
    "name": "Beat Repeater - Mono",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1793,7 +1793,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/beatrepeater_mono.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/beatrepeater_mono.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1823,7 +1823,7 @@
    "installed": true,
    "name": "Beat Repeater - Stereo",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1840,7 +1840,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/beatrepeater_stereo.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/beatrepeater_stereo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1870,7 +1870,7 @@
    "installed": true,
    "name": "Beat Slicer - Mono",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1887,7 +1887,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/beatslicer_mono.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/beatslicer_mono.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1917,7 +1917,7 @@
    "installed": true,
    "name": "Beat Slicer - Stereo",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1934,7 +1934,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/beatslicer_stereo.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/beatslicer_stereo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -1964,7 +1964,7 @@
    "installed": true,
    "name": "Control to CV",
    "class": "Converter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -1981,7 +1981,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/controltocv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/controltocv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2011,7 +2011,7 @@
    "installed": true,
    "name": "AMS CV Source",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2028,7 +2028,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/cvs.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/cvs.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2058,7 +2058,7 @@
    "installed": true,
    "name": "CV to Control",
    "class": "Converter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2075,7 +2075,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/cvtocontrol.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/cvtocontrol.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2104,7 +2104,7 @@
    "installed": true,
    "name": "AMS Delay",
    "class": "Delay Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2121,7 +2121,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/delay.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/delay.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2151,7 +2151,7 @@
    "installed": true,
    "name": "Downsampler - Mono",
    "class": "Filter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2168,7 +2168,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/downsampler_mono.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/downsampler_mono.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2198,7 +2198,7 @@
    "installed": true,
    "name": "Downsampler - Stereo",
    "class": "Filter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2215,7 +2215,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/downsampler_stereo.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/downsampler_stereo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2245,7 +2245,7 @@
    "installed": true,
    "name": "AMS Envelope",
    "class": "Envelope Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2262,7 +2262,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/env.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/env.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2292,7 +2292,7 @@
    "installed": true,
    "name": "Granulator - Mono",
    "class": "Filter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2309,7 +2309,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/granulator_mono.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/granulator_mono.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2339,7 +2339,7 @@
    "installed": true,
    "name": "Granulator - Stereo",
    "class": "Filter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2356,7 +2356,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/granulator_stereo.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/granulator_stereo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2386,7 +2386,7 @@
    "installed": true,
    "name": "Hz to VC",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2403,7 +2403,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/hztovc.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/hztovc.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2434,7 +2434,7 @@
    "installed": true,
    "name": "AMS Inv",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2451,7 +2451,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/inv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/inv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2481,7 +2481,7 @@
    "installed": true,
    "name": "AMS LFO - Freq",
    "class": "Oscillator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2498,7 +2498,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/lfo_freq.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/lfo_freq.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2530,7 +2530,7 @@
    "installed": true,
    "name": "AMS LFO - Tempo",
    "class": "Oscillator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2547,7 +2547,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/lfo_tempo.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/lfo_tempo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2577,7 +2577,7 @@
    "installed": true,
    "name": "AMS Mixer 2 channels - Audio",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2594,7 +2594,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/mixer_2ch_audio.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/mixer_2ch_audio.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2624,7 +2624,7 @@
    "installed": true,
    "name": "AMS Mixer 2 channels - CV",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2641,7 +2641,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/mixer_2ch_cv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/mixer_2ch_cv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2671,7 +2671,7 @@
    "installed": true,
    "name": "AMS Mixer 4 channels - Audio",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2688,7 +2688,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/mixer_4ch_audio.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/mixer_4ch_audio.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2718,7 +2718,7 @@
    "installed": true,
    "name": "AMS Mixer 4 channels - CV",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2735,7 +2735,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/mixer_4ch_cv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/mixer_4ch_cv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2765,7 +2765,7 @@
    "installed": true,
    "name": "Moog LPF",
    "class": "Filter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2782,7 +2782,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/mooglpf.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/mooglpf.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2813,7 +2813,7 @@
    "installed": true,
    "name": "AMS Noise2 - Audio",
    "class": "Generator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2830,7 +2830,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/noise2_audio.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/noise2_audio.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2860,7 +2860,7 @@
    "installed": true,
    "name": "AMS Noise2 - CV",
    "class": "Generator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2877,7 +2877,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/noise2_cv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/noise2_cv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2907,7 +2907,7 @@
    "installed": true,
    "name": "AMS Percussive Envelope",
    "class": "Envelope Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2924,7 +2924,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/percussiveenv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/percussiveenv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -2954,7 +2954,7 @@
    "installed": true,
    "name": "AMS Ring Modulator - Audio",
    "class": "Filter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -2971,7 +2971,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/ringmodulator_audio.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/ringmodulator_audio.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3001,7 +3001,7 @@
    "installed": true,
    "name": "AMS Ring Modulator - CV",
    "class": "Filter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3018,7 +3018,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/ringmodulator_cv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/ringmodulator_cv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3050,7 +3050,7 @@
    "installed": true,
    "name": "AMS Sample&Hold",
    "class": "Delay Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3067,7 +3067,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/samplehold.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/samplehold.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3097,7 +3097,7 @@
    "installed": true,
    "name": "Scope",
    "class": "Analyser Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3114,7 +3114,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/scope.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/scope.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3141,7 +3141,7 @@
    "installed": true,
    "name": "AMS Slew Limiter",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3158,7 +3158,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/slew.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/slew.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3190,7 +3190,7 @@
    "installed": true,
    "name": "AMS VCA Exp - Audio",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3207,7 +3207,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vcaexp_audio.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vcaexp_audio.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3238,7 +3238,7 @@
    "installed": true,
    "name": "AMS VCA Exp - CV",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3255,7 +3255,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vcaexp_cv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vcaexp_cv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3286,7 +3286,7 @@
    "installed": true,
    "name": "AMS VCA Lin - Audio",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3303,7 +3303,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vcalin_audio.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vcalin_audio.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3333,7 +3333,7 @@
    "installed": true,
    "name": "AMS VCA Lin - CV",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3350,7 +3350,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vcalin_cv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vcalin_cv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3380,7 +3380,7 @@
    "installed": true,
    "name": "AMS VCF",
    "class": "Filter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3397,7 +3397,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vcf.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vcf.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3428,7 +3428,7 @@
    "installed": true,
    "name": "None",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3445,7 +3445,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vco2_audio.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vco2_audio.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3471,7 +3471,7 @@
    "installed": true,
    "name": "None",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3488,7 +3488,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vco2_cv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vco2_cv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3516,7 +3516,7 @@
    "installed": true,
    "name": "AMS VC Panning",
    "class": "Spatial Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3533,7 +3533,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vcpanning.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vcpanning.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3563,7 +3563,7 @@
    "installed": true,
    "name": "AMS VC Switch - Audio",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3580,7 +3580,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vcswitch_audio.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vcswitch_audio.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3610,7 +3610,7 @@
    "installed": true,
    "name": "AMS VC Switch - CV",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3627,7 +3627,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vcswitch_cv.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vcswitch_cv.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3657,7 +3657,7 @@
    "installed": true,
    "name": "VC to Hz",
    "class": "Utility Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/avw.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/avw.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -3674,7 +3674,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: avwlv2",
-   "binary": "/opt/pedalpi/lib/lv2/avw.lv2/vctohz.so",
+   "binary": "/opt/peepo/lib/lv2/avw.lv2/vctohz.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3705,7 +3705,7 @@
    "installed": true,
    "name": "LV2 Convolution Mono",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/convo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/convo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -3732,7 +3732,7 @@
     "http://gareus.org/oss/lv2/convoLV2#impulse"
    ],
    "source": "Poly: convoLV2",
-   "binary": "/opt/pedalpi/lib/lv2/convo.lv2/convoLV2.so",
+   "binary": "/opt/peepo/lib/lv2/convo.lv2/convoLV2.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libzita-convolver.so.4",
@@ -3766,7 +3766,7 @@
    "installed": true,
    "name": "LV2 Convolution Mono=>Stereo",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/convo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/convo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -3793,7 +3793,7 @@
     "http://gareus.org/oss/lv2/convoLV2#impulse"
    ],
    "source": "Poly: convoLV2",
-   "binary": "/opt/pedalpi/lib/lv2/convo.lv2/convoLV2.so",
+   "binary": "/opt/peepo/lib/lv2/convo.lv2/convoLV2.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libzita-convolver.so.4",
@@ -3827,7 +3827,7 @@
    "installed": true,
    "name": "LV2 Convolution Stereo",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/convo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/convo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -3854,7 +3854,7 @@
     "http://gareus.org/oss/lv2/convoLV2#impulse"
    ],
    "source": "Poly: convoLV2",
-   "binary": "/opt/pedalpi/lib/lv2/convo.lv2/convoLV2.so",
+   "binary": "/opt/peepo/lib/lv2/convo.lv2/convoLV2.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libzita-convolver.so.4",
@@ -3910,7 +3910,7 @@
    "installed": true,
    "name": "Poly Beat Repeat",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -3929,7 +3929,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyclouds.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyclouds.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3952,7 +3952,7 @@
    "installed": true,
    "name": "Poly Mist Granular",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -3971,7 +3971,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyclouds.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyclouds.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -3994,7 +3994,7 @@
    "installed": true,
    "name": "Poly Mist Looping Delay",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4013,7 +4013,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyclouds.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyclouds.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4036,7 +4036,7 @@
    "installed": true,
    "name": "Poly Mist Oliverb",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4055,7 +4055,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyclouds.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyclouds.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4078,7 +4078,7 @@
    "installed": true,
    "name": "Poly Mist Resonestor",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4097,7 +4097,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyclouds.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyclouds.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4118,7 +4118,7 @@
    "installed": true,
    "name": "Poly Mist Spectral",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4137,7 +4137,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyclouds.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyclouds.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4160,7 +4160,7 @@
    "installed": true,
    "name": "Poly Mist Stretch",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4179,7 +4179,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyclouds.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyclouds.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4202,7 +4202,7 @@
    "installed": true,
    "name": "Poly Topological Sequencer",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4221,7 +4221,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polygrids.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polygrids.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4244,7 +4244,7 @@
    "installed": true,
    "name": "Poly Random CV Sampler",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4263,7 +4263,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polymarbles.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polymarbles.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4287,7 +4287,7 @@
    "installed": true,
    "name": "Poly Macro Osc",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4306,7 +4306,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyplaits.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyplaits.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4329,7 +4329,7 @@
    "installed": true,
    "name": "Poly Random CV Sampler",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4348,7 +4348,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polyrings.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polyrings.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4372,7 +4372,7 @@
    "installed": true,
    "name": "Poly Looping Envelope Generator",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4391,7 +4391,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polytides.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polytides.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4414,7 +4414,7 @@
    "installed": true,
    "name": "Poly Twist Bitmangler",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4433,7 +4433,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4453,7 +4453,7 @@
    "installed": true,
    "name": "Poly Twist Chebyschev",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4472,7 +4472,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4492,7 +4492,7 @@
    "installed": true,
    "name": "Poly Twist Comparator",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4511,7 +4511,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4533,7 +4533,7 @@
    "installed": true,
    "name": "Poly Twist Delay",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4552,7 +4552,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4574,7 +4574,7 @@
    "installed": true,
    "name": "Poly Twist Binaural Doppler Panner",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4593,7 +4593,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4615,7 +4615,7 @@
    "installed": true,
    "name": "Poly Twist Wavefolder",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4634,7 +4634,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4654,7 +4654,7 @@
    "installed": true,
    "name": "Poly Twist frequency shifter",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4673,7 +4673,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4695,7 +4695,7 @@
    "installed": true,
    "name": "Poly Twist Meta",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4714,7 +4714,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4734,7 +4734,7 @@
    "installed": true,
    "name": "Poly Twist Vocoder",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polylenticular.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -4753,7 +4753,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: lenticular_lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polylenticular.lv2/polywarps.so",
+   "binary": "/opt/peepo/lib/lv2/polylenticular.lv2/polywarps.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4775,7 +4775,7 @@
    "installed": true,
    "name": "Neural Amp Modeler",
    "class": "Simulator Plugin",
-   "bundle": "file:///opt/pedalpi/nam/current/neural_amp_modeler.lv2/",
+   "bundle": "file:///opt/peepo/nam/current/neural_amp_modeler.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map",
     "http://lv2plug.in/ns/ext/worker#schedule"
@@ -4801,7 +4801,7 @@
     "http://github.com/mikeoliphant/neural-amp-modeler-lv2#model"
    ],
    "source": "Poly: neural-amp-modeler-lv2",
-   "binary": "/opt/pedalpi/nam/current/neural_amp_modeler.lv2/neural_amp_modeler.so",
+   "binary": "/opt/peepo/nam/current/neural_amp_modeler.lv2/neural_amp_modeler.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -4835,7 +4835,7 @@
    "installed": true,
    "name": "diodeLadder",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/poly_filter.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -4852,7 +4852,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: poly_filters",
-   "binary": "/opt/pedalpi/lib/lv2/poly_filter.lv2/poly_filter.so",
+   "binary": "/opt/peepo/lib/lv2/poly_filter.lv2/poly_filter.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -4874,7 +4874,7 @@
    "installed": true,
    "name": "Korg HPF",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/poly_filter.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -4891,7 +4891,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: poly_filters",
-   "binary": "/opt/pedalpi/lib/lv2/poly_filter.lv2/poly_filter.so",
+   "binary": "/opt/peepo/lib/lv2/poly_filter.lv2/poly_filter.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -4913,7 +4913,7 @@
    "installed": true,
    "name": "korg lpf",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/poly_filter.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -4930,7 +4930,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: poly_filters",
-   "binary": "/opt/pedalpi/lib/lv2/poly_filter.lv2/poly_filter.so",
+   "binary": "/opt/peepo/lib/lv2/poly_filter.lv2/poly_filter.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -4952,7 +4952,7 @@
    "installed": true,
    "name": "moog half ladder",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/poly_filter.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -4969,7 +4969,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: poly_filters",
-   "binary": "/opt/pedalpi/lib/lv2/poly_filter.lv2/poly_filter.so",
+   "binary": "/opt/peepo/lib/lv2/poly_filter.lv2/poly_filter.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -4989,7 +4989,7 @@
    "installed": true,
    "name": "moog ladder",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/poly_filter.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -5006,7 +5006,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: poly_filters",
-   "binary": "/opt/pedalpi/lib/lv2/poly_filter.lv2/poly_filter.so",
+   "binary": "/opt/peepo/lib/lv2/poly_filter.lv2/poly_filter.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -5028,7 +5028,7 @@
    "installed": true,
    "name": "oberheim filter",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/poly_filter.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -5045,7 +5045,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: poly_filters",
-   "binary": "/opt/pedalpi/lib/lv2/poly_filter.lv2/poly_filter.so",
+   "binary": "/opt/peepo/lib/lv2/poly_filter.lv2/poly_filter.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -5067,7 +5067,7 @@
    "installed": true,
    "name": "Poly Convolver Cab Mono",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polyconvo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -5095,7 +5095,7 @@
     "http://polyeffects.com/lv2/polyconvo#ir"
    ],
    "source": "Poly: polyconvo.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polyconvo.lv2/polyconvo.so",
+   "binary": "/opt/peepo/lib/lv2/polyconvo.lv2/polyconvo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libfftw3f.so.3",
@@ -5122,7 +5122,7 @@
    "installed": true,
    "name": "Poly Convolver Cab Mono => Stereo",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polyconvo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -5150,7 +5150,7 @@
     "http://polyeffects.com/lv2/polyconvo#ir"
    ],
    "source": "Poly: polyconvo.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polyconvo.lv2/polyconvo.so",
+   "binary": "/opt/peepo/lib/lv2/polyconvo.lv2/polyconvo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libfftw3f.so.3",
@@ -5177,7 +5177,7 @@
    "installed": true,
    "name": "Poly Convolver Cab Stereo",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polyconvo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -5205,7 +5205,7 @@
     "http://polyeffects.com/lv2/polyconvo#ir"
    ],
    "source": "Poly: polyconvo.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polyconvo.lv2/polyconvo.so",
+   "binary": "/opt/peepo/lib/lv2/polyconvo.lv2/polyconvo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libfftw3f.so.3",
@@ -5232,7 +5232,7 @@
    "installed": true,
    "name": "Poly Convolver Mono",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polyconvo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -5260,7 +5260,7 @@
     "http://polyeffects.com/lv2/polyconvo#ir"
    ],
    "source": "Poly: polyconvo.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polyconvo.lv2/polyconvo.so",
+   "binary": "/opt/peepo/lib/lv2/polyconvo.lv2/polyconvo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libfftw3f.so.3",
@@ -5287,7 +5287,7 @@
    "installed": true,
    "name": "Poly Convolver Mono => Stereo",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polyconvo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -5315,7 +5315,7 @@
     "http://polyeffects.com/lv2/polyconvo#ir"
    ],
    "source": "Poly: polyconvo.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polyconvo.lv2/polyconvo.so",
+   "binary": "/opt/peepo/lib/lv2/polyconvo.lv2/polyconvo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libfftw3f.so.3",
@@ -5342,7 +5342,7 @@
    "installed": true,
    "name": "Poly Convolver Stereo",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/polyconvo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/buf-size#boundedBlockLength",
     "http://lv2plug.in/ns/ext/options#options",
@@ -5370,7 +5370,7 @@
     "http://polyeffects.com/lv2/polyconvo#ir"
    ],
    "source": "Poly: polyconvo.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/polyconvo.lv2/polyconvo.so",
+   "binary": "/opt/peepo/lib/lv2/polyconvo.lv2/polyconvo.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libfftw3f.so.3",
@@ -5397,7 +5397,7 @@
    "installed": true,
    "name": "x42 Instrument Tuner",
    "class": "Analyser Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/tuna.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/tuna.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -5418,7 +5418,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "Poly: tuna.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/tuna.lv2/tuna.so",
+   "binary": "/opt/peepo/lib/lv2/tuna.lv2/tuna.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -5613,7 +5613,7 @@
    "installed": true,
    "name": "MVerb",
    "class": "Reverb Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/MVerb.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/MVerb.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/options#options",
     "http://lv2plug.in/ns/ext/urid#map"
@@ -5636,7 +5636,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "DISTRHO/MVerb",
-   "binary": "/opt/pedalpi/lib/lv2/MVerb.lv2/MVerb_dsp.so",
+   "binary": "/opt/peepo/lib/lv2/MVerb.lv2/MVerb_dsp.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -7898,7 +7898,7 @@
    "installed": true,
    "name": "GxCreamMachine",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/gx_CreamMachine.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/gx_CreamMachine.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -7915,7 +7915,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "brummer10/GxCreamMachine.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/gx_CreamMachine.lv2/gx_CreamMachine.so",
+   "binary": "/opt/peepo/lib/lv2/gx_CreamMachine.lv2/gx_CreamMachine.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -7948,7 +7948,7 @@
    "installed": true,
    "name": "GxSVT",
    "class": "Simulator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/gx_ampegsvt.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/gx_ampegsvt.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -7965,7 +7965,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "brummer10/GxSVT.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/gx_ampegsvt.lv2/gx_ampegsvt.so",
+   "binary": "/opt/peepo/lib/lv2/gx_ampegsvt.lv2/gx_ampegsvt.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -7998,7 +7998,7 @@
    "installed": true,
    "name": "GxSlowGear",
    "class": "Gate Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/gx_slowgear.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/gx_slowgear.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8015,7 +8015,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "brummer10/GxSlowGear.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/gx_slowgear.lv2/gx_slowgear.so",
+   "binary": "/opt/peepo/lib/lv2/gx_slowgear.lv2/gx_slowgear.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -8046,7 +8046,7 @@
    "installed": true,
    "name": "GxSupersonic",
    "class": "Amplifier Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/gx_supersonic.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/gx_supersonic.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8063,7 +8063,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "brummer10/GxSuperSonic.lv2",
-   "binary": "/opt/pedalpi/lib/lv2/gx_supersonic.lv2/gx_supersonic.so",
+   "binary": "/opt/peepo/lib/lv2/gx_supersonic.lv2/gx_supersonic.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -8096,7 +8096,7 @@
    "installed": true,
    "name": "Stone phaser",
    "class": "Phaser Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/stone-phaser.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/stone-phaser.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/options#options",
     "http://lv2plug.in/ns/ext/urid#map"
@@ -8118,7 +8118,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "jpcima/stone-phaser",
-   "binary": "/opt/pedalpi/lib/lv2/stone-phaser.lv2/stone-phaser_dsp.so",
+   "binary": "/opt/peepo/lib/lv2/stone-phaser.lv2/stone-phaser_dsp.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -8152,7 +8152,7 @@
    "installed": true,
    "name": "Stone phaser stereo",
    "class": "Phaser Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/stone-phaser-stereo.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/stone-phaser-stereo.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/options#options",
     "http://lv2plug.in/ns/ext/urid#map"
@@ -8174,7 +8174,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "jpcima/stone-phaser",
-   "binary": "/opt/pedalpi/lib/lv2/stone-phaser-stereo.lv2/stone-phaser-stereo_dsp.so",
+   "binary": "/opt/peepo/lib/lv2/stone-phaser-stereo.lv2/stone-phaser-stereo_dsp.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",
@@ -8208,7 +8208,7 @@
    "installed": true,
    "name": "CV meter",
    "class": "Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/mod-cv-meter.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/mod-cv-meter.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8225,7 +8225,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "moddevices/mod-cv-plugins",
-   "binary": "/opt/pedalpi/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.so",
+   "binary": "/opt/peepo/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -8250,7 +8250,7 @@
    "installed": true,
    "name": "TAP Pitch Shifter",
    "class": "Pitch Shifter Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/tap-pitch.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/tap-pitch.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8267,7 +8267,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "moddevices/tap-lv2",
-   "binary": "/opt/pedalpi/lib/lv2/tap-pitch.lv2/tap_pitch.so",
+   "binary": "/opt/peepo/lib/lv2/tap-pitch.lv2/tap_pitch.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -8299,7 +8299,7 @@
    "installed": true,
    "name": "TAP Reflector",
    "class": "Delay Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/tap-reflector.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/tap-reflector.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8316,7 +8316,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "moddevices/tap-lv2",
-   "binary": "/opt/pedalpi/lib/lv2/tap-reflector.lv2/tap_reflector.so",
+   "binary": "/opt/peepo/lib/lv2/tap-reflector.lv2/tap_reflector.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -8348,7 +8348,7 @@
    "installed": true,
    "name": "TAP Sigmoid Booster",
    "class": "Distortion Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/tap-sigmoid.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/tap-sigmoid.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8365,7 +8365,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "moddevices/tap-lv2",
-   "binary": "/opt/pedalpi/lib/lv2/tap-sigmoid.lv2/tap_sigmoid.so",
+   "binary": "/opt/peepo/lib/lv2/tap-sigmoid.lv2/tap_sigmoid.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -8397,7 +8397,7 @@
    "installed": true,
    "name": "TAP Tubewarmth",
    "class": "Simulator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/tap-tubewarmth.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/tap-tubewarmth.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8414,7 +8414,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "moddevices/tap-lv2",
-   "binary": "/opt/pedalpi/lib/lv2/tap-tubewarmth.lv2/tap_tubewarmth.so",
+   "binary": "/opt/peepo/lib/lv2/tap-tubewarmth.lv2/tap_tubewarmth.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -8640,7 +8640,7 @@
    "installed": true,
    "name": "the infamous envelope follower (CV)",
    "class": "Envelope Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/envfollower.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/envfollower.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/urid#map"
    ],
@@ -8659,7 +8659,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "ssj71/infamousPlugins",
-   "binary": "/opt/pedalpi/lib/lv2/envfollower.lv2/envfollower.so",
+   "binary": "/opt/peepo/lib/lv2/envfollower.lv2/envfollower.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libc.so.6"
@@ -8680,7 +8680,7 @@
    "installed": true,
    "name": "the infamous power cut",
    "class": "Modulator Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/powercut.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/powercut.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8697,7 +8697,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "ssj71/infamousPlugins",
-   "binary": "/opt/pedalpi/lib/lv2/powercut.lv2/powercut.so",
+   "binary": "/opt/peepo/lib/lv2/powercut.lv2/powercut.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -8719,7 +8719,7 @@
    "installed": true,
    "name": "the infamous stuck",
    "class": "Delay Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/stuck.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/stuck.lv2/",
    "required_features": [],
    "extension_data": [],
    "ports": {
@@ -8736,7 +8736,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "ssj71/infamousPlugins",
-   "binary": "/opt/pedalpi/lib/lv2/stuck.lv2/stuck.so",
+   "binary": "/opt/peepo/lib/lv2/stuck.lv2/stuck.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libm.so.6",
@@ -8759,7 +8759,7 @@
    "installed": true,
    "name": "YK Chorus",
    "class": "Chorus Plugin",
-   "bundle": "file:///opt/pedalpi/lib/lv2/ykchorus.lv2/",
+   "bundle": "file:///opt/peepo/lib/lv2/ykchorus.lv2/",
    "required_features": [
     "http://lv2plug.in/ns/ext/options#options",
     "http://lv2plug.in/ns/ext/urid#map"
@@ -8782,7 +8782,7 @@
    "morph_ports": 0,
    "file_parameters": [],
    "source": "SpotlightKid/ykchorus",
-   "binary": "/opt/pedalpi/lib/lv2/ykchorus.lv2/ykchorus_dsp.so",
+   "binary": "/opt/peepo/lib/lv2/ykchorus.lv2/ykchorus_dsp.so",
    "machine": "Advanced Micro Devices X86-64",
    "needs": [
     "libstdc++.so.6",

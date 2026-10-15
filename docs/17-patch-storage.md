@@ -19,7 +19,7 @@
 | Interface | Real LVGL pointer checks cover Save, Save as, Load, Startup, Delete with confirmation, a missing module on load, the reconnecting banner and the startup patch. A restart over an unsaved patch leaves it alone. |
 | Connection states | Against the real engine: stopping it shows RECONNECTING with the reason, keeps the last graph and pauses edits. Starting it again brings its graph back by itself. |
 
-Unit tests: `pedal_storage_tests` (bundles, revisions, recovery, foreign bundles, missing files, the simulator), `pedal_ingen_tests` (save and load against the stand-in engine, which now loads files as the real one does), `pedal_ui_check`. All six Windows CTest suites pass.
+Unit tests: `peepo_storage_tests` (bundles, revisions, recovery, foreign bundles, missing files, the simulator), `peepo_ingen_tests` (save and load against the stand-in engine, which now loads files as the real one does), `peepo_ui_check`. All six Windows CTest suites pass.
 
 ## What the engine does
 
@@ -54,13 +54,13 @@ Recorded with `tools/ingen-spike/10-bundle-probe.sh` against the live engine. Ea
 
 | Property | On | Meaning |
 | --- | --- | --- |
-| `pedalpi:patchId` | graph | Stored identity; empty for a patch never saved |
-| `pedalpi:patchName` | graph | Display name |
-| `pedalpi:schemaVersion` | graph | `1`. A bundle with a higher number is not offered; a missing one is read as a pre-schema bundle |
-| `pedalpi:modified` | graph | Unsaved edits since the last save or load |
-| `pedalpi:displayName` | block | Module name |
+| `peepo:patchId` | graph | Stored identity; empty for a patch never saved |
+| `peepo:patchName` | graph | Display name |
+| `peepo:schemaVersion` | graph | `1`. A bundle with a higher number is not offered; a missing one is read as a pre-schema bundle |
+| `peepo:modified` | graph | Unsaved edits since the last save or load |
+| `peepo:displayName` | block | Module name |
 | `ingen:canvasX`, `ingen:canvasY` | block | Position (Ingen's own) |
-| `pedalpi:control-<control>` | graph | One per pinned physical control (`control-enc1`, `control-stomp2`); see [physical controls](18-physical-controls.md). An empty value is an unpinned control |
+| `peepo:control-<control>` | graph | One per pinned physical control (`control-enc1`, `control-stomp2`); see [physical controls](18-physical-controls.md). An empty value is an unpinned control |
 
 Graph properties are set with `patch:context ingen:internalContext`, without which the engine does not keep them. Every property is optional on reading. Without a name a module takes its catalogue name, a block without a position is laid out in a row, a graph without a name is "Untitled", and a bundle without an identity takes its folder's.
 
@@ -100,7 +100,7 @@ Below the list:
 
 A failed add names the module and the engine's reason. Settings shows the connection state with Connect and Disconnect, and where patches are stored. Disconnecting stops only the interface; nothing in it starts or stops an engine.
 
-**Windows.** `--patches DIR` chooses the folder; the default is `%LOCALAPPDATA%\PedalPI\patches`, or `simulator-patches` for the simulation. With `--engine`, the engine is told the same folder as WSL sees it (`/mnt/c/…`), unless `--engine-patches PATH` says otherwise.
+**Windows.** `--patches DIR` chooses the folder; the default is `%LOCALAPPDATA%\Peepo\patches`, or `simulator-patches` for the simulation. With `--engine`, the engine is told the same folder as WSL sees it (`/mnt/c/…`), unless `--engine-patches PATH` says otherwise.
 
 ![Saved patches](images/ui-stored-patches.png)
 ![Asking before loading without a module](images/ui-missing-on-load.png)

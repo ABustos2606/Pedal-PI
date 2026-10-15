@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 # Both NAM candidates in the engine (P8.1 record, P8.2 host checks). Run as
 # root inside Debian, after 12-nam.sh:
 #   bash 13-nam.sh [a1-model.nam a2-model.nam]
@@ -29,16 +29,16 @@ for c in current poly; do
     export LV2_PATH="$BASE_PATH:$PREFIX/nam/$c"
     lv2info http://github.com/mikeoliphant/neural-amp-modeler-lv2 | awk '/Required Features:/ {r=1; o=0; e=0; $1=$2=""} /Optional Features:/ {r=0; o=1; e=0; $1=$2=""} /Extension Data:/ {r=0; o=0; e=1; $1=$2=""} /Presets:|Port [0-9]|Parameters:|Data URIs:/ {r=0; o=0; e=0} r && NF {print "requires " $NF} o && NF {print "optional " $NF} e && NF {print "extension " $NF}'
     for period in 128 64 1024; do
-        export PEDALPI_PERIOD=$period
+        export PEEPO_PERIOD=$period
         start_engine || exit 1
         if [ "$period" = 128 ]; then
-            python3 "$D/13-nam.py" "$c" "$A1" "$A2" "/tmp/pedalpi-nam-$c" || status=1
+            python3 "$D/13-nam.py" "$c" "$A1" "$A2" "/tmp/peepo-nam-$c" || status=1
             grep -E "rror|nable|arning" "$RUN/ingen.log" | sort | uniq -c | head -12
             # The saved patch, into an engine that has never seen the model.
             start_engine || exit 1
-            python3 "$D/13-nam.py" --restore "$c" "/tmp/pedalpi-nam-$c/nam.ingen" || status=1
+            python3 "$D/13-nam.py" --restore "$c" "/tmp/peepo-nam-$c/nam.ingen" || status=1
         else
-            python3 "$D/13-nam.py" "$c" "$A1" "$A2" "/tmp/pedalpi-nam-$c-$period" --quick || status=1
+            python3 "$D/13-nam.py" "$c" "$A1" "$A2" "/tmp/peepo-nam-$c-$period" --quick || status=1
         fi
         pgrep -x ingen >/dev/null && echo "PASS  the engine is still running" || { echo "FAIL  the engine did not survive"; status=1; }
     done

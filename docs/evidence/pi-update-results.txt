@@ -1,14 +1,14 @@
 # Pi package update, 14 October 2026
 
-Package: pedalpi-arm64-20261014-c91d0b9-dirty.tar.gz
+Package: peepo-arm64-20261014-c91d0b9-dirty.tar.gz
 SHA256: 83a17abddf99dd34bda1541f5154f1619e889d77af2834712ae190861e88b3e0
 Build: all eight arm64 CTests passed; offscreen 800x480 smoke passed.
 The initial chorus build lacked OpenGL headers; it was repaired successfully before packaging.
 Native checks below cover Clouds and NAM loading, not the entire inventory or guitar listening.
 The SSH deployment command returned status 1 after all functional checks passed and journal output was printed; final services and graph were checked independently afterwards.
 
-83a17abddf99dd34bda1541f5154f1619e889d77af2834712ae190861e88b3e0  /tmp/pedalpi-20261014-update.tar.gz
-Installing Pedal PI c91d0b9-dirty arm64 2026-10-14T21:53Z
+83a17abddf99dd34bda1541f5154f1619e889d77af2834712ae190861e88b3e0  /tmp/peepo-20261014-update.tar.gz
+Installing Peepo c91d0b9-dirty arm64 2026-10-14T21:53Z
 + env DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends jackd2 liblilv-0-0 libserd-0-0 libsord-0-0 libsratom-0-0 libsuil-0-0 libsigc++-2.0-0v5 libjack-jackd2-0 libdrm2 mda-lv2 lv2-examples x42-plugins setbfree blop-lv2 fomp calf-plugins libzita-convolver4 libzita-resampler1 libsndfile1 libsamplerate0 libfftw3-single3 libcairo2 libx11-6 libxext6 libxrandr2 libxcursor1
 Reading package lists...
 Building dependency tree...
@@ -45,39 +45,39 @@ The following packages were automatically installed and are no longer required:
   libwpebackend-fdo-1.0-1 lxplug-network python3-gi-cairo
 Use 'sudo apt autoremove' to remove them.
 0 upgraded, 0 newly installed, 0 to remove and 433 not upgraded.
-+ rm -rf /opt/pedalpi.previous
-+ mv /opt/pedalpi /opt/pedalpi.previous
-+ cp -a /tmp/pedalpi-20261014-clouds-release/pedalpi/root/opt/pedalpi /opt/pedalpi
-+ install -m 0755 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/bin/pedalpi-engine /tmp/pedalpi-20261014-clouds-release/pedalpi/config/bin/pedalpi-route /opt/pedalpi/bin/
-+ install -m 0755 /tmp/pedalpi-20261014-clouds-release/pedalpi/export-catalogue.sh /opt/pedalpi/bin/pedalpi-export-catalogue
-+ /opt/pedalpi/bin/pedalpi-export-catalogue
++ rm -rf /opt/peepo.previous
++ mv /opt/peepo /opt/peepo.previous
++ cp -a /tmp/peepo-20261014-clouds-release/peepo/root/opt/peepo /opt/peepo
++ install -m 0755 /tmp/peepo-20261014-clouds-release/peepo/config/bin/peepo-engine /tmp/peepo-20261014-clouds-release/peepo/config/bin/peepo-route /opt/peepo/bin/
++ install -m 0755 /tmp/peepo-20261014-clouds-release/peepo/export-catalogue.sh /opt/peepo/bin/peepo-export-catalogue
++ /opt/peepo/bin/peepo-export-catalogue
 ssh : lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#Mono>
 En línea: 2 Carácter: 1
-+ ssh -o BatchMode=yes pedalpi sudo bash /tmp/pi-deploy-update.sh /tmp/ ...
++ ssh -o BatchMode=yes peepo sudo bash /tmp/pi-deploy-update.sh /tmp/ ...
 + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (lilv_world_add_.../convoLV2#Mono>:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
  
-lilv_world_add_plugin(): warning: ... found in file:///opt/pedalpi/lib/lv2/convo.lv2/
+lilv_world_add_plugin(): warning: ... found in file:///opt/peepo/lib/lv2/convo.lv2/
 lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
 lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#MonoToStereo>
-lilv_world_add_plugin(): warning: ... found in file:///opt/pedalpi/lib/lv2/convo.lv2/
+lilv_world_add_plugin(): warning: ... found in file:///opt/peepo/lib/lv2/convo.lv2/
 lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
 lilv_world_add_plugin(): warning: Duplicate plugin <http://gareus.org/oss/lv2/convoLV2#Stereo>
-lilv_world_add_plugin(): warning: ... found in file:///opt/pedalpi/lib/lv2/convo.lv2/
+lilv_world_add_plugin(): warning: ... found in file:///opt/peepo/lib/lv2/convo.lv2/
 lilv_world_add_plugin(): warning: ... and      file:///usr/lib/lv2/convo.lv2/ (ignored)
-+ install -d -m 0755 /etc/pedalpi
-keeping /etc/pedalpi/pedalpi.conf (new default: /opt/pedalpi/share/pedalpi/pedalpi.conf)
++ install -d -m 0755 /etc/peepo
+keeping /etc/peepo/peepo.conf (new default: /opt/peepo/share/peepo/peepo.conf)
 error: failed to expand CURIE `opts:interface'
-lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/avw.lv2/scope.ttl'
+lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/avw.lv2/scope.ttl'
 withheld http://avwlv2.sourceforge.net/plugins/avw/scope: This module has no audio or control connectors to patch.
 error: failed to expand CURIE `param:OscillatorControls'
-lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/avw.lv2/vco2_audio.ttl'
+lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/avw.lv2/vco2_audio.ttl'
 lilv_plugin_get_name(): warning: Plugin <http://avwlv2.sourceforge.net/plugins/avw/vco2_audio> has no (mandatory) 
 doap:name
 withheld http://avwlv2.sourceforge.net/plugins/avw/vco2_audio: This module has no audio or control connectors to patch.
 error: failed to expand CURIE `param:OscillatorControls'
-lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/avw.lv2/vco2_cv.ttl'
+lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/avw.lv2/vco2_cv.ttl'
 lilv_plugin_get_name(): warning: Plugin <http://avwlv2.sourceforge.net/plugins/avw/vco2_cv> has no (mandatory) 
 doap:name
 withheld http://avwlv2.sourceforge.net/plugins/avw/vco2_cv: This module has no audio or control connectors to patch.
@@ -117,30 +117,30 @@ withheld http://gareus.org/oss/lv2/midifilter#velocityrange: This module has no 
 withheld http://gareus.org/oss/lv2/midifilter#velocityscale: This module has no audio or control connectors to patch.
 withheld http://lv2plug.in/plugins/eg-fifths: This module has no audio or control connectors to patch.
 withheld http://lv2plug.in/plugins/eg-params: This module has no audio or control connectors to patch.
-error: /opt/pedalpi/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl:16:66: line end in short string
-lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl'
+error: /opt/peepo/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl:16:66: line end in short string
+lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl'
 withheld http://moddevices.com/plugins/mod-devel/mod-cv-meter: This module has no audio or control connectors to patch.
 withheld http://polyeffects.com/lv2/basic_modular#tempo_ratio: This module has no audio or control connectors to patch.
 226 modules exported, 186 available, 40 withheld; 58 controls left to the plugin, 214 plugins skipped
-+ install -m 0644 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/pedalpi.conf /opt/pedalpi/share/pedalpi/pedalpi.conf
-keeping /etc/pedalpi/controls.conf (new default: /opt/pedalpi/share/pedalpi/controls.conf)
-+ install -m 0644 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/controls.conf /opt/pedalpi/share/pedalpi/controls.conf
-+ install -m 0644 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/config.txt /opt/pedalpi/share/pedalpi/config.txt
-+ install -d -o pedalpi -g pedalpi -m 0755 /var/lib/pedalpi /var/lib/pedalpi/patches
-+ install -m 0644 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/systemd/pedalpi.target /etc/systemd/system/pedalpi.target
-+ install -m 0644 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/systemd/pedalpi-jack.service /etc/systemd/system/pedalpi-jack.service
-+ install -m 0644 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/systemd/pedalpi-engine.service /etc/systemd/system/pedalpi-engine.service
-+ install -m 0644 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/systemd/pedalpi-route.service /etc/systemd/system/pedalpi-route.service
-+ install -m 0644 /tmp/pedalpi-20261014-clouds-release/pedalpi/config/systemd/pedalpi-ui.service /etc/systemd/system/pedalpi-ui.service
++ install -m 0644 /tmp/peepo-20261014-clouds-release/peepo/config/peepo.conf /opt/peepo/share/peepo/peepo.conf
+keeping /etc/peepo/controls.conf (new default: /opt/peepo/share/peepo/controls.conf)
++ install -m 0644 /tmp/peepo-20261014-clouds-release/peepo/config/controls.conf /opt/peepo/share/peepo/controls.conf
++ install -m 0644 /tmp/peepo-20261014-clouds-release/peepo/config/config.txt /opt/peepo/share/peepo/config.txt
++ install -d -o peepo -g peepo -m 0755 /var/lib/peepo /var/lib/peepo/patches
++ install -m 0644 /tmp/peepo-20261014-clouds-release/peepo/config/systemd/peepo.target /etc/systemd/system/peepo.target
++ install -m 0644 /tmp/peepo-20261014-clouds-release/peepo/config/systemd/peepo-jack.service /etc/systemd/system/peepo-jack.service
++ install -m 0644 /tmp/peepo-20261014-clouds-release/peepo/config/systemd/peepo-engine.service /etc/systemd/system/peepo-engine.service
++ install -m 0644 /tmp/peepo-20261014-clouds-release/peepo/config/systemd/peepo-route.service /etc/systemd/system/peepo-route.service
++ install -m 0644 /tmp/peepo-20261014-clouds-release/peepo/config/systemd/peepo-ui.service /etc/systemd/system/peepo-ui.service
 + systemctl daemon-reload
-Installed in /opt/pedalpi; settings in /etc/pedalpi; patches in /var/lib/pedalpi/patches.
-Wiring of the encoders and footswitches: add the lines of /opt/pedalpi/share/pedalpi/config.txt
+Installed in /opt/peepo; settings in /etc/peepo; patches in /var/lib/peepo/patches.
+Wiring of the encoders and footswitches: add the lines of /opt/peepo/share/peepo/config.txt
 to /boot/firmware/config.txt yourself, then reboot.
-Start now:          sudo systemctl start pedalpi.target
-Start at every boot: sudo systemctl enable pedalpi.target
-Restart only the interface (audio keeps playing): sudo systemctl restart pedalpi-ui
+Start now:          sudo systemctl start peepo.target
+Start at every boot: sudo systemctl enable peepo.target
+Restart only the interface (audio keeps playing): sudo systemctl restart peepo-ui
 PASS installed binaries and plugin libraries resolve on Pi
-Catalogue generated on Pi: {'tool': 'pedal_catalogue_export', 'lilv': '0.24.24', 'machine': 'aarch64', 'lv2_path': '/opt/pedalpi/lib/aarch64-linux-gnu/lv2:/opt/pedalpi/lib/lv2:/opt/pedalpi/nam/current:/usr/lib/lv2', 'sample_rate': '48000'}
+Catalogue generated on Pi: {'tool': 'peepo_catalogue_export', 'lilv': '0.24.24', 'machine': 'aarch64', 'lv2_path': '/opt/peepo/lib/aarch64-linux-gnu/lv2:/opt/peepo/lib/lv2:/opt/peepo/nam/current:/usr/lib/lv2', 'sample_rate': '48000'}
 Inventory entries installed: 226
 PASS all seven Clouds modes and selected NAM are in native catalogue
 SKIP  Clouds Beat Repeat <http://polyeffects.com/lv2/polyclouds#beat_repeat> -- Most controls do nothing in this port: its beat-repeat settings are never set (see docs/20-clouds.md).
@@ -179,27 +179,27 @@ ingen:out_l
 ingen:out_r
    system:playback_2
 JACK_DRIVER_OPTIONS=-d hw:CODEC -r 48000 -p 128 -n 3
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/vco2_audio>; missing or corrupt ports
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: error: failed to expand CURIE `param:OscillatorControls'
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/avw.lv2/vco2_cv.ttl'
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/vco2_cv>; missing or corrupt ports
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: error: /opt/pedalpi/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl:16:66: line end in short string
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl'
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: Ignoring <http://moddevices.com/plugins/mod-devel/mod-cv-meter>; missing or corrupt ports
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: error: failed to open file /opt/pedalpi/lib/lv2/mod-cv-transport.lv2/modgui.ttl (No such file or directory)
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: lilv_world_load_file(): error: Error loading file `file:///opt/pedalpi/lib/lv2/mod-cv-transport.lv2/modgui.ttl'
-Oct 14 22:59:03 patchbox pedalpi-engine[108838]: Loaded 439 plugins
-Oct 14 22:59:04 patchbox pedalpi-engine[108838]: Unregistering client <unix:///run/pedalpi/ingen.sock.108838>
-Oct 14 22:59:04 patchbox pedalpi-engine[108838]: Registering client <unix:///run/pedalpi/ingen.sock.108838>
-Oct 14 22:59:04 patchbox pedalpi-engine[108838]: /m3: Unable to load model from: ''
-Oct 14 22:59:04 patchbox pedalpi-engine[108838]: Unregistering client <unix:///run/pedalpi/ingen.sock.108838>
-Oct 14 22:59:05 patchbox pedalpi-engine[108838]: Registering client <unix:///run/pedalpi/ingen.sock.108838>
-Oct 14 22:59:08 patchbox pedalpi-engine[108838]: Unregistering client <unix:///run/pedalpi/ingen.sock.108838>
-Oct 14 22:59:08 patchbox systemd[1]: Started pedalpi-ui.service - Pedal PI touch interface.
-Oct 14 22:59:08 patchbox pedalpi-engine[108838]: Registering client <unix:///run/pedalpi/ingen.sock.108838>
+Oct 14 22:59:03 patchbox peepo-engine[108838]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/vco2_audio>; missing or corrupt ports
+Oct 14 22:59:03 patchbox peepo-engine[108838]: error: failed to expand CURIE `param:OscillatorControls'
+Oct 14 22:59:03 patchbox peepo-engine[108838]: lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/avw.lv2/vco2_cv.ttl'
+Oct 14 22:59:03 patchbox peepo-engine[108838]: Ignoring <http://avwlv2.sourceforge.net/plugins/avw/vco2_cv>; missing or corrupt ports
+Oct 14 22:59:03 patchbox peepo-engine[108838]: error: /opt/peepo/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl:16:66: line end in short string
+Oct 14 22:59:03 patchbox peepo-engine[108838]: lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/mod-cv-meter.lv2/mod-cv-meter.ttl'
+Oct 14 22:59:03 patchbox peepo-engine[108838]: Ignoring <http://moddevices.com/plugins/mod-devel/mod-cv-meter>; missing or corrupt ports
+Oct 14 22:59:03 patchbox peepo-engine[108838]: error: failed to open file /opt/peepo/lib/lv2/mod-cv-transport.lv2/modgui.ttl (No such file or directory)
+Oct 14 22:59:03 patchbox peepo-engine[108838]: lilv_world_load_file(): error: Error loading file `file:///opt/peepo/lib/lv2/mod-cv-transport.lv2/modgui.ttl'
+Oct 14 22:59:03 patchbox peepo-engine[108838]: Loaded 439 plugins
+Oct 14 22:59:04 patchbox peepo-engine[108838]: Unregistering client <unix:///run/peepo/ingen.sock.108838>
+Oct 14 22:59:04 patchbox peepo-engine[108838]: Registering client <unix:///run/peepo/ingen.sock.108838>
+Oct 14 22:59:04 patchbox peepo-engine[108838]: /m3: Unable to load model from: ''
+Oct 14 22:59:04 patchbox peepo-engine[108838]: Unregistering client <unix:///run/peepo/ingen.sock.108838>
+Oct 14 22:59:05 patchbox peepo-engine[108838]: Registering client <unix:///run/peepo/ingen.sock.108838>
+Oct 14 22:59:08 patchbox peepo-engine[108838]: Unregistering client <unix:///run/peepo/ingen.sock.108838>
+Oct 14 22:59:08 patchbox systemd[1]: Started peepo-ui.service - Peepo touch interface.
+Oct 14 22:59:08 patchbox peepo-engine[108838]: Registering client <unix:///run/peepo/ingen.sock.108838>
 
 # Final graph after UI start
-		<urn:pedalpi:ns#patchName> "Clouds guitar"
+		<urn:peepo:ns#patchName> "Clouds guitar"
 		lv2:prototype <http://polyeffects.com/lv2/polyclouds#granular> ;
 		ingen:tail </main/clouds/r_out> ;
 		ingen:head </main/out_r>

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include "core/model.hpp"
 #include <optional>
 #include <variant>
 
-namespace pedal {
+namespace peepo {
 enum class EngineState { Ready, Disconnected, Error, Connecting };
 struct EngineCapabilities {
     bool simulation = false;

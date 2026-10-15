@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 #
 # Build Poly's Ingen fork at the pinned reference commit inside a Debian
 # environment (WSL2 or a Pi), in an isolated prefix. Run as root:
@@ -10,7 +10,7 @@ set -euo pipefail
 
 # Resolved before any cd, so the script also works when called by a relative path.
 HERE="$(dirname "$(readlink -f "$0")")"
-PREFIX=/opt/pedalpi
+PREFIX=/opt/peepo
 SRC=$PREFIX/src
 # Poly's main (8dae7404) is upstream Ingen 13a045d0 plus three commits. Two of
 # them switch the client socket to JSON through SERD_JSONTURTLE, which exists in
@@ -69,9 +69,9 @@ fi
 if [ ! -d ingen ]; then
     git clone -q https://github.com/polyeffects/ingen.git
 fi
-if ! git -C ingen rev-parse -q --verify pedalpi-spike >/dev/null; then
-    git -C ingen checkout -q -b pedalpi-spike "$INGEN_BASE"
-    git -C ingen -c user.name=pedalpi -c user.email=pedalpi@localhost cherry-pick "$INGEN_PICK"
+if ! git -C ingen rev-parse -q --verify peepo-spike >/dev/null; then
+    git -C ingen checkout -q -b peepo-spike "$INGEN_BASE"
+    git -C ingen -c user.name=peepo -c user.email=peepo@localhost cherry-pick "$INGEN_PICK"
 fi
 
 # Our small changes to the engine (AGPL-3.0-or-later, like the files they touch).

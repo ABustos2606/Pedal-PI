@@ -41,7 +41,7 @@ PASS save current patch with plugin state
 TIME save current patch with plugin state: 9.92478 ms
 PASS validate and publish revision 1 atomically
 PASS saved patch is listed with a complete readable bundle
-SAVED Clouds guitar id=p20261014-222121-f9e0 path="/var/lib/pedalpi/patches/p20261014-222121-f9e0/r000001.ingen"
+SAVED Clouds guitar id=p20261014-222121-f9e0 path="/var/lib/peepo/patches/p20261014-222121-f9e0/r000001.ingen"
 PASS engine knows the saved identity and clears unsaved edits
 PASS change blend temporarily before reload
 TIME change blend temporarily before reload: 4.44207 ms
@@ -50,7 +50,7 @@ PASS reload the saved patch from the Pi card
 TIME reload the saved patch from the Pi card: 45.1788 ms
 ssh : FAIL saved identity, name, modules, cables, every control, positions and assignments restored exactly
 En línea: 2 Carácter: 310
-+ ... patch_live; ssh -o BatchMode=yes pedalpi sudo -u pedalpi /tmp/pedalpi ...
++ ... patch_live; ssh -o BatchMode=yes peepo sudo -u peepo /tmp/peepo ...
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (FAIL saved iden...estored exactly:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
@@ -95,7 +95,7 @@ CONTROL Clouds/reverb_param=1
 PASS open the Pi's real patch store
 PASS the current musical patch contains an effect
 PASS saved patch is listed with a complete readable bundle
-SAVED Clouds guitar id=p20261014-222121-f9e0 path="/var/lib/pedalpi/patches/p20261014-222121-f9e0/r000001.ingen"
+SAVED Clouds guitar id=p20261014-222121-f9e0 path="/var/lib/peepo/patches/p20261014-222121-f9e0/r000001.ingen"
 PASS engine knows the saved identity and clears unsaved edits
 PASS change blend temporarily before reload
 TIME change blend temporarily before reload: 8.65469 ms
@@ -114,14 +114,14 @@ PASS the Pi patch manager lists revision 2
 PASS reload the live-input revision
 TIME reload the live-input revision: 60.3836 ms
 PASS live-input revision restores exactly with Freeze off
-SAVED live-input revision path="/var/lib/pedalpi/patches/p20261014-222121-f9e0/r000002.ingen"
+SAVED live-input revision path="/var/lib/peepo/patches/p20261014-222121-f9e0/r000002.ingen"
 PASS record a baseline for the interface-only restart
 SUMMARY patch save and reload passed on the Pi; restored patch left playing
 
 
 # pi-ui-restart-results.log
 BEFORE JACK=108820 ENGINE=108838 UI=108894
-RESTARTING ONLY pedalpi-ui
+RESTARTING ONLY peepo-ui
 AFTER JACK=108820 ENGINE=108838 UI=126356
 PASS only the interface process changed; JACK and Ingen kept their process IDs
 {
@@ -173,11 +173,11 @@ CONTROL Clouds/reverb_param=1
 PASS open the Pi's real patch store
 PASS name, identity, modules, cables, controls, layout and dirty flag unchanged after UI restart
 PASS saved patch still lists cleanly in the Pi patch store
-u_str ESTAB 0      0                                         * 290748            * 0    users:(("pedal_pi",pid=126356,fd=2),("pedal_pi",pid=126356,fd=1))                                                                                                                                                                                                                                        
-u_str ESTAB 0      0                                         * 292872            * 0    users:(("pedal_pi",pid=126356,fd=6))                                                                                                                                                                                                                                                                     
+u_str ESTAB 0      0                                         * 290748            * 0    users:(("peepo",pid=126356,fd=2),("peepo",pid=126356,fd=1))
+u_str ESTAB 0      0                                         * 292872            * 0    users:(("peepo",pid=126356,fd=6))
 
 
 # pi-live-tools-installed.log
 PASS monitor metadata API: 48000 128
-/var/lib/pedalpi/patches/p20261014-222121-f9e0/r000002.ingen
-/var/lib/pedalpi/patches/p20261014-222121-f9e0/r000001.ingen
+/var/lib/peepo/patches/p20261014-222121-f9e0/r000002.ingen
+/var/lib/peepo/patches/p20261014-222121-f9e0/r000001.ingen

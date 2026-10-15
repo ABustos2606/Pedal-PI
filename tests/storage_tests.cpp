@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 // Bundles and the patch store: reading what the engine writes, revisions,
 // interrupted saves, fallback to an older revision, identity, the startup
 // choice, and the simulator saving and loading through the same store.
@@ -10,7 +10,7 @@
 #include <iostream>
 #include <stdexcept>
 
-using namespace pedal;
+using namespace peepo;
 namespace fs = std::filesystem;
 namespace {
 void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
@@ -26,7 +26,7 @@ const char* recorded = R"(@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix pedalpi: <urn:pedalpi:ns#> .
+@prefix peepo: <urn:peepo:ns#> .
 
 <control>
 	ingen:canvasX 32.0 ;
@@ -57,14 +57,14 @@ const char* recorded = R"(@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
 		<m3/out> ;
 	lv2:prototype <http://lv2plug.in/plugins/eg-amp> ;
 	a ingen:Block ;
-	pedalpi:displayName "Boost" .
+	peepo:displayName "Boost" .
 
 <m3/gain>
 	ingen:value 6.0 ;
 	lv2:index 0 ;
 	a lv2:ControlPort ,
 		lv2:InputPort ;
-	pedalpi:assignedControl "knob1" .
+	peepo:assignedControl "knob1" .
 
 <m3/in>
 	lv2:index 1 ;
@@ -99,9 +99,9 @@ const char* recorded = R"(@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
 	doap:name "one" ;
 	a ingen:Graph ,
 		lv2:Plugin ;
-	pedalpi:patchId "p-0001" ;
-	pedalpi:patchName "Saved one" ;
-	pedalpi:schemaVersion 1 .
+	peepo:patchId "p-0001" ;
+	peepo:patchName "Saved one" ;
+	peepo:schemaVersion 1 .
 )";
 void write(const fs::path& path, const std::string& text) {
     fs::create_directories(path.parent_path());
@@ -161,7 +161,7 @@ void bundles() {
 }
 
 void store(const fs::path& root) {
-    check(engine_path("/var/lib/pedalpi/patches") && engine_path("C:/Users/me/patches") && engine_path("/mnt/c/Users/me/AppData/Local/PedalPI/patches"), "plain paths refused");
+    check(engine_path("/var/lib/peepo/patches") && engine_path("C:/Users/me/patches") && engine_path("/mnt/c/Users/me/AppData/Local/Peepo/patches"), "plain paths refused");
     check(!engine_path("relative/patches") && !engine_path("/with space/x") && !engine_path("/a%20b") && !engine_path("/a/../b") && !engine_path("/a>b"), "unsafe path accepted");
     check(wsl_path("C:\\Users\\me\\x") == "/mnt/c/Users/me/x" && wsl_path("/home/me") == "/home/me", "WSL path translation wrong");
     check(!PatchStore(root, "/with space").open().empty(), "a store the engine cannot be told about opened");
@@ -241,7 +241,7 @@ void foreign_bundles(const fs::path& root) {
     // An Ingen bundle with none of the project's properties: no identity, name or layout.
     write(root / "p-bare" / "r000001.ingen" / "main.ttl",
           "@prefix ingen: <http://drobilla.net/ns/ingen#> .\n@prefix lv2: <http://lv2plug.in/ns/lv2core#> .\n"
-          "<m3> a ingen:Block ; lv2:prototype <urn:pedalpi:demo:drive> .\n<m3/drive> ingen:value 70.0 .\n"
+          "<m3> a ingen:Block ; lv2:prototype <urn:peepo:demo:drive> .\n<m3/drive> ingen:value 70.0 .\n"
           "<> a ingen:Graph , lv2:Plugin ; ingen:block <m3> ; ingen:arc [ ingen:tail <in_l> ; ingen:head <m3/in> ] .\n");
     const auto bare = patches.find("p-bare");
     check(bare && bare->revision == 1 && bare->issue.empty() && bare->name == "p-bare", "bundle without project properties not offered");
@@ -254,10 +254,11 @@ void foreign_bundles(const fs::path& root) {
     // A newer schema is not guessed at.
     auto newer = demo_graph(); newer.patch_id = "p-newer";
     auto text = write_main_ttl(newer);
-    text.replace(text.find("pedalpi:schemaVersion 1"), 23, "pedalpi:schemaVersion 2");
+    const std::string schema = "peepo:schemaVersion 1";
+    text.replace(text.find(schema), schema.size(), "peepo:schemaVersion 2");
     write(root / "p-newer" / "r000001.ingen" / "main.ttl", text);
     const auto refused = patches.find("p-newer");
-    check(refused && refused->revision == 0 && refused->issue.find("newer Pedal PI") != std::string::npos, "newer schema offered as loadable");
+    check(refused && refused->revision == 0 && refused->issue.find("newer Peepo") != std::string::npos, "newer schema offered as loadable");
     // Plugin state that saved a file beside itself, as the example `params` plugin does.
     const auto stateful = root / "p-0001" / "r000001.ingen";
     write(stateful / "main.ttl", recorded);
@@ -319,7 +320,7 @@ void simulated(const fs::path& root) {
 }
 int main() {
     try {
-        const auto root = fs::temp_directory_path() / "pedalpi-storage-tests";
+        const auto root = fs::temp_directory_path() / "peepo-storage-tests";
         fs::remove_all(root);
         bundles();
         store(root / "store");

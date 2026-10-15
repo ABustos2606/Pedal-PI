@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #ifndef LV_CONF_H
 #define LV_CONF_H
 #define LV_COLOR_DEPTH 32
@@ -16,10 +16,10 @@
  * are enabled by CMake when their libraries are found. */
 #define LV_USE_LINUX_FBDEV 1
 #define LV_USE_EVDEV 1
-#ifdef PEDAL_LVGL_DRM
+#ifdef PEEPO_LVGL_DRM
 #define LV_USE_LINUX_DRM 1
 #endif
-#ifdef PEDAL_LVGL_SDL
+#ifdef PEEPO_LVGL_SDL
 #define LV_USE_SDL 1
 #define LV_SDL_INCLUDE_PATH <SDL2/SDL.h>
 #define LV_SDL_RENDER_MODE LV_DISPLAY_RENDER_MODE_DIRECT

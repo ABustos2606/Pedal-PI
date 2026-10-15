@@ -87,7 +87,7 @@ Switch actions go to the engine at once; only encoder turns are coalesced (one v
 
 **Storage.**
 
-- **Per-patch assignments** are graph properties, one per control: `pedalpi:control-enc1 "parameter|m4|<plugin>|mix|0|100|0|toggle"`. They therefore live in the engine and in the saved bundle, like everything else (D13), and survive an interface restart.
+- **Per-patch assignments** are graph properties, one per control: `peepo:control-enc1 "parameter|m4|<plugin>|mix|0|100|0|toggle"`. They therefore live in the engine and in the saved bundle, like everything else (D13), and survive an interface restart.
 - **The plugin is recorded.** A different module that later holds the same identity is never controlled; the assignment is shown as orphaned and is never applied.
 - **Removing a module** removes its assignments in the same edit. Duplicating one does not copy them.
 - **Patch changes are instrument-wide.** A footswitch that changes patch must do so in every patch, so those actions are kept beside the patches (`<patches>/controls`), not in one. A patch's own assignment of the same stomp takes precedence while it plays.
@@ -105,10 +105,10 @@ The keys work in the Windows build against the simulation or a real engine. They
 
 ## Verification
 
-- `pedal_controls_tests`: gestures (tap, hold, fine, bounce, repeated presses) and every mapping rule above. It also covers soft takeover, encoding, validation of assignments and orphans, and assignments in the simulator: replaced per control, removed with their module, saved and loaded through the patch store. The instrument-wide actions are covered too.
-- `pedal_ingen_tests`: assignments as engine graph properties, seen by a second client, kept across an interface restart, cleared by a new patch, saved, loaded and removed with their module.
-- `pedal_ingen_live` against the real engine: an inverted encoder pinned to Mist Granular's first control is saved and comes back from disk.
-- `pedal_ui_check`, through the same entry point the hardware will use:
+- `peepo_controls_tests`: gestures (tap, hold, fine, bounce, repeated presses) and every mapping rule above. It also covers soft takeover, encoding, validation of assignments and orphans, and assignments in the simulator: replaced per control, removed with their module, saved and loaded through the patch store. The instrument-wide actions are covered too.
+- `peepo_ingen_tests`: assignments as engine graph properties, seen by a second client, kept across an interface restart, cleared by a new patch, saved, loaded and removed with their module.
+- `peepo_ingen_live` against the real engine: an inverted encoder pinned to Mist Granular's first control is saved and comes back from disk.
+- `peepo_ui_check`, through the same entry point the hardware will use:
   - encoders following Drive's tiles, then fine steps, pinning, the pinned encoder working from the patch page, tap to show and unpin;
   - following on Clouds' custom pages, with a tap moving to the next page;
   - the Controls page assigning stomp 1 to Clouds freeze in toggle and then momentary mode, and stomp 2 to Delay's bypass;

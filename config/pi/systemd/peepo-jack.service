@@ -1,16 +1,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # The audio server. Restarting it restarts the engine too (its client).
 [Unit]
-Description=Pedal PI audio server (JACK)
-PartOf=pedalpi.target
-Wants=pedalpi-engine.service
+Description=Peepo audio server (JACK)
+PartOf=peepo.target
+Wants=peepo-engine.service
 # Keep retrying if the USB interface is absent or arrives after boot.
 StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-User=pedalpi
-EnvironmentFile=/etc/pedalpi/pedalpi.conf
+User=peepo
+EnvironmentFile=/etc/peepo/peepo.conf
 Environment=JACK_NO_AUDIO_RESERVATION=1
 ExecStart=/usr/bin/jackd $JACK_OPTIONS -d $JACK_DRIVER $JACK_DRIVER_OPTIONS
 # JACK is ready when it answers.

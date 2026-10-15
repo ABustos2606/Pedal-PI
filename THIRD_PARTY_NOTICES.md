@@ -1,10 +1,10 @@
 # Licensing and third-party notices
 
-## Original Pedal PI files
+## Original Peepo files
 
-Original code and documentation authored for Pedal PI are licensed under the GNU General Public License, version 3 or (at your option) any later version: **SPDX-License-Identifier: GPL-3.0-or-later**. This selection was requested by the project owner on 13 October 2026. The complete license text is in [LICENSE](LICENSE).
+Original code and documentation authored for Peepo are licensed under the GNU General Public License, version 3 or (at your option) any later version: **SPDX-License-Identifier: GPL-3.0-or-later**. This selection was requested by the project owner on 13 October 2026. The complete license text is in [LICENSE](LICENSE).
 
-Pedal PI is distributed in the hope that it will be useful, but without any warranty, including the implied warranties of merchantability or fitness for a particular purpose. See the license for its full terms.
+Peepo is distributed in the hope that it will be useful, but without any warranty, including the implied warranties of merchantability or fitness for a particular purpose. See the license for its full terms.
 
 Add `SPDX-License-Identifier: GPL-3.0-or-later` and an accurate author/copyright notice to new project source files. Preserve existing notices in adapted third-party files. Authors retain their copyrights; the project license does not transfer ownership.
 
@@ -20,7 +20,7 @@ The project license does not replace the licenses of repositories, nested depend
 | Poly `lenticular_lv2` | [LICENSE.txt](reference/upstream/lenticular_lv2/LICENSE.txt) is GPLv2; [LICENSE-dist.txt](reference/upstream/lenticular_lv2/LICENSE-dist.txt) includes Olivier Gillet's MIT notice for Mutable Instruments STM32F modules and further component notices | Preserve the wrapper, Mutable Instruments, Parasites and dependency notices separately; assess the selected module's complete source set. |
 | Poly NAM LV2 fork | [LICENCE.md](reference/upstream/neural-amp-modeler-lv2/LICENCE.md) contains GPLv3 text | Keep plugin and nested dependency notices; record the exact version grant from file notices for the selected implementation. Models have separate provenance. |
 | Poly Serd | [COPYING](reference/upstream/serd/COPYING) contains David Robillard's ISC-style permission and disclaimer | Include this notice with copied or packaged Serd code. |
-| Casette | No root `LICENSE`, `LICENCE` or `COPYING` file, or license notice in the README and C++ files inspected at the pinned revision | Technical reference only. Establish permission before copying implementation or distributing its bundled models/IRs; the Pedal PI license does not grant rights to these files. |
+| Casette | No root `LICENSE`, `LICENCE` or `COPYING` file, or license notice in the README and C++ files inspected at the pinned revision | Technical reference only. Establish permission before copying implementation or distributing its bundled models/IRs; the Peepo license does not grant rights to these files. |
 
 The Windows UI uses LVGL v9.5.0 at commit `85aa60d18b3d5e5588d7b247abf90198f07c8a63`, fetched from its official repository. Its Win32 display/input driver is part of the same source revision. [cmake/lvgl_windows_fix.cmake](cmake/lvgl_windows_fix.cmake) builds a corrected copy of `src/osal/lv_windows.c`, changing two cleanup calls to dereference the Windows thread handle pointer. The pinned checkout is unchanged and the generated copy remains MIT licensed. The supplied notice is preserved in [licenses/LVGL-MIT.txt](licenses/LVGL-MIT.txt) and copied beside the executable.
 

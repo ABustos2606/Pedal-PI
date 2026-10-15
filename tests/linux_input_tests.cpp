@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 // The physical controls on Linux: bindings, event translation, and, where the
 // kernel offers uinput and evdev, a virtual device read through the real path.
 #include "platform/linux/evdev_controls.hpp"
@@ -16,8 +16,8 @@
 #include <thread>
 #include <unistd.h>
 
-using namespace pedal;
-using namespace pedal::linux_input;
+using namespace peepo;
+using namespace peepo::linux_input;
 namespace {
 void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
 std::string read_file(const std::string& path) {
@@ -73,7 +73,7 @@ struct Virtual {
 };
 // True when it ran; false when this kernel cannot provide the devices.
 bool real_devices(const std::string& shipped) {
-    Virtual knob("pedalpi-test-controls", false);
+    Virtual knob("peepo-test-controls", false);
     if (knob.fd < 0) return false;
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     if (!std::filesystem::exists("/dev/input")) return false;
@@ -82,7 +82,7 @@ bool real_devices(const std::string& shipped) {
     EvdevControls controls(b);
     controls.poll(0);
     bool found = false;
-    for (const auto& name : controls.devices()) found = found || name == "pedalpi-test-controls";
+    for (const auto& name : controls.devices()) found = found || name == "peepo-test-controls";
     check(found, "the virtual control device was not opened");
     knob.send(EV_REL, REL_X, 1); knob.send(EV_REL, REL_X, 1); knob.send(EV_KEY, KEY_F17, 1); knob.send(EV_KEY, KEY_F17, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -90,7 +90,7 @@ bool real_devices(const std::string& shipped) {
     check(events.size() == 4 && events[0].control == "enc1" && events[0].steps == 1 && events[2].control == "stomp1" &&
           events[2].type == ControlEvent::Type::Press && events[3].type == ControlEvent::Type::Release, "events from the virtual device were not read");
     {
-        Virtual touch("pedalpi-test-touch", true);
+        Virtual touch("peepo-test-touch", true);
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
         const auto found_touch = find_touchscreen();
         check(found_touch && controls.poll(EvdevControls::rescan_ms).empty(), "touch screen not found, or taken for a control");

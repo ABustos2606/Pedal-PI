@@ -1,4 +1,4 @@
-# Pedal PI: lines for the [all] section of /boot/firmware/config.txt.
+# Peepo: lines for the [all] section of /boot/firmware/config.txt.
 # PROPOSED wiring, not yet built or tested: see docs/18-physical-controls.md.
 # The installer never edits config.txt; copy these lines by hand, then reboot.
 #

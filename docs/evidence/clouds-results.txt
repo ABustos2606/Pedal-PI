@@ -89,7 +89,7 @@ PASS  beat_repeat   heard -- 0.0340 RMS
       changes the sound: reverb 5.7x
       no clear change:   position 1.5x, size 1.1x, pitch 0.9x, density 0.6x, texture 0.2x, blend 0.2x, spread 0.3x, feedback 0.5x
 ==== state restoration through a bundle
-PASS  saved to /tmp/pedalpi-clouds/clouds.ingen
+PASS  saved to /tmp/peepo-clouds/clouds.ingen
 PASS  loaded back
 PASS  every control value and the on switch came back
 PASS  the reloaded patch is heard -- 0.0061 RMS

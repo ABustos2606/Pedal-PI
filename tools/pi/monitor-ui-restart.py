@@ -6,7 +6,7 @@ from pathlib import Path
 import jack
 import numpy as np
 
-client=jack.Client('pedalpi_restart_monitor')
+client=jack.Client('peepo_restart_monitor')
 rate, period = client.samplerate, client.blocksize
 ports=[client.inports.register(name) for name in ['input_l','input_r','output_l','output_r']]
 records=[]; xruns=[]
@@ -23,7 +23,7 @@ for source, port in zip(['system:capture_1','system:capture_2','ingen:out_l','in
     client.connect(source,port.name)
 time.sleep(1)
 records.clear(); xruns.clear()
-Path('/tmp/pedalpi-restart-monitor-ready').write_text('ready')
+Path('/tmp/peepo-restart-monitor-ready').write_text('ready')
 start=time.monotonic()
 time.sleep(22)
 duration=time.monotonic()-start
@@ -36,7 +36,7 @@ report={'duration_seconds':duration,'sample_rate':rate,'period_frames':period,'b
         'minimum_output_rms':[min(row[2][channel] for row in records) for channel in [2,3]],
         'maximum_input_rms':[max(row[2][channel] for row in records) for channel in [0,1]],
         'maximum_output_rms':[max(row[2][channel] for row in records) for channel in [2,3]]}
-Path('/tmp/pedalpi-ui-restart-audio.json').write_text(json.dumps(report,indent=2))
+Path('/tmp/peepo-ui-restart-audio.json').write_text(json.dumps(report,indent=2))
 print(json.dumps(report,indent=2),flush=True)
 ok = report['all_finite'] and not gaps and not xruns and not any(report['exactly_silent_output_blocks'])
 print(('PASS' if ok else 'CHECK')+' audio monitor across interface restart',flush=True)

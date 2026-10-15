@@ -10,7 +10,7 @@ It also contains **one Casette repository**, for **21 repositories total**. Case
 
 These are unchanged source snapshots at recorded commits. The downloads are shallow: the selected default-branch revision is present, while complete historical branches, tags, and releases are not included. This is not a complete firmware image or a validated compatible build set.
 
-Every upstream snapshot, dependency and archive retains its original copyright and licensing terms. The root Pedal PI GPL-3.0-or-later license covers original project files, not these third-party sources or their assets. See [third-party notices](../THIRD_PARTY_NOTICES.md) for inspected license evidence; keep each upstream license and file notice when adapting or packaging a component.
+Every upstream snapshot, dependency and archive retains its original copyright and licensing terms. The root Peepo GPL-3.0-or-later license covers original project files, not these third-party sources or their assets. See [third-party notices](../THIRD_PARTY_NOTICES.md) for inspected license evidence; keep each upstream license and file notice when adapting or packaging a component.
 
 ## Layout
 
@@ -47,7 +47,7 @@ Every upstream snapshot, dependency and archive retains its original copyright a
 
 ## Git publication and retrieval
 
-The Pedal PI repository records the 20 ordinary upstream checkouts and the separate Autowaf checkout as **21 pinned top-level Git submodules**. Their own declared dependencies retain their upstream commit pointers. `.gitmodules` records the origin for each top-level checkout, and `manifest.json` records source provenance and scope.
+The Peepo repository records the 20 ordinary upstream checkouts and the separate Autowaf checkout as **21 pinned top-level Git submodules**. Their own declared dependencies retain their upstream commit pointers. `.gitmodules` records the origin for each top-level checkout, and `manifest.json` records source provenance and scope.
 
 The complete 166,786,644-byte kernel source archive is tracked using Git LFS. The local `upstream/linux.git` bare repository is an ignored object cache; the archive retains the published complete source. The unfinished archive `.part` file is ignored. These local caches and scratch files are not source changes.
 

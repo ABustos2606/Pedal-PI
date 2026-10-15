@@ -125,8 +125,8 @@ console=serial0,115200 console=tty1 root=PARTUUID=54239d29-02 rootfstype=ext4 fs
 
 === kernel_rt ===
 #1 SMP PREEMPT Debian 1:6.6.74-1+rpt1 (2025-01-27)
-bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== pedalpi services ==="; systemctl is-active pedalpi-jack pedalpi-engine pedalpi-route pedalpi-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/pedalpi/pedalpi.conf; echo; echo "=== jack connections ==="; sudo -u pedalpi jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u pedalpi-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u pedalpi-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C pedal_pi,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
-bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== pedalpi services ==="; systemctl is-active pedalpi-jack pedalpi-engine pedalpi-route pedalpi-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/pedalpi/pedalpi.conf; echo; echo "=== jack connections ==="; sudo -u pedalpi jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u pedalpi-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u pedalpi-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C pedal_pi,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
+bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== peepo services ==="; systemctl is-active peepo-jack peepo-engine peepo-route peepo-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/peepo/peepo.conf; echo; echo "=== jack connections ==="; sudo -u peepo jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u peepo-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u peepo-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C peepo,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
+bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== peepo services ==="; systemctl is-active peepo-jack peepo-engine peepo-route peepo-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/peepo/peepo.conf; echo; echo "=== jack connections ==="; sudo -u peepo jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u peepo-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u peepo-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C peepo,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
 
 
 === jack_conf ===
@@ -320,8 +320,8 @@ SESSION  UID USER  SEAT  TTY
 2 sessions listed.
 patch    tty1         2025-02-26 23:10
 tty
-bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== pedalpi services ==="; systemctl is-active pedalpi-jack pedalpi-engine pedalpi-route pedalpi-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/pedalpi/pedalpi.conf; echo; echo "=== jack connections ==="; sudo -u pedalpi jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u pedalpi-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u pedalpi-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C pedal_pi,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
-bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== pedalpi services ==="; systemctl is-active pedalpi-jack pedalpi-engine pedalpi-route pedalpi-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/pedalpi/pedalpi.conf; echo; echo "=== jack connections ==="; sudo -u pedalpi jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u pedalpi-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u pedalpi-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C pedal_pi,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
+bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== peepo services ==="; systemctl is-active peepo-jack peepo-engine peepo-route peepo-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/peepo/peepo.conf; echo; echo "=== jack connections ==="; sudo -u peepo jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u peepo-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u peepo-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C peepo,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
+bash -c bash /tmp/p0-profile.sh; bash /tmp/p0-services.sh 2>/dev/null | sed -n "/=== modules/,/=== lv2/p;/=== display ===/,/=== groups/p"; echo; echo "=== tascam stream ==="; head -14 /proc/asound/CODEC/stream0; echo; echo "=== peepo services ==="; systemctl is-active peepo-jack peepo-engine peepo-route peepo-ui lightdm jack; grep JACK_DRIVER_OPTIONS /etc/peepo/peepo.conf; echo; echo "=== jack connections ==="; sudo -u peepo jack_lsp -c; echo; echo "=== jack log ==="; journalctl -u peepo-jack -b --no-pager | grep -E "configuring|format|XRun" | cut -c 17-; echo; echo "=== engine log ==="; journalctl -u peepo-engine -b --no-pager | grep -E "Listening|TCP|Activated|Loaded" | cut -c 17-; echo; echo "=== load ==="; ps -o pcpu,rss,comm -C peepo,ingen,jackd; free -m | head -2; vcgencmd measure_temp; vcgencmd get_throttled; dmesg | grep -i voltage
 
 === input ===
 N: Name="pwr_button"
@@ -400,7 +400,7 @@ Playback:
     Endpoint: 0x02 (2 OUT) (ADAPTIVE)
     Rates: 32000, 44100, 48000
 
-=== pedalpi services ===
+=== peepo services ===
 active
 active
 active
@@ -437,16 +437,16 @@ patchbox jackd[5326]: JackEngine::XRun: client = ingen was not finished, state =
 patchbox jackd[5326]: JackEngine::XRun: client = ingen was not finished, state = Triggered
 
 === engine log ===
-patchbox pedalpi-engine[5341]: Listening on unix:///run/pedalpi/ingen.sock
-patchbox pedalpi-engine[5341]: TCP socket disabled
-patchbox pedalpi-engine[5341]: Activated Jack client `ingen'
-patchbox pedalpi-engine[5341]: Loaded 72 plugins
+patchbox peepo-engine[5341]: Listening on unix:///run/peepo/ingen.sock
+patchbox peepo-engine[5341]: TCP socket disabled
+patchbox peepo-engine[5341]: Activated Jack client `ingen'
+patchbox peepo-engine[5341]: Loaded 72 plugins
 
 === load ===
 %CPU   RSS COMMAND
  2.6 133632 jackd
  0.6 115200 ingen
- 0.8  9216 pedal_pi
+ 0.8  9216 peepo
                total        used        free      shared  buff/cache   available
 Mem:            2005         479         184         109        1515        1525
 temp=51.6'C

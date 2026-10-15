@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "engine/ingen/protocol.hpp"
 #include <charconv>
 #include <cmath>
@@ -7,7 +7,7 @@
 #include <iterator>
 #include <map>
 
-namespace pedal::ingen {
+namespace peepo::ingen {
 namespace {
 constexpr std::string_view xsd = "http://www.w3.org/2001/XMLSchema#";
 std::string name(std::string_view space, std::string_view local) { return std::string(space) + std::string(local); }
@@ -106,7 +106,7 @@ const char* status_text(int status) {
 std::string prefixes() {
     std::string text;
     for (const auto& [prefix, space] : std::initializer_list<std::pair<std::string_view, std::string_view>>{
-             {"atom", uri::atom}, {"ingen", uri::ingen}, {"lv2", uri::lv2}, {"patch", uri::patch}, {"pedalpi", uri::pedalpi}, {"xsd", xsd}})
+             {"atom", uri::atom}, {"ingen", uri::ingen}, {"lv2", uri::lv2}, {"patch", uri::patch}, {"peepo", uri::peepo}, {"xsd", xsd}})
         text += "@prefix " + std::string(prefix) + ": <" + std::string(space) + "> .\n";
     return text;
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "ui/application.hpp"
 #include "catalogue/catalogue.hpp"
 #include "engine/ingen/ingen_engine.hpp"
@@ -20,19 +20,19 @@ namespace {
 // the interface thread. The keys still go on to LVGL, which uses them as text
 // on the name page; the interface ignores controls there.
 std::mutex control_mutex;
-std::vector<pedal::ControlEvent> control_events;
+std::vector<peepo::ControlEvent> control_events;
 WNDPROC original_procedure = nullptr;
 LRESULT CALLBACK control_keys(HWND window, UINT message, WPARAM key, LPARAM details) {
     if (message == WM_KEYDOWN || message == WM_KEYUP) {
         const bool down = message == WM_KEYDOWN, repeat = down && (details & (1 << 30));
-        std::vector<pedal::ControlEvent> found;
+        std::vector<peepo::ControlEvent> found;
         static const std::pair<char, std::pair<int, int>> turns[] = {
             // Upper row clockwise, the key below it anticlockwise: Q/A, W/S, E/D, R/F.
             {'Q', {1, 1}}, {'A', {1, -1}}, {'W', {2, 1}}, {'S', {2, -1}}, {'E', {3, 1}}, {'D', {3, -1}}, {'R', {4, 1}}, {'F', {4, -1}}};
         for (const auto& [letter, turn] : turns)
-            if (down && key == static_cast<WPARAM>(letter)) found.push_back({pedal::ControlEvent::Type::Turn, "enc" + std::to_string(turn.first), turn.second});
+            if (down && key == static_cast<WPARAM>(letter)) found.push_back({peepo::ControlEvent::Type::Turn, "enc" + std::to_string(turn.first), turn.second});
         auto press = [&](const std::string& control) {
-            if (!repeat) found.push_back({down ? pedal::ControlEvent::Type::Press : pedal::ControlEvent::Type::Release, control, 0});
+            if (!repeat) found.push_back({down ? peepo::ControlEvent::Type::Press : peepo::ControlEvent::Type::Release, control, 0});
         };
         if (key >= '1' && key <= '4') press("enc" + std::to_string(key - '0'));
         if (key == 'Z') press("stomp1");
@@ -54,7 +54,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
     // --catalogue file.json names the modules on offer; by default the
     // exported catalogue.json beside this program, with its overlay. The
     // simulation offers them too, beside its own demo modules.
-    // --patches DIR keeps saved patches there (by default %LOCALAPPDATA%/PedalPI/patches,
+    // --patches DIR keeps saved patches there (by default %LOCALAPPDATA%/Peepo/patches,
     // or simulator-patches for the simulation). --engine-patches PATH is the same
     // folder as the engine sees it; for an engine in WSL that is /mnt/c/... by default.
     std::string address, catalogue_path, overlay_path, patches_path, engine_patches;
@@ -84,49 +84,49 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
         catalogue_path = folder + "catalogue.json";
         overlay_path = folder + "catalogue-overlay.json";
     }
-    std::vector<pedal::ModuleDefinition> offered;
-    const auto catalogue_issue = pedal::load_catalogue(catalogue_path, overlay_path, offered);
+    std::vector<peepo::ModuleDefinition> offered;
+    const auto catalogue_issue = peepo::load_catalogue(catalogue_path, overlay_path, offered);
     if (!address.empty()) {
         // Without a readable catalogue the engine's graph is still shown; its
         // modules are placeholders and nothing can be added.
-        pedal::replace_catalogue(std::move(offered));
+        peepo::replace_catalogue(std::move(offered));
     } else if (catalogue_issue.empty()) {
         // The simulation keeps its demo modules: its sample patches and custom
         // pages are built around them. The exported entries take the place of
         // the built-in reference ones, which describe the same plugins.
-        std::vector<pedal::ModuleDefinition> both;
-        for (const auto& d : pedal::demo_catalogue()) if (d.category != "Endpoint") both.push_back(d);
+        std::vector<peepo::ModuleDefinition> both;
+        for (const auto& d : peepo::demo_catalogue()) if (d.category != "Endpoint") both.push_back(d);
         both.insert(both.end(), offered.begin(), offered.end());
-        pedal::replace_catalogue(std::move(both));
+        peepo::replace_catalogue(std::move(both));
     }
     // A simulation without the default file simply keeps its built-in list.
     const bool expected = !address.empty() || named || std::filesystem::exists(std::filesystem::path(std::u8string(catalogue_path.begin(), catalogue_path.end())));
     if (!catalogue_issue.empty() && expected && !smoke)
-        MessageBoxW(nullptr, std::wstring(catalogue_issue.begin(), catalogue_issue.end()).c_str(), L"Pedal PI - catalogue", MB_OK | MB_ICONWARNING);
+        MessageBoxW(nullptr, std::wstring(catalogue_issue.begin(), catalogue_issue.end()).c_str(), L"Peepo - catalogue", MB_OK | MB_ICONWARNING);
     lv_init();
-    auto* display = lv_windows_create_display(address.empty() ? L"Pedal PI - UI simulator" : L"Pedal PI - Ingen engine", 800, 480, 100, true, true);
+    auto* display = lv_windows_create_display(address.empty() ? L"Peepo - UI simulator" : L"Peepo - Ingen engine", 800, 480, 100, true, true);
     if (!display) return 1;
     auto* group = lv_group_create(); lv_group_set_default(group);
     lv_windows_acquire_pointer_indev(display);
     lv_indev_set_group(lv_windows_acquire_keypad_indev(display), group);
-    std::unique_ptr<pedal::Engine> owned;
-    if (address.empty()) owned = std::make_unique<pedal::SimulatedEngine>();
+    std::unique_ptr<peepo::Engine> owned;
+    if (address.empty()) owned = std::make_unique<peepo::SimulatedEngine>();
     else {
-        owned = std::make_unique<pedal::IngenEngine>(pedal::ingen::Options{address});
+        owned = std::make_unique<peepo::IngenEngine>(peepo::ingen::Options{address});
         owned->connect();
     }
     auto& engine = *owned;
     // Saved patches. The smoke check runs without them, touching no user folder.
-    std::unique_ptr<pedal::PatchStore> store;
+    std::unique_ptr<peepo::PatchStore> store;
     if (!smoke) {
         std::filesystem::path root;
         if (!patches_path.empty()) root = std::filesystem::path(std::u8string(patches_path.begin(), patches_path.end()));
-        else if (const auto* local = _wgetenv(L"LOCALAPPDATA")) root = std::filesystem::path(local) / L"PedalPI" / (address.empty() ? L"simulator-patches" : L"patches");
+        else if (const auto* local = _wgetenv(L"LOCALAPPDATA")) root = std::filesystem::path(local) / L"Peepo" / (address.empty() ? L"simulator-patches" : L"patches");
         if (!root.empty()) {
             // The engine in WSL reaches this Windows folder through /mnt/<drive>.
-            store = std::make_unique<pedal::PatchStore>(root, !engine_patches.empty() ? engine_patches : address.empty() ? std::string() : pedal::wsl_path(root));
+            store = std::make_unique<peepo::PatchStore>(root, !engine_patches.empty() ? engine_patches : address.empty() ? std::string() : peepo::wsl_path(root));
             if (const auto issue = store->open(); !issue.empty())
-                MessageBoxW(nullptr, std::wstring(issue.begin(), issue.end()).c_str(), L"Pedal PI - patches", MB_OK | MB_ICONWARNING);
+                MessageBoxW(nullptr, std::wstring(issue.begin(), issue.end()).c_str(), L"Peepo - patches", MB_OK | MB_ICONWARNING);
         }
     }
     lv_lock();
@@ -138,7 +138,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
     lv_display_add_event_cb(display, [](lv_event_t* e) {
         ++*static_cast<unsigned*>(lv_event_get_user_data(e));
     }, LV_EVENT_FLUSH_FINISH, &completed_flushes);
-    pedal::Application app(engine, store.get());
+    peepo::Application app(engine, store.get());
     lv_unlock();
     const auto window = lv_windows_get_display_window_handle(display);
     original_procedure = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(window, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(control_keys)));
@@ -165,7 +165,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
             }
         }
         {
-            std::vector<pedal::ControlEvent> events;
+            std::vector<peepo::ControlEvent> events;
             { const std::lock_guard guard(control_mutex); events.swap(control_events); }
             for (const auto& event : events) app.control(event);
         }

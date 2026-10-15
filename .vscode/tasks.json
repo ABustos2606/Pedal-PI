@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Pedal PI: configure",
+      "label": "Peepo: configure",
       "type": "process",
       "command": "cmake",
       "args": ["--preset", "windows"],
@@ -10,22 +10,22 @@
       "problemMatcher": []
     },
     {
-      "label": "Pedal PI: build",
+      "label": "Peepo: build",
       "type": "process",
       "command": "cmake",
       "args": ["--build", "--preset", "windows", "--parallel", "6"],
       "options": { "cwd": "${workspaceFolder}" },
-      "dependsOn": "Pedal PI: configure",
+      "dependsOn": "Peepo: configure",
       "group": { "kind": "build", "isDefault": true },
       "problemMatcher": ["$msCompile"]
     },
     {
-      "label": "Pedal PI: test",
+      "label": "Peepo: test",
       "type": "process",
       "command": "ctest",
       "args": ["--preset", "windows", "--output-on-failure"],
       "options": { "cwd": "${workspaceFolder}" },
-      "dependsOn": "Pedal PI: build",
+      "dependsOn": "Peepo: build",
       "group": { "kind": "test", "isDefault": true },
       "problemMatcher": []
     }

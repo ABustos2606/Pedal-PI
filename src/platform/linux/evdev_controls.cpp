@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "platform/linux/evdev_controls.hpp"
 #include <algorithm>
 #include <cerrno>
@@ -11,7 +11,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-namespace pedal::linux_input {
+namespace peepo::linux_input {
 namespace {
 struct Named { const char* name; unsigned code; };
 // The codes the Pi's overlays are given; any other is accepted as a number.

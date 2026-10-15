@@ -1,11 +1,11 @@
 {
-  "format": "pedalpi-catalogue",
+  "format": "peepo-catalogue",
   "version": 1,
   "provenance": {
-    "tool": "pedal_catalogue_export",
+    "tool": "peepo_catalogue_export",
     "lilv": "0.24.26",
     "machine": "x86_64",
-    "lv2_path": "/usr/lib/lv2:/opt/pedalpi/lib/x86_64-linux-gnu/lv2:/opt/pedalpi/lib/lv2:/opt/pedalpi/nam/current",
+    "lv2_path": "/usr/lib/lv2:/opt/peepo/lib/x86_64-linux-gnu/lv2:/opt/peepo/lib/lv2:/opt/peepo/nam/current",
     "sample_rate": "48000"
   },
   "modules": [
@@ -17,7 +17,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -33,7 +33,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Simulator; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Simulator; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "cvin", "direction": "input", "type": "cv"},
@@ -57,7 +57,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Envelope; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Envelope; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "gate", "direction": "input", "type": "cv"},
@@ -91,7 +91,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -109,7 +109,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Converter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Converter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -130,7 +130,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "audio"},
@@ -153,7 +153,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "inputL", "direction": "input", "type": "audio"},
@@ -178,7 +178,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "audio"},
@@ -202,7 +202,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "inputL", "direction": "input", "type": "audio"},
@@ -228,7 +228,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Converter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Converter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "output", "direction": "output", "type": "cv"}
@@ -245,7 +245,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "cvOut1", "direction": "output", "type": "cv"},
@@ -272,7 +272,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Converter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Converter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"}
@@ -287,7 +287,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Delay; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Delay; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -305,7 +305,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Filter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Filter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "audio"},
@@ -323,7 +323,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Filter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Filter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "inputL", "direction": "input", "type": "audio"},
@@ -343,7 +343,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Envelope; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Envelope; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "gate", "direction": "input", "type": "cv"},
@@ -369,7 +369,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Filter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Filter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "audio"},
@@ -393,7 +393,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Filter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Filter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "inputL", "direction": "input", "type": "audio"},
@@ -419,7 +419,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -437,7 +437,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -453,7 +453,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Oscillator; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Oscillator; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "reset", "direction": "input", "type": "cv"},
@@ -473,7 +473,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Oscillator; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Oscillator; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "reset", "direction": "input", "type": "cv"},
@@ -496,7 +496,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1", "direction": "input", "type": "audio"},
@@ -517,7 +517,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1", "direction": "input", "type": "cv"},
@@ -538,7 +538,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1", "direction": "input", "type": "audio"},
@@ -563,7 +563,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1", "direction": "input", "type": "cv"},
@@ -588,7 +588,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Filter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Filter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "portinput", "direction": "input", "type": "audio"},
@@ -614,7 +614,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Generator; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Generator; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "audio"}
@@ -633,7 +633,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Generator; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Generator; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "cv"}
@@ -652,7 +652,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Envelope; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Envelope; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "trigger", "direction": "input", "type": "cv"},
@@ -675,7 +675,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Filter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Filter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -694,7 +694,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Filter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Filter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "cv"},
@@ -713,7 +713,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Delay; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Delay; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -733,7 +733,7 @@
       "color": "#93a4b5",
       "availability": "unavailable",
       "reason": "This module has no audio or control connectors to patch.",
-      "origin": "class Analyser; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Analyser; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [],
       "parameters": []
@@ -746,7 +746,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "cv"},
@@ -765,7 +765,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1Data", "direction": "input", "type": "audio"},
@@ -790,7 +790,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "gain1Data", "direction": "input", "type": "cv"},
@@ -815,7 +815,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1Data", "direction": "input", "type": "audio"},
@@ -840,7 +840,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "gain1Data", "direction": "input", "type": "cv"},
@@ -865,7 +865,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Filter; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Filter; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -893,7 +893,7 @@
       "color": "#93a4b5",
       "availability": "unavailable",
       "reason": "This module has no audio or control connectors to patch.",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [],
       "parameters": []
@@ -906,7 +906,7 @@
       "color": "#93a4b5",
       "availability": "unavailable",
       "reason": "This module has no audio or control connectors to patch.",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [],
       "parameters": []
@@ -919,7 +919,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Spatial; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Spatial; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -941,7 +941,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1", "direction": "input", "type": "audio"},
@@ -963,7 +963,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "cv", "direction": "input", "type": "cv"},
@@ -985,7 +985,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Utility; bundle file:///opt/pedalpi/lib/lv2/avw.lv2/",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/avw.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -1053,7 +1053,7 @@
       "color": "#81c9b8",
       "availability": "available",
       "reason": "",
-      "origin": "class Reverb; bundle file:///opt/pedalpi/lib/lv2/MVerb.lv2/",
+      "origin": "class Reverb; bundle file:///opt/peepo/lib/lv2/MVerb.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "lv2_audio_in_1", "direction": "input", "type": "audio"},
@@ -2188,7 +2188,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/convo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/convo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -2208,7 +2208,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/convo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/convo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -2229,7 +2229,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/convo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/convo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in_1", "direction": "input", "type": "audio"},
@@ -3123,7 +3123,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Analyser; bundle file:///opt/pedalpi/lib/lv2/tuna.lv2/",
+      "origin": "class Analyser; bundle file:///opt/peepo/lib/lv2/tuna.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -3255,7 +3255,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Simulator; bundle file:///opt/pedalpi/nam/current/neural_amp_modeler.lv2/",
+      "origin": "class Simulator; bundle file:///opt/peepo/nam/current/neural_amp_modeler.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "audio"},
@@ -3277,7 +3277,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/gx_CreamMachine.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/gx_CreamMachine.lv2/",
       "enable": "BYPASS",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -3298,7 +3298,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Simulator; bundle file:///opt/pedalpi/lib/lv2/gx_ampegsvt.lv2/",
+      "origin": "class Simulator; bundle file:///opt/peepo/lib/lv2/gx_ampegsvt.lv2/",
       "enable": "BYPASS",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -3323,7 +3323,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Gate; bundle file:///opt/pedalpi/lib/lv2/gx_slowgear.lv2/",
+      "origin": "class Gate; bundle file:///opt/peepo/lib/lv2/gx_slowgear.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -3343,7 +3343,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/gx_supersonic.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/gx_supersonic.lv2/",
       "enable": "BYPASS",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -3364,7 +3364,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Phaser; bundle file:///opt/pedalpi/lib/lv2/stone-phaser.lv2/",
+      "origin": "class Phaser; bundle file:///opt/peepo/lib/lv2/stone-phaser.lv2/",
       "enable": "lv2_enabled",
       "ports": [
         {"symbol": "lv2_audio_in_1", "direction": "input", "type": "audio"},
@@ -3386,7 +3386,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Phaser; bundle file:///opt/pedalpi/lib/lv2/stone-phaser-stereo.lv2/",
+      "origin": "class Phaser; bundle file:///opt/peepo/lib/lv2/stone-phaser-stereo.lv2/",
       "enable": "lv2_enabled",
       "ports": [
         {"symbol": "lv2_audio_in_1", "direction": "input", "type": "audio"},
@@ -3532,7 +3532,7 @@
       "color": "#93a4b5",
       "availability": "unavailable",
       "reason": "This module has no audio or control connectors to patch.",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/mod-cv-meter.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/mod-cv-meter.lv2/",
       "enable": "",
       "ports": [],
       "parameters": []
@@ -3545,7 +3545,7 @@
       "color": "#bfa1ed",
       "availability": "available",
       "reason": "",
-      "origin": "class Pitch Shifter; bundle file:///opt/pedalpi/lib/lv2/tap-pitch.lv2/",
+      "origin": "class Pitch Shifter; bundle file:///opt/peepo/lib/lv2/tap-pitch.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "Input", "direction": "input", "type": "audio"},
@@ -3567,7 +3567,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Delay; bundle file:///opt/pedalpi/lib/lv2/tap-reflector.lv2/",
+      "origin": "class Delay; bundle file:///opt/peepo/lib/lv2/tap-reflector.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "audio"},
@@ -3587,7 +3587,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Distortion; bundle file:///opt/pedalpi/lib/lv2/tap-sigmoid.lv2/",
+      "origin": "class Distortion; bundle file:///opt/peepo/lib/lv2/tap-sigmoid.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "Input", "direction": "input", "type": "audio"},
@@ -3606,7 +3606,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Simulator; bundle file:///opt/pedalpi/lib/lv2/tap-tubewarmth.lv2/",
+      "origin": "class Simulator; bundle file:///opt/peepo/lib/lv2/tap-tubewarmth.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "audio"},
@@ -3625,7 +3625,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "cv"},
@@ -3644,7 +3644,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -3661,7 +3661,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -3680,7 +3680,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "cv"},
@@ -3698,7 +3698,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "cv"},
@@ -3718,7 +3718,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "cv"},
@@ -3738,7 +3738,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "cv"},
@@ -3758,7 +3758,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "cv"},
@@ -3778,7 +3778,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "cv"},
@@ -3798,7 +3798,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "trigger", "direction": "input", "type": "cv"},
@@ -3814,7 +3814,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "cv"},
@@ -3834,7 +3834,7 @@
       "color": "#93a4b5",
       "availability": "unavailable",
       "reason": "This module has no audio or control connectors to patch.",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [],
       "parameters": [
@@ -3851,7 +3851,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "trigger", "direction": "input", "type": "cv"},
@@ -3867,7 +3867,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_modular.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_modular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "gate_out", "direction": "output", "type": "cv"},
@@ -3887,7 +3887,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/basic_quantizer.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/basic_quantizer.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -3917,7 +3917,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/bitcrushed_delay.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/bitcrushed_delay.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "in0", "direction": "input", "type": "audio"},
@@ -3943,7 +3943,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/chorus.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/chorus.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in0", "direction": "input", "type": "audio"},
@@ -3966,7 +3966,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/chorus_ext.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/chorus_ext.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in0", "direction": "input", "type": "audio"},
@@ -3988,7 +3988,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Generator; bundle file:///opt/pedalpi/lib/lv2/cv_to_cc.lv2/",
+      "origin": "class Generator; bundle file:///opt/peepo/lib/lv2/cv_to_cc.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "MIDI_OUT", "direction": "output", "type": "midi"},
@@ -4008,7 +4008,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Generator; bundle file:///opt/pedalpi/lib/lv2/cv_to_note.lv2/",
+      "origin": "class Generator; bundle file:///opt/peepo/lib/lv2/cv_to_note.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "midi_out", "direction": "output", "type": "midi"},
@@ -4029,7 +4029,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/poly_euclidean.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/poly_euclidean.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "back_trigger", "direction": "input", "type": "cv"},
@@ -4071,7 +4071,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/flanger.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/flanger.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in0", "direction": "input", "type": "audio"},
@@ -4094,7 +4094,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/flanger_ext.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/flanger_ext.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1", "direction": "input", "type": "audio"},
@@ -4116,7 +4116,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/harm_trem.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/harm_trem.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in0", "direction": "input", "type": "audio"},
@@ -4136,7 +4136,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/harm_trem_ext.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/harm_trem_ext.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in0", "direction": "input", "type": "audio"},
@@ -4156,7 +4156,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/poly_mclk_in.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/poly_mclk_in.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "control", "direction": "input", "type": "midi"},
@@ -4177,7 +4177,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/note_sequencer.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/note_sequencer.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "back_trigger", "direction": "input", "type": "cv"},
@@ -4214,7 +4214,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/note_sequencer_bpm.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/note_sequencer_bpm.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "back_gate", "direction": "input", "type": "cv"},
@@ -4253,7 +4253,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/pitch_cal.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/pitch_cal.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -4273,7 +4273,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Amplifier; bundle file:///opt/pedalpi/lib/lv2/pitch_cal.lv2/",
+      "origin": "class Amplifier; bundle file:///opt/peepo/lib/lv2/pitch_cal.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "input", "direction": "input", "type": "cv"},
@@ -4292,7 +4292,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "l_in", "direction": "input", "type": "audio"},
@@ -4335,7 +4335,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "l_in", "direction": "input", "type": "audio"},
@@ -4378,7 +4378,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "l_in", "direction": "input", "type": "audio"},
@@ -4421,7 +4421,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "l_in", "direction": "input", "type": "audio"},
@@ -4464,7 +4464,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "l_in", "direction": "input", "type": "audio"},
@@ -4507,7 +4507,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "l_in", "direction": "input", "type": "audio"},
@@ -4550,7 +4550,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "l_in", "direction": "input", "type": "audio"},
@@ -4593,7 +4593,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polyconvo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4612,7 +4612,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polyconvo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4632,7 +4632,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polyconvo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in_1", "direction": "input", "type": "audio"},
@@ -4653,7 +4653,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polyconvo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4672,7 +4672,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polyconvo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4692,7 +4692,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polyconvo.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polyconvo.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in_1", "direction": "input", "type": "audio"},
@@ -4713,7 +4713,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/poly_filter.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4734,7 +4734,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/poly_filter.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4755,7 +4755,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/poly_filter.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4776,7 +4776,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/poly_filter.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4797,7 +4797,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/poly_filter.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4818,7 +4818,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/poly_filter.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/poly_filter.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in", "direction": "input", "type": "audio"},
@@ -4842,7 +4842,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "clock", "direction": "input", "type": "cv"},
@@ -4883,7 +4883,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "t_bias_input", "direction": "input", "type": "cv"},
@@ -4935,7 +4935,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "out", "direction": "output", "type": "audio"},
@@ -4970,7 +4970,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "in_input", "direction": "input", "type": "audio"},
@@ -5008,7 +5008,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "slope_input", "direction": "input", "type": "cv"},
@@ -5048,7 +5048,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5076,7 +5076,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5104,7 +5104,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5132,7 +5132,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5160,7 +5160,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5188,7 +5188,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5216,7 +5216,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5244,7 +5244,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5272,7 +5272,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/polylenticular.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/polylenticular.lv2/",
       "enable": "enabled",
       "ports": [
         {"symbol": "carrier", "direction": "input", "type": "audio"},
@@ -5300,7 +5300,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/step_sequencer.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/step_sequencer.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "back_trigger", "direction": "input", "type": "cv"},
@@ -5337,7 +5337,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/step_sequencer_bpm.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/step_sequencer_bpm.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "back_gate", "direction": "input", "type": "cv"},
@@ -5376,7 +5376,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Generator; bundle file:///opt/pedalpi/lib/lv2/strum.lv2/",
+      "origin": "class Generator; bundle file:///opt/peepo/lib/lv2/strum.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "midi_out", "direction": "output", "type": "midi"},
@@ -5400,7 +5400,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/vibrato.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/vibrato.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in0", "direction": "input", "type": "audio"},
@@ -5427,7 +5427,7 @@
       "color": "#93a4b5",
       "availability": "available",
       "reason": "",
-      "origin": "class Plugin; bundle file:///opt/pedalpi/lib/lv2/vibrato_ext.lv2/",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/vibrato_ext.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "in1", "direction": "input", "type": "audio"},
@@ -5453,7 +5453,7 @@
       "color": "#a6c8ec",
       "availability": "available",
       "reason": "",
-      "origin": "class Envelope; bundle file:///opt/pedalpi/lib/lv2/envfollower.lv2/",
+      "origin": "class Envelope; bundle file:///opt/peepo/lib/lv2/envfollower.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "INPUT", "direction": "input", "type": "audio"},
@@ -5479,7 +5479,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Modulator; bundle file:///opt/pedalpi/lib/lv2/powercut.lv2/",
+      "origin": "class Modulator; bundle file:///opt/peepo/lib/lv2/powercut.lv2/",
       "enable": "PULL_THE_PLUG",
       "ports": [
         {"symbol": "INPUT", "direction": "input", "type": "audio"},
@@ -5498,7 +5498,7 @@
       "color": "#7bbaed",
       "availability": "available",
       "reason": "",
-      "origin": "class Delay; bundle file:///opt/pedalpi/lib/lv2/stuck.lv2/",
+      "origin": "class Delay; bundle file:///opt/peepo/lib/lv2/stuck.lv2/",
       "enable": "STICK_IT",
       "ports": [
         {"symbol": "INPUT", "direction": "input", "type": "audio"},
@@ -5517,7 +5517,7 @@
       "color": "#f0aa72",
       "availability": "available",
       "reason": "",
-      "origin": "class Chorus; bundle file:///opt/pedalpi/lib/lv2/ykchorus.lv2/",
+      "origin": "class Chorus; bundle file:///opt/peepo/lib/lv2/ykchorus.lv2/",
       "enable": "",
       "ports": [
         {"symbol": "lv2_audio_in_1", "direction": "input", "type": "audio"},

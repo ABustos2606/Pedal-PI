@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "catalogue/catalogue.hpp"
 #include "catalogue/json.hpp"
 #include <algorithm>
@@ -9,7 +9,7 @@
 #include <set>
 #include <sstream>
 
-namespace pedal {
+namespace peepo {
 namespace {
 using json::Value;
 constexpr std::size_t max_file_bytes = std::size_t{16} << 20;
@@ -147,7 +147,7 @@ std::uint32_t category_color(std::string_view category) {
     return 0x93a4b5;
 }
 std::string write_catalogue(const CatalogueDocument& document) {
-    std::string out = "{\n  \"format\": \"pedalpi-catalogue\",\n  \"version\": " + std::to_string(catalogue_version) + ",\n  \"provenance\": {";
+    std::string out = "{\n  \"format\": \"peepo-catalogue\",\n  \"version\": " + std::to_string(catalogue_version) + ",\n  \"provenance\": {";
     for (std::size_t i = 0; i < document.provenance.size(); ++i)
         out += std::string(i ? "," : "") + "\n    " + json::quote(document.provenance[i].first) + ": " + json::quote(document.provenance[i].second);
     out += document.provenance.empty() ? "},\n  \"modules\": [" : "\n  },\n  \"modules\": [";
@@ -180,7 +180,7 @@ std::string write_catalogue(const CatalogueDocument& document) {
 std::string read_catalogue(std::string_view text, CatalogueDocument& out) {
     Value root;
     if (auto issue = json::parse(text, root); !issue.empty()) return "catalogue is not valid JSON: " + issue;
-    if (auto issue = header(root, "pedalpi-catalogue"); !issue.empty()) return issue;
+    if (auto issue = header(root, "peepo-catalogue"); !issue.empty()) return issue;
     CatalogueDocument document;
     if (const auto* provenance = root.get("provenance"); provenance && provenance->kind == Value::Kind::Object)
         for (const auto& [key, value] : provenance->members) if (value.kind == Value::Kind::String) document.provenance.emplace_back(key, value.text);
@@ -260,7 +260,7 @@ std::string read_catalogue(std::string_view text, CatalogueDocument& out) {
 std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDefinition>& modules) {
     Value root;
     if (auto issue = json::parse(text, root); !issue.empty()) return "overlay is not valid JSON: " + issue;
-    if (auto issue = header(root, "pedalpi-catalogue-overlay"); !issue.empty()) return issue;
+    if (auto issue = header(root, "peepo-catalogue-overlay"); !issue.empty()) return issue;
     const auto* rules = root.get("rules");
     if (!rules || rules->kind != Value::Kind::Array) return "overlay has no rule list";
     auto changed = modules;

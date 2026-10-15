@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """Do real plugins process sound in the engine, not merely load?
 
 Feeds a 440 Hz sine at 0.25 through one module at a time and measures what

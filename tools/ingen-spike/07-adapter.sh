@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 # Build the project's own engine adapter and run it against a live Ingen, then
 # measure what the patch it leaves behind does to a signal. Run as root inside
 # Debian, from anywhere:  bash 07-adapter.sh
 D="$(dirname "$(readlink -f "$0")")"
 . "$D/env.sh"
-BUILD="${PEDALPI_BUILD:-/tmp/pedalpi-adapter-build}"
-# The modules this engine offers, as exported by 08-catalogue.sh (or PEDALPI_CATALOGUE).
-CATALOGUE="${PEDALPI_CATALOGUE:-$D/../../config/catalogue/wsl-debian.json}"
-# PEDALPI_PREBUILT=1 uses the build in PEDALPI_BUILD as it is, such as the one
+BUILD="${PEEPO_BUILD:-/tmp/peepo-adapter-build}"
+# The modules this engine offers, as exported by 08-catalogue.sh (or PEEPO_CATALOGUE).
+CATALOGUE="${PEEPO_CATALOGUE:-$D/../../config/catalogue/wsl-debian.json}"
+# PEEPO_PREBUILT=1 uses the build in PEEPO_BUILD as it is, such as the one
 # tools/pi/build.sh made in the arm64 root.
-if [ -z "${PEDALPI_PREBUILT:-}" ]; then
+if [ -z "${PEEPO_PREBUILT:-}" ]; then
     command -v cmake >/dev/null || apt-get install -y -q cmake >/dev/null
-    cmake -S "$D/../.." -B "$BUILD" -G Ninja -DPEDAL_BUILD_UI=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo >/dev/null || exit 1
+    cmake -S "$D/../.." -B "$BUILD" -G Ninja -DPEEPO_BUILD_UI=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo >/dev/null || exit 1
     cmake --build "$BUILD" 2>&1 | grep -E "error|warning|FAILED"
 fi
 python3 -c "import jack, numpy" 2>/dev/null || apt-get install -y -qq python3-jack-client python3-numpy >/dev/null
-[ -x "$BUILD/pedal_ingen_live" ] && [ -x "$BUILD/pedal_storage_tests" ] || exit 1
-"$BUILD/pedal_ingen_tests" || exit 1
-"$BUILD/pedal_storage_tests" || exit 1
-"$BUILD/pedal_controls_tests" || exit 1
+[ -x "$BUILD/peepo_ingen_live" ] && [ -x "$BUILD/peepo_storage_tests" ] || exit 1
+"$BUILD/peepo_ingen_tests" || exit 1
+"$BUILD/peepo_storage_tests" || exit 1
+"$BUILD/peepo_controls_tests" || exit 1
 start_engine || exit 1
-"$BUILD/pedal_ingen_live" unix:///tmp/pedalpi-ingen.sock "$CATALOGUE"; live=$?
+"$BUILD/peepo_ingen_live" unix:///tmp/peepo-ingen.sock "$CATALOGUE"; live=$?
 # The same checks over TCP, which is how a Windows build reaches an engine in WSL.
-"$BUILD/pedal_ingen_live" tcp://127.0.0.1:16180 "$CATALOGUE" | grep -E "^(FAIL|SUMMARY)"; tcp=${PIPESTATUS[0]}
+"$BUILD/peepo_ingen_live" tcp://127.0.0.1:16180 "$CATALOGUE" | grep -E "^(FAIL|SUMMARY)"; tcp=${PIPESTATUS[0]}
 python3 - <<'PY'
 import time
 import jack
@@ -51,7 +51,7 @@ raise SystemExit(0 if ok else 1)
 PY
 audio=$?
 # Stop the engine under a connected adapter, start a fresh one, and see it return.
-"$BUILD/pedal_ingen_live" unix:///tmp/pedalpi-ingen.sock "$CATALOGUE" --survive-restart > "$RUN/restart.log" 2>&1 &
+"$BUILD/peepo_ingen_live" unix:///tmp/peepo-ingen.sock "$CATALOGUE" --survive-restart > "$RUN/restart.log" 2>&1 &
 waiter=$!
 for _ in $(seq 100); do grep -q WAITING "$RUN/restart.log" && break; sleep 0.1; done
 start_engine

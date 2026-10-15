@@ -22,7 +22,7 @@ There is no tracked `.gitmodules` or Git submodule entry. `.gitignore` excludes 
 
 Links below refer to the downloaded commit, not a moving default branch.
 
-| Source | Observed behaviour | Lesson for Pedal PI |
+| Source | Observed behaviour | Lesson for Peepo |
 | --- | --- | --- |
 | [README](https://github.com/pawelKapl/Casette/blob/75ded6663e2d758bfe8a290952c672b2e8c01697/README.md) | Reports DietPi/Pi 4, HiFiBerry DAC2 ADC Pro, 800 × 480 DSI screen, and JACK at 48 kHz, 64 frames, two periods | Useful configuration example; our HDMI/touch/audio interface and OS must be identified independently |
 | [UI startup](https://github.com/pawelKapl/Casette/blob/75ded6663e2d758bfe8a290952c672b2e8c01697/src/ui/gui.cpp) | LVGL uses `/dev/fb0` and hardcoded `/dev/input/event0`; fixed tabs and meters | Supports investigating direct native graphics; use stable device identities and our own modular screens |

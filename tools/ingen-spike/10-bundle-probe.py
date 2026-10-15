@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """Save a graph to a bundle and load it back into a running engine (P5.2).
 
 Answers what Phase 5 needs before any client code is written: what a saved
@@ -17,7 +17,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ingenprobe import Client, show
 
-root = sys.argv[1] if len(sys.argv) > 1 else "/tmp/pedalpi-spike/bundles"
+root = sys.argv[1] if len(sys.argv) > 1 else "/tmp/peepo-spike/bundles"
 shutil.rmtree(root, ignore_errors=True)
 os.makedirs(os.path.join(root, "with space"))
 transcript = []
@@ -28,13 +28,13 @@ def check(label, status):
     print("%-58s %s" % (label, status))
 
 check("put in_l, out_l", (c.put("ingen:/main/in_l", "a lv2:InputPort , lv2:AudioPort")[0], c.put("ingen:/main/out_l", "a lv2:OutputPort , lv2:AudioPort")[0]))
-check("put amp m3 with name, position", c.put("ingen:/main/m3", "a ingen:Block ;\n\t\tlv2:prototype <http://lv2plug.in/plugins/eg-amp> ;\n\t\tingen:canvasX \"300\"^^xsd:float ;\n\t\tingen:canvasY \"200\"^^xsd:float ;\n\t\tpedalpi:displayName \"Boost\"")[0])
+check("put amp m3 with name, position", c.put("ingen:/main/m3", "a ingen:Block ;\n\t\tlv2:prototype <http://lv2plug.in/plugins/eg-amp> ;\n\t\tingen:canvasX \"300\"^^xsd:float ;\n\t\tingen:canvasY \"200\"^^xsd:float ;\n\t\tpeepo:displayName \"Boost\"")[0])
 check("put params m4 (has LV2 state)", c.put("ingen:/main/m4", "a ingen:Block ;\n\t\tlv2:prototype <http://lv2plug.in/plugins/eg-params>")[0])
 check("set gain 6", c.set("ingen:/main/m3/gain", "ingen:value", "\"6\"^^xsd:float")[0])
 check("cables", (c.connect("ingen:/main/in_l", "ingen:/main/m3/in")[0], c.connect("ingen:/main/m3/out", "ingen:/main/out_l")[0]))
-for key, value in (("pedalpi:patchName", "\"Saved one\""), ("pedalpi:patchId", "\"p-0001\""), ("pedalpi:schemaVersion", "\"1\"^^xsd:int")):
+for key, value in (("peepo:patchName", "\"Saved one\""), ("peepo:patchId", "\"p-0001\""), ("peepo:schemaVersion", "\"1\"^^xsd:int")):
     check("graph property %s" % key, c.request("a patch:Set ;\n\t%spatch:subject <ingen:/main> ;\n\tpatch:property %s ;\n\tpatch:value %s" % (ctx, key, value))[0])
-check("assignment property on a port", c.set("ingen:/main/m3/gain", "pedalpi:assignedControl", "\"knob1\"")[0])
+check("assignment property on a port", c.set("ingen:/main/m3/gain", "peepo:assignedControl", "\"knob1\"")[0])
 c.drain()
 transcript.clear()
 

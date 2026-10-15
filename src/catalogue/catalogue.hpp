@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include "core/model.hpp"
 #include <map>
@@ -10,7 +10,7 @@
 // Linux, read everywhere. Windows uses an exported file as a fixture, so it
 // needs no LV2 binaries. Presentation choices live in a separate overlay the
 // project owns, and survive a new export.
-namespace pedal {
+namespace peepo {
 inline constexpr int catalogue_version = 1;
 struct CatalogueDocument {
     std::vector<ModuleDefinition> modules;

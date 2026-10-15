@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """Engine assumptions checked against a live Ingen on JACK's dummy backend.
 
 A JACK client feeds a constant 0.25 into the graph and measures what comes
@@ -135,8 +135,8 @@ report("INFO", "control value far outside the plugin range", "status %s, output 
 c.set("ingen:/main/amp/gain", "ingen:value", "0.0")
 ok(c.set("ingen:/main/amp", "ingen:canvasX", "312.0"), "store canvas position on a block")
 ok(c.set("ingen:/main/amp", "ingen:canvasY", "144.0"), "store canvas position (y)")
-ok(c.set("ingen:/main/amp", "pedalpi:displayName", "\"Clean boost\""), "store a project-owned property on a block")
-ok(c.set("ingen:/main/amp/gain", "pedalpi:assignedControl", "\"knob-1\""), "store a project-owned property on a port")
+ok(c.set("ingen:/main/amp", "peepo:displayName", "\"Clean boost\""), "store a project-owned property on a block")
+ok(c.set("ingen:/main/amp/gain", "peepo:assignedControl", "\"knob-1\""), "store a project-owned property on a port")
 steady(meter, LEVEL * 2, "level unchanged by metadata edits")
 
 # --- request timing -------------------------------------------------------
@@ -186,7 +186,7 @@ check(near(low, LEVEL * 2) and near(high, LEVEL * 2), "audio level never moves a
 report("INFO", "xruns", "%d in total; WSL has no real-time scheduling and the dummy backend also xruns when idle, so this number means nothing until it is measured on the Pi" % meter.xruns)
 
 # --- save -----------------------------------------------------------------
-bundle = "/tmp/pedalpi-spike/saved.ingen"
+bundle = "/tmp/peepo-spike/saved.ingen"
 subprocess.run(["rm", "-rf", bundle])
 ok(c.copy("ingen:/main", "file://" + bundle), "save the graph to a bundle")
 time.sleep(0.3)

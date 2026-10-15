@@ -2,15 +2,15 @@
 # Keeps the engine wired to the audio interface, also after the engine or
 # JACK restarts.
 [Unit]
-Description=Pedal PI audio connections
-PartOf=pedalpi.target
-After=pedalpi-engine.service
+Description=Peepo audio connections
+PartOf=peepo.target
+After=peepo-engine.service
 StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-User=pedalpi
-EnvironmentFile=/etc/pedalpi/pedalpi.conf
-ExecStart=/opt/pedalpi/bin/pedalpi-route
+User=peepo
+EnvironmentFile=/etc/peepo/peepo.conf
+ExecStart=/opt/peepo/bin/peepo-route
 Restart=always
 RestartSec=2

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include "engine/engine.hpp"
 #include <map>
@@ -11,7 +11,7 @@
 // directory ending in .ingen: main.ttl describes the graph, relative to the
 // bundle, and each stateful block keeps its LV2 state in a subdirectory.
 // See docs/17-patch-storage.md for the recorded format.
-namespace pedal {
+namespace peepo {
 inline constexpr int bundle_schema_version = 1;
 struct BundleBlock {
     // Relative to the graph: `m3`, the engine's name for module 3.

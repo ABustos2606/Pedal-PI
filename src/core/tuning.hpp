@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include <cmath>
 #include <optional>
 #include <string>
 
-namespace pedal {
+namespace peepo {
 inline bool tuner_uri(const std::string& uri) {
     return uri == "http://gareus.org/oss/lv2/tuna#mod" || uri == "http://gareus.org/oss/lv2/tuna#one" ||
            uri == "http://gareus.org/oss/lv2/tuna#two";

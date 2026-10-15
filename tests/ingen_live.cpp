@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 // The Ingen adapter against a running engine. Needs the LV2 example amplifier
 // and replaces whatever patch the engine holds:
-//   pedal_ingen_live unix:///tmp/pedalpi-ingen.sock catalogue.json
+//   peepo_ingen_live unix:///tmp/peepo-ingen.sock catalogue.json
 // It leaves IN (left) -> amp at +6.02 dB -> OUT (left) for a level measurement.
 // With --survive-restart it instead waits for the engine to be stopped and
 // started again, and reports whether the adapter found its way back.
@@ -17,7 +17,7 @@
 #include <iostream>
 #include <thread>
 
-using namespace pedal;
+using namespace peepo;
 namespace {
 using Clock = std::chrono::steady_clock;
 const std::string amp = "http://lv2plug.in/plugins/eg-amp";
@@ -73,7 +73,7 @@ bool has_cable(const Graph& graph, const Connection& cable) { return std::find(g
 double gain_of(const Graph& graph, InstanceId id) { const auto* m = find_module(graph, id); return m && !m->parameters.empty() ? m->parameters[0].value : std::nan(""); }
 }
 int main(int argc, char** argv) {
-    const std::string address = argc > 1 ? argv[1] : "unix:///tmp/pedalpi-ingen.sock";
+    const std::string address = argc > 1 ? argv[1] : "unix:///tmp/peepo-ingen.sock";
     // The catalogue exported from this engine's plugins, not a hand-written entry.
     std::vector<ModuleDefinition> offered;
     if (const auto issue = load_catalogue(argc > 2 ? argv[2] : "catalogue.json", "", offered); !issue.empty()) { std::cerr << issue << std::endl; return 2; }
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
     const auto first = a->graph().modules[2];
     check(first.uri == amp && first.x == 184 && first.y == 132 && first.ports.size() == 2 && first.parameters.size() == 1 && first.parameters[0].value == 0,
           "the new module carries the engine's ports and value", "id " + std::to_string(first.id) + ", " + std::to_string(first.ports.size()) + " ports");
-    check(!a->result(AddModule{"urn:pedalpi:demo:drive", 24, 24}).accepted, "a plugin the engine lacks is refused");
+    check(!a->result(AddModule{"urn:peepo:demo:drive", 24, 24}).accepted, "a plugin the engine lacks is refused");
     a->ok(Disconnect{{1, 2, "out", "in"}}, "remove the direct left cable");
     a->ok(Connect{{1, first.id, "out", "in"}}, "cable IN to the module");
     a->ok(Connect{{first.id, 2, "out", "in"}}, "cable the module to OUT");
@@ -153,8 +153,8 @@ int main(int argc, char** argv) {
     // a load rebuilds the graph from it. From Windows the engine is in WSL and
     // sees the same folder under /mnt/<drive>.
     {
-        const char* folder = std::getenv("PEDALPI_PATCHES");
-        const std::filesystem::path root = folder ? std::filesystem::path(folder) : std::filesystem::temp_directory_path() / "pedalpi-live-patches";
+        const char* folder = std::getenv("PEEPO_PATCHES");
+        const std::filesystem::path root = folder ? std::filesystem::path(folder) : std::filesystem::temp_directory_path() / "peepo-live-patches";
         std::error_code cleared;
         std::filesystem::remove_all(root, cleared);
         check(!cleared, "the patch folder from an earlier run can be cleared", root.string() + (cleared ? ": " + cleared.message() : ""));
@@ -206,9 +206,9 @@ int main(int argc, char** argv) {
         check(a->result(SaveGraph{SaveScope::Persistent, true, staging->location, id}).accepted && store.publish(*staging).empty() && store.find(id)->revision == 2,
               "a second save becomes revision 2");
         auto stranger = saved_blocks(stored->bundle);
-        stranger.push_back({"m90", "urn:pedalpi:not-installed", "Stranger"});
+        stranger.push_back({"m90", "urn:peepo:not-installed", "Stranger"});
         check(!a->result(LoadPatch{stored->location, stranger}).accepted && a->graph().patch_id == id, "a patch needing a missing plugin is refused before anything changes");
-        event = a->result(LoadPatch{"file:///tmp/pedalpi-live-nowhere/r000001.ingen", saved_blocks(stored->bundle)});
+        event = a->result(LoadPatch{"file:///tmp/peepo-live-nowhere/r000001.ingen", saved_blocks(stored->bundle)});
         check(!event.accepted && event.message.find("restored nothing") != std::string::npos && a->graph().patch_id.empty(), "a bundle the engine cannot read is a failure, not a silent empty patch", event.message);
         event = a->result(LoadPatch{store.find(id)->location, saved_blocks(store.find(id)->bundle)});
         check(event.accepted && find_module(a->graph(), mist.id) && find_module(a->graph(), mist.id)->x == 600, "the newest revision loads", event.message);
@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
             std::ifstream in(source / "main.ttl");
             std::vector<std::string> kept;
             for (std::string line; std::getline(in, line);) {
-                const bool ours = line.find("pedalpi:") != std::string::npos || line.find("ingen:canvas") != std::string::npos;
+                const bool ours = line.find("peepo:") != std::string::npos || line.find("ingen:canvas") != std::string::npos;
                 if (!ours) { kept.push_back(line); continue; }
                 // Dropping a statement's last property moves its full stop up a line.
                 if (line.ends_with(" .") && !kept.empty() && kept.back().ends_with(" ;")) kept.back().replace(kept.back().size() - 2, 2, " .");

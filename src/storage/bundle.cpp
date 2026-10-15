@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "storage/bundle.hpp"
 #include "engine/ingen/protocol.hpp"
 #include <algorithm>
@@ -9,11 +9,11 @@
 #include <optional>
 #include <set>
 
-namespace pedal {
+namespace peepo {
 namespace {
 using turtle::Term;
 constexpr std::string_view xsd = "http://www.w3.org/2001/XMLSchema#";
-const std::string ingen_ns(ingen::uri::ingen), lv2_ns(ingen::uri::lv2), pedalpi_ns(ingen::uri::pedalpi);
+const std::string ingen_ns(ingen::uri::ingen), lv2_ns(ingen::uri::lv2), peepo_ns(ingen::uri::peepo);
 const std::string state_key = "http://lv2plug.in/ns/ext/state#state";
 // The graph's own audio ports stand for IN's outputs and OUT's inputs, as in the adapter.
 struct Endpoint { const char* symbol; InstanceId module; const char* port; };
@@ -66,12 +66,12 @@ std::string read_bundle(std::string_view text, Bundle& out) {
         if (subject.empty() && is(properties, ingen_ns + "Graph")) graph = &properties;
     if (!graph) return "main.ttl does not describe a graph";
     for (const auto& [predicate, object] : *graph) {
-        if (predicate == pedalpi_ns + "patchName" && object.kind == Term::Kind::Literal) out.name = object.value;
-        else if (predicate == pedalpi_ns + "patchId" && object.kind == Term::Kind::Literal) out.id = object.value;
-        else if (predicate == pedalpi_ns + "schemaVersion") out.schema = static_cast<int>(number(object).value_or(0));
-        else if (predicate == pedalpi_ns + "modified") out.modified = boolean(object).value_or(false);
-        else if (predicate.starts_with(pedalpi_ns + "control-") && object.kind == Term::Kind::Literal && !object.value.empty())
-            out.controls[predicate.substr(pedalpi_ns.size() + 8)] = object.value;
+        if (predicate == peepo_ns + "patchName" && object.kind == Term::Kind::Literal) out.name = object.value;
+        else if (predicate == peepo_ns + "patchId" && object.kind == Term::Kind::Literal) out.id = object.value;
+        else if (predicate == peepo_ns + "schemaVersion") out.schema = static_cast<int>(number(object).value_or(0));
+        else if (predicate == peepo_ns + "modified") out.modified = boolean(object).value_or(false);
+        else if (predicate.starts_with(peepo_ns + "control-") && object.kind == Term::Kind::Literal && !object.value.empty())
+            out.controls[predicate.substr(peepo_ns.size() + 8)] = object.value;
         else if (predicate == ingen_ns + "arc" && object.kind == Term::Kind::Blank) {
             std::string tail, head;
             const auto arc = subjects.find("_:" + object.value);
@@ -91,7 +91,7 @@ std::string read_bundle(std::string_view text, Bundle& out) {
         std::optional<double> x, y;
         for (const auto& [predicate, object] : properties) {
             if (predicate == lv2_ns + "prototype" && object.kind == Term::Kind::Iri) block.plugin = object.value;
-            else if (predicate == pedalpi_ns + "displayName" && object.kind == Term::Kind::Literal) block.name = object.value;
+            else if (predicate == peepo_ns + "displayName" && object.kind == Term::Kind::Literal) block.name = object.value;
             else if (predicate == ingen_ns + "canvasX") x = number(object);
             else if (predicate == ingen_ns + "canvasY") y = number(object);
             else if (predicate == ingen_ns + "enabled") block.enabled = boolean(object).value_or(true);
@@ -161,8 +161,9 @@ Graph bundle_graph(const Bundle& bundle) {
                     auto value = p.kind == ParameterKind::Continuous ? it->second : std::round(it->second);
                     p.value = std::clamp(value, p.minimum, p.maximum);
                 }
+            // Earlier versions bypassed such a plugin by clearing its own switch.
             if (!known->enable_symbol.empty())
-                if (const auto it = block.values.find(known->enable_symbol); it != block.values.end()) m.bypassed = it->second < 0.5;
+                if (const auto it = block.values.find(known->enable_symbol); it != block.values.end() && it->second < 0.5) m.bypassed = true;
         } else {
             // A plugin nobody can describe: keep the jacks its cables use, so they survive for repair.
             for (const auto& [tail, head] : bundle.arcs)
@@ -216,8 +217,8 @@ std::string write_main_ttl(const Graph& graph) {
         const auto* known = definition(m.uri);
         const bool own_switch = known && !known->enable_symbol.empty();
         text += iri(symbol) + "\n\ta ingen:Block ;\n\tlv2:prototype " + iri(m.uri) + " ;\n\tingen:canvasX " + literal_number(m.x) + " ;\n\tingen:canvasY " +
-                literal_number(m.y) + " ;\n\tpedalpi:displayName " + ingen::string_literal(m.name) + (m.bypassed && !own_switch ? " ;\n\tingen:enabled false" : "") + " .\n\n";
-        if (own_switch) text += iri(symbol + "/" + known->enable_symbol) + "\n\tingen:value " + literal_number(m.bypassed ? 0 : 1) + " .\n\n";
+                literal_number(m.y) + " ;\n\tpeepo:displayName " + ingen::string_literal(m.name) + (m.bypassed ?" ;\n\tingen:enabled false" : "") + " .\n\n";
+        if (own_switch) text += iri(symbol + "/" + known->enable_symbol) + "\n\tingen:value " + literal_number(1) +" .\n\n";
         for (const auto& p : m.parameters) text += iri(symbol + "/" + p.symbol) + "\n\tingen:value " + literal_number(p.value) + " .\n\n";
     }
     auto address = [&](InstanceId id, const std::string& port, bool source) {
@@ -233,10 +234,10 @@ std::string write_main_ttl(const Graph& graph) {
     for (const auto& c : graph.connections)
         text += " ;\n\tingen:arc [\n\t\tingen:tail " + iri(address(c.from, c.output, true)) + " ;\n\t\tingen:head " + iri(address(c.to, c.input, false)) + "\n\t]";
     for (const auto& a : graph.assignments)
-        text += " ;\n\tpedalpi:control-" + a.control + " " + ingen::string_literal(encode_assignment(a, "m" + std::to_string(a.module)));
-    text += " ;\n\tpedalpi:patchName " + ingen::string_literal(graph.name);
-    if (!graph.patch_id.empty()) text += " ;\n\tpedalpi:patchId " + ingen::string_literal(graph.patch_id);
-    text += " ;\n\tpedalpi:schemaVersion " + std::to_string(bundle_schema_version) + " ;\n\tpedalpi:modified " + (graph.dirty ? "true" : "false") + " .\n";
+        text += " ;\n\tpeepo:control-" + a.control + " " + ingen::string_literal(encode_assignment(a, "m" + std::to_string(a.module)));
+    text += " ;\n\tpeepo:patchName " + ingen::string_literal(graph.name);
+    if (!graph.patch_id.empty()) text += " ;\n\tpeepo:patchId " + ingen::string_literal(graph.patch_id);
+    text += " ;\n\tpeepo:schemaVersion " + std::to_string(bundle_schema_version) + " ;\n\tpeepo:modified " + (graph.dirty ? "true" : "false") + " .\n";
     return text;
 }
 std::string write_manifest_ttl() {

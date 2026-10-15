@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 // Catalogue files: what is written reads back identically, a damaged or
 // hostile file is refused whole, and the overlay can restrict but not grant.
-//   pedal_catalogue_tests <folder holding the exported fixture and overlay>
+//   peepo_catalogue_tests <folder holding the exported fixture and overlay>
 #include "catalogue/catalogue.hpp"
 #include "catalogue/json.hpp"
 #include "engine/simulated_engine.hpp"
@@ -13,7 +13,7 @@
 #include <sstream>
 #include <stdexcept>
 
-using namespace pedal;
+using namespace peepo;
 namespace {
 void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
 std::string replaced(std::string text, const std::string& from, const std::string& to) {
@@ -64,16 +64,16 @@ void round_trip() {
         check(!message.empty() && read.modules.size() == untouched.modules.size(), why);
         return message;
     };
-    refused(replaced(text, "\"pedalpi-catalogue\"", "\"something-else\""), "foreign file accepted");
+    refused(replaced(text, "\"peepo-catalogue\"", "\"something-else\""), "foreign file accepted");
     refused(replaced(text, "\"version\": 1", "\"version\": 2"), "newer file accepted");
     refused(replaced(text, "\"default\": 32", "\"default\": 320"), "default outside its range accepted");
     refused(replaced(text, "\"symbol\": \"drive\"", "\"symbol\": \"drive> ; x\""), "unusable symbol accepted");
     refused(replaced(text, "\"symbol\": \"drive\"", "\"symbol\": \"in\""), "control sharing a connector's symbol accepted");
     refused(replaced(text, "\"category\": \"Drive\"", "\"category\": \"Endpoint\""), "reserved category accepted");
     refused(replaced(text, "\"kind\": \"continuous\"", "\"kind\": \"wobbly\""), "unknown kind accepted");
-    refused(replaced(text, "\"uri\": \"urn:pedalpi:demo:clouds\"", "\"uri\": \"urn:pedalpi:demo:drive\""), "repeated module accepted");
+    refused(replaced(text, "\"uri\": \"urn:peepo:demo:clouds\"", "\"uri\": \"urn:peepo:demo:drive\""), "repeated module accepted");
     refused(replaced(text, "\"minimum\": 0,", "\"minimum\": \"0\","), "mistyped number accepted");
-    check(refused(replaced(text, "\"name\": \"Drive\",", ""), "module without a name accepted").find("urn:pedalpi:demo:drive") != std::string::npos, "fault not attributed to its module");
+    check(refused(replaced(text, "\"name\": \"Drive\",", ""), "module without a name accepted").find("urn:peepo:demo:drive") != std::string::npos, "fault not attributed to its module");
     refused(text.substr(0, text.size() / 2), "truncated file accepted");
 }
 void overlay() {
@@ -82,7 +82,7 @@ void overlay() {
     document.modules[0].availability = Availability::Unavailable; document.modules[0].availability_reason = "export said no";
     auto modules = document.modules;
     const auto first = modules[0].uri, second = modules[1].uri;
-    const std::string rules = R"({"format": "pedalpi-catalogue-overlay", "version": 1, "rules": [
+    const std::string rules = R"({"format": "peepo-catalogue-overlay", "version": 1, "rules": [
         {"match": "polyclouds", "category": "Texture", "description": "Granular", "strip_prefix": "Mist "},
         {"match": "polyclouds", "color": "#102030"},
         {"uri": ")" + second + R"(", "name": "Renamed", "availability": "untested", "reason": "Not heard yet."},
@@ -93,11 +93,11 @@ void overlay() {
     check(modules[1].name == "Renamed" && modules[2].name == "Looping Delay" && modules[0].name == "Beat Repeat" && modules[1].availability == Availability::Untested && modules[1].availability_reason == "Not heard yet.", "exact rule not applied");
     check(modules[0].availability == Availability::Unavailable && modules[0].availability_reason == "export said no", "overlay weakened the export's verdict");
     const auto before = modules;
-    for (const char* bad : {R"({"format": "pedalpi-catalogue-overlay", "version": 1, "rules": [{"match": "poly", "availability": "available"}]})",
-                            R"({"format": "pedalpi-catalogue-overlay", "version": 1, "rules": [{"name": "No selector"}]})",
-                            R"({"format": "pedalpi-catalogue-overlay", "version": 1, "rules": [{"match": "poly", "name": "Applied"}, {"match": "poly", "color": "blue"}]})",
-                            R"({"format": "pedalpi-catalogue-overlay", "version": 1, "rules": [{"match": "poly", "category": "Endpoint"}]})",
-                            R"({"format": "pedalpi-catalogue", "version": 1, "rules": []})"}) {
+    for (const char* bad : {R"({"format": "peepo-catalogue-overlay", "version": 1, "rules": [{"match": "poly", "availability": "available"}]})",
+                            R"({"format": "peepo-catalogue-overlay", "version": 1, "rules": [{"name": "No selector"}]})",
+                            R"({"format": "peepo-catalogue-overlay", "version": 1, "rules": [{"match": "poly", "name": "Applied"}, {"match": "poly", "color": "blue"}]})",
+                            R"({"format": "peepo-catalogue-overlay", "version": 1, "rules": [{"match": "poly", "category": "Endpoint"}]})",
+                            R"({"format": "peepo-catalogue", "version": 1, "rules": []})"}) {
         check(!apply_catalogue_overlay(bad, modules).empty(), "invalid overlay accepted");
         for (std::size_t i = 0; i < modules.size(); ++i) check(modules[i].name == before[i].name && modules[i].availability == before[i].availability, "refused overlay was half applied");
     }
@@ -106,7 +106,7 @@ void overlay() {
     // Per-control rules: listed controls first, the rest in their own order.
     auto controls = document.modules;
     const std::string granular = "http://polyeffects.com/lv2/polyclouds#granular";
-    const auto header = std::string(R"({"format": "pedalpi-catalogue-overlay", "version": 1, "rules": [)");
+    const auto header = std::string(R"({"format": "peepo-catalogue-overlay", "version": 1, "rules": [)");
     const auto rule = [&](const std::string& parameters) { return header + R"({"uri": ")" + granular + R"(", "parameters": [)" + parameters + "]}]}"; };
     const auto find = [&](const std::vector<ModuleDefinition>& list) { return &*std::find_if(list.begin(), list.end(), [&](const ModuleDefinition& d) { return d.uri == granular; }); };
     const auto original = find(controls)->parameters;
@@ -182,6 +182,14 @@ void fixture(const std::string& folder) {
         const auto refused = read_catalogue(text.str(), raw);
         check(refused.empty(), refused.c_str());
     }
+    // Every module on the Add screen says what it does, in words the
+    // interface font can draw, not the export's class-and-author line.
+    for (const auto& d : offered) {
+        if (d.hidden) continue;
+        const auto exported = std::find_if(raw.modules.begin(), raw.modules.end(), [&](const ModuleDefinition& m) { return m.uri == d.uri; });
+        check(!d.description.empty() && exported != raw.modules.end() && d.description != exported->description, ("module has no written description: " + d.uri).c_str());
+        check(std::all_of(d.description.begin(), d.description.end(), [](char c) { return c >= ' ' && c <= '~'; }), ("description the font cannot draw: " + d.uri).c_str());
+    }
     unsigned compared = 0;
     for (const auto& reference : reference_catalogue()) {
         const ModuleDefinition* exported = nullptr;
@@ -208,7 +216,7 @@ void fixture(const std::string& folder) {
     const auto count = offered.size();
     const auto exported = offered;
     replace_catalogue(std::move(offered));
-    check(catalogue().size() == count + 2 && !definition("urn:pedalpi:demo:drive") && !definition("urn:pedalpi:demo:nam") && definition("http://lv2plug.in/plugins/eg-amp"),
+    check(catalogue().size() == count + 2 && !definition("urn:peepo:demo:drive") && !definition("urn:peepo:demo:nam") && definition("http://lv2plug.in/plugins/eg-amp"),
           "replaced catalogue kept fixtures or lost entries");
     check(validate_graph(empty_graph("Still valid")).empty() && module_available(empty_graph("x").modules[0]), "endpoints lost with the fixtures");
 
@@ -218,7 +226,7 @@ void fixture(const std::string& folder) {
     for (const auto& d : demo_catalogue()) if (d.category != "Endpoint") both.push_back(d);
     both.insert(both.end(), exported.begin(), exported.end());
     replace_catalogue(std::move(both));
-    check(definition("urn:pedalpi:demo:drive") && definition("http://polyeffects.com/lv2/polyclouds#granular") && catalogue().size() == count + demo_catalogue().size(), "simulation catalogue incomplete");
+    check(definition("urn:peepo:demo:drive") && definition("http://polyeffects.com/lv2/polyclouds#granular") && catalogue().size() == count + demo_catalogue().size(), "simulation catalogue incomplete");
     check(validate_graph(demo_graph()).empty() && validate_graph(parallel_demo_graph()).empty(), "demo patches broken by the exported catalogue");
     SimulatedEngine engine;
     engine.submit(AddModule{"http://polyeffects.com/lv2/polyclouds#granular", 240, 240});

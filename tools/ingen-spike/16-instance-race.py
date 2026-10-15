@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """Delete the last block of a plugin and load it again at once (patch 0005).
 
 The engine creates blocks in its pre-processor and frees deleted ones in its
@@ -22,7 +22,7 @@ from ingenprobe import Client
 
 PLUGINS = ["http://polyeffects.com/lv2/basic_quantizer", "http://drobilla.net/plugins/mda/Overdrive",
            "http://polyeffects.com/lv2/polyclouds#granular", "http://lv2plug.in/plugins/eg-amp"]
-WORK = "/tmp/pedalpi-race"
+WORK = "/tmp/peepo-race"
 
 
 def alive():

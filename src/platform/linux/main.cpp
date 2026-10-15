@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 //
 // The interface on Linux: the Pi's screen through DRM/KMS or the framebuffer
 // with evdev touch, an SDL window on a desktop or under WSL, or an offscreen
@@ -20,7 +20,7 @@
 #include <memory>
 #include <sstream>
 #include <unistd.h>
-#ifdef PEDAL_LVGL_SDL
+#ifdef PEEPO_LVGL_SDL
 #include <SDL2/SDL.h>
 #endif
 
@@ -44,20 +44,20 @@ std::filesystem::path data_home() {
 }
 void usage() {
     std::cout <<
-        "pedal_pi [options]\n"
-        "  --engine ADDRESS        unix:///run/pedalpi/ingen.sock or tcp://host:port; without it, the simulation\n"
+        "peepo [options]\n"
+        "  --engine ADDRESS        unix:///run/peepo/ingen.sock or tcp://host:port; without it, the simulation\n"
         "  --display NAME          drm, fbdev, sdl or offscreen (default: sdl with a desktop, else drm, else fbdev)\n"
         "  --drm-device PATH       DRM card (default: the first with a connected display)\n"
         "  --fbdev PATH            framebuffer device (default /dev/fb0)\n"
         "  --touch PATH|none       touch screen input device (default: the first that reports touches)\n"
         "  --rotate 0|90|180|270   rotate the display\n"
-        "  --controls FILE         physical control bindings (default /etc/pedalpi/controls.conf if present)\n"
+        "  --controls FILE         physical control bindings (default /etc/peepo/controls.conf if present)\n"
         "  --patches DIR           saved patches; --engine-patches PATH if the engine sees them elsewhere\n"
         "  --catalogue FILE        modules on offer (default catalogue.json beside the program)\n"
         "  --smoke                 run one second, check that something was drawn, and exit\n"
         "  --screenshot FILE       with --smoke and --display offscreen: save what was drawn as BMP\n";
 }
-#ifdef PEDAL_LVGL_DRM
+#ifdef PEEPO_LVGL_DRM
 // The interface is laid out for 800 x 480. Small HDMI panels often prefer
 // another mode while also offering that one, so take it when it is there
 // (at its highest refresh), and the panel's own preference otherwise.
@@ -70,19 +70,19 @@ std::size_t pick_mode(lv_display_t*, const lv_linux_drm_mode_t* modes, std::size
     return 0;
 }
 #endif
-#ifdef PEDAL_LVGL_SDL
+#ifdef PEEPO_LVGL_SDL
 // Keys standing in for the controls, as in the Windows build.
 int sdl_keys(void* events, SDL_Event* e) {
     if (e->type != SDL_KEYDOWN && e->type != SDL_KEYUP) return 1;
-    auto& out = *static_cast<std::vector<pedal::ControlEvent>*>(events);
+    auto& out = *static_cast<std::vector<peepo::ControlEvent>*>(events);
     const bool down = e->type == SDL_KEYDOWN, repeat = e->key.repeat != 0;
     const auto key = e->key.keysym.sym;
     static const std::pair<SDL_Keycode, std::pair<int, int>> turns[] = {
         {SDLK_q, {1, 1}}, {SDLK_a, {1, -1}}, {SDLK_w, {2, 1}}, {SDLK_s, {2, -1}}, {SDLK_e, {3, 1}}, {SDLK_d, {3, -1}}, {SDLK_r, {4, 1}}, {SDLK_f, {4, -1}}};
     for (const auto& [code, turn] : turns)
-        if (down && key == code) out.push_back({pedal::ControlEvent::Type::Turn, "enc" + std::to_string(turn.first), turn.second});
+        if (down && key == code) out.push_back({peepo::ControlEvent::Type::Turn, "enc" + std::to_string(turn.first), turn.second});
     auto press = [&](const std::string& control) {
-        if (!repeat) out.push_back({down ? pedal::ControlEvent::Type::Press : pedal::ControlEvent::Type::Release, control, 0});
+        if (!repeat) out.push_back({down ? peepo::ControlEvent::Type::Press : peepo::ControlEvent::Type::Release, control, 0});
     };
     if (key >= SDLK_1 && key <= SDLK_4) press("enc" + std::to_string(key - SDLK_0));
     if (key == SDLK_z) press("stomp1");
@@ -139,27 +139,27 @@ int main(int argc, char** argv) {
         catalogue_path = (folder / "catalogue.json").string();
         overlay_path = (folder / "catalogue-overlay.json").string();
         // An installed program finds them in its share directory.
-        if (!std::filesystem::exists(catalogue_path) && std::filesystem::exists(folder / ".." / "share" / "pedalpi" / "catalogue.json")) {
-            catalogue_path = (folder / ".." / "share" / "pedalpi" / "catalogue.json").string();
-            overlay_path = (folder / ".." / "share" / "pedalpi" / "catalogue-overlay.json").string();
+        if (!std::filesystem::exists(catalogue_path) && std::filesystem::exists(folder / ".." / "share" / "peepo" / "catalogue.json")) {
+            catalogue_path = (folder / ".." / "share" / "peepo" / "catalogue.json").string();
+            overlay_path = (folder / ".." / "share" / "peepo" / "catalogue-overlay.json").string();
         }
     }
-    std::vector<pedal::ModuleDefinition> offered;
-    const auto catalogue_issue = pedal::load_catalogue(catalogue_path, overlay_path, offered);
-    if (!address.empty()) pedal::replace_catalogue(std::move(offered));
+    std::vector<peepo::ModuleDefinition> offered;
+    const auto catalogue_issue = peepo::load_catalogue(catalogue_path, overlay_path, offered);
+    if (!address.empty()) peepo::replace_catalogue(std::move(offered));
     else if (catalogue_issue.empty()) {
-        std::vector<pedal::ModuleDefinition> both;
-        for (const auto& d : pedal::demo_catalogue()) if (d.category != "Endpoint") both.push_back(d);
+        std::vector<peepo::ModuleDefinition> both;
+        for (const auto& d : peepo::demo_catalogue()) if (d.category != "Endpoint") both.push_back(d);
         both.insert(both.end(), offered.begin(), offered.end());
-        pedal::replace_catalogue(std::move(both));
+        peepo::replace_catalogue(std::move(both));
     }
     if (!catalogue_issue.empty() && !address.empty()) std::cerr << "catalogue: " << catalogue_issue << "\n";
 
     if (display_name.empty()) {
-#ifdef PEDAL_LVGL_SDL
+#ifdef PEEPO_LVGL_SDL
         if (std::getenv("DISPLAY") || std::getenv("WAYLAND_DISPLAY")) display_name = "sdl";
 #endif
-#ifdef PEDAL_LVGL_DRM
+#ifdef PEEPO_LVGL_DRM
         if (display_name.empty()) display_name = "drm";
 #endif
         if (display_name.empty()) display_name = "fbdev";
@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
     lv_tick_set_cb(now_ms);
     lv_display_t* display = nullptr;
     std::vector<std::uint32_t> offscreen;
-    std::vector<pedal::ControlEvent> key_events;
+    std::vector<peepo::ControlEvent> key_events;
     auto* group = lv_group_create();
     lv_group_set_default(group);
     if (display_name == "offscreen") {
@@ -179,18 +179,18 @@ int main(int argc, char** argv) {
         lv_display_set_buffers(display, offscreen.data(), nullptr, static_cast<std::uint32_t>(offscreen.size() * 4), LV_DISPLAY_RENDER_MODE_FULL);
         lv_display_set_flush_cb(display, [](lv_display_t* d, const lv_area_t*, std::uint8_t*) { lv_display_flush_ready(d); });
     }
-#ifdef PEDAL_LVGL_SDL
+#ifdef PEEPO_LVGL_SDL
     else if (display_name == "sdl") {
         display = lv_sdl_window_create(800, 480);
         if (display) {
-            lv_sdl_window_set_title(display, address.empty() ? "Pedal PI - UI simulator" : "Pedal PI - Ingen engine");
+            lv_sdl_window_set_title(display, address.empty() ? "Peepo - UI simulator" : "Peepo - Ingen engine");
             lv_sdl_mouse_create();
             lv_indev_set_group(lv_sdl_keyboard_create(), group);
             SDL_AddEventWatch(sdl_keys, &key_events);
         }
     }
 #endif
-#ifdef PEDAL_LVGL_DRM
+#ifdef PEEPO_LVGL_DRM
     else if (display_name == "drm") {
         display = lv_linux_drm_create();
         lv_linux_drm_set_mode_cb(display, pick_mode);
@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
     // The touch screen, on the Pi's own displays.
     std::set<std::string> touch_devices;
     if ((display_name == "drm" || display_name == "fbdev") && touch_path != "none") {
-        if (touch_path.empty()) touch_path = pedal::linux_input::find_touchscreen().value_or("");
+        if (touch_path.empty()) touch_path = peepo::linux_input::find_touchscreen().value_or("");
         if (touch_path.empty()) std::cerr << "no touch screen found; use --touch PATH\n";
         else if (auto* touch = lv_evdev_create(LV_INDEV_TYPE_POINTER, touch_path.c_str())) {
             lv_indev_set_display(touch, display);
@@ -226,28 +226,28 @@ int main(int argc, char** argv) {
     }
 
     // Physical controls from the kernel's input devices.
-    std::unique_ptr<pedal::linux_input::EvdevControls> controls;
-    if (controls_path.empty() && std::filesystem::exists("/etc/pedalpi/controls.conf")) controls_path = "/etc/pedalpi/controls.conf";
+    std::unique_ptr<peepo::linux_input::EvdevControls> controls;
+    if (controls_path.empty() && std::filesystem::exists("/etc/peepo/controls.conf")) controls_path = "/etc/peepo/controls.conf";
     if (!controls_path.empty()) {
-        std::vector<pedal::linux_input::Binding> bindings;
-        if (const auto issue = pedal::linux_input::parse_bindings(read_file(controls_path), bindings); !issue.empty())
+        std::vector<peepo::linux_input::Binding> bindings;
+        if (const auto issue = peepo::linux_input::parse_bindings(read_file(controls_path), bindings); !issue.empty())
             std::cerr << controls_path << ": " << issue << "\n";
-        else controls = std::make_unique<pedal::linux_input::EvdevControls>(std::move(bindings), "/dev/input", touch_devices);
+        else controls = std::make_unique<peepo::linux_input::EvdevControls>(std::move(bindings), "/dev/input", touch_devices);
     }
 
-    std::unique_ptr<pedal::Engine> engine;
-    if (address.empty()) engine = std::make_unique<pedal::SimulatedEngine>();
+    std::unique_ptr<peepo::Engine> engine;
+    if (address.empty()) engine = std::make_unique<peepo::SimulatedEngine>();
     else {
-        engine = std::make_unique<pedal::IngenEngine>(pedal::ingen::Options{address});
+        engine = std::make_unique<peepo::IngenEngine>(peepo::ingen::Options{address});
         engine->connect();
     }
-    std::unique_ptr<pedal::PatchStore> store;
+    std::unique_ptr<peepo::PatchStore> store;
     if (!smoke) {
-        const auto root = !patches_path.empty() ? std::filesystem::path(patches_path) : data_home() / "pedalpi" / (address.empty() ? "simulator-patches" : "patches");
-        store = std::make_unique<pedal::PatchStore>(root, engine_patches);
+        const auto root = !patches_path.empty() ? std::filesystem::path(patches_path) : data_home() / "peepo" / (address.empty() ? "simulator-patches" : "patches");
+        store = std::make_unique<peepo::PatchStore>(root, engine_patches);
         if (const auto issue = store->open(); !issue.empty()) std::cerr << "patches: " << issue << "\n";
     }
-    pedal::Application app(*engine, store.get());
+    peepo::Application app(*engine, store.get());
 
     const auto started = now_ms();
     auto last = started;

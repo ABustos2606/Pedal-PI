@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include "controls/controls.hpp"
 #include <optional>
@@ -13,7 +13,7 @@
 // relative turns on its own axis, and each gpio-key overlay a key code of its
 // own (see config/pi/config.txt). Bindings name those codes, so nothing
 // depends on device numbering, and a device that comes and goes is found again.
-namespace pedal::linux_input {
+namespace peepo::linux_input {
 struct Binding {
     std::string control;
     enum class Kind { Turn, Key } kind = Kind::Key;

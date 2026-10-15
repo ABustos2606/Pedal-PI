@@ -25,7 +25,7 @@ Casette's published source uses LVGL framebuffer output, evdev touch, tabs, leve
 
 ## Visual identity — open
 
-The basic form is agreed: named squares and cables. Colour palette, typography, square and cable styling, and the instrument's name/branding remain open. Design for legibility on a small screen viewed from standing height on a pedalboard, and review on the physical display.
+The basic form is agreed: named squares and cables. The instrument is named **Peepo**, agreed 14 October 2026. Colour palette, typography, and square and cable styling remain open. Design for legibility on a small screen viewed from standing height on a pedalboard, and review on the physical display.
 
 ## Patch view (main screen)
 

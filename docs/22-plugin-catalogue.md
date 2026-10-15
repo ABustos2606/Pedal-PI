@@ -22,7 +22,7 @@ The agreed collection is "Poly's Mutable-derived modules and compatible MODEP ef
 
 ## Builds (P9.2)
 
-`tools/ingen-spike/14-more-plugins.sh` builds everything below into `/opt/pedalpi`, beside the Mutable-derived modules of `02-plugins.sh` and the NAM candidates of `12-nam.sh` ([NAM in Ingen](21-nam.md)).
+`tools/ingen-spike/14-more-plugins.sh` builds everything below into `/opt/peepo`, beside the Mutable-derived modules of `02-plugins.sh` and the NAM candidates of `12-nam.sh` ([NAM in Ingen](21-nam.md)).
 
 - Sources are cloned fresh at the commits shown; nothing under `reference/` changes.
 - Each build fix is a variable or a build-tree copy given in the script, never an edit to upstream files.
@@ -55,7 +55,7 @@ Every component builds for x86-64. All binaries need only libraries the system p
 `tools/ingen-spike/15-compat.sh` does the following:
 
 1. Exports the catalogue restricted to the inventory.
-2. Loads every offered entry in the engine and compares it with the export (`pedal_catalogue_live`).
+2. Loads every offered entry in the engine and compares it with the export (`peepo_catalogue_live`).
 3. For every inventory entry, records:
    - its source and bundle;
    - its binary's machine and libraries;

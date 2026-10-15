@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include "engine/ingen/session.hpp"
 #include "engine/ingen/transport.hpp"
 
-namespace pedal {
+namespace peepo {
 // The engine contract over a running Ingen. Audio belongs to the engine
 // process: connecting, disconnecting or destroying this object never starts,
 // stops or restarts it, and a lost connection is retried, not replaced.

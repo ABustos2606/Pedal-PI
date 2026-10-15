@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """Minimal raw-socket client for probing Ingen's Turtle protocol.
 
 Deliberately dumb: it frames messages, keeps a transcript, and correlates
@@ -10,14 +10,14 @@ import re
 import socket
 import time
 
-SOCKET_PATH = "/tmp/pedalpi-ingen.sock"
+SOCKET_PATH = "/tmp/peepo-ingen.sock"
 PREFIXES = """@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
 @prefix ingen: <http://drobilla.net/ns/ingen#> .
 @prefix lv2: <http://lv2plug.in/ns/lv2core#> .
 @prefix patch: <http://lv2plug.in/ns/ext/patch#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix pedalpi: <urn:pedalpi:ns#> .
+@prefix peepo: <urn:peepo:ns#> .
 """
 
 

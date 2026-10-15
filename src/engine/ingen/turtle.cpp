@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "engine/ingen/turtle.hpp"
 #include <stdexcept>
 
-namespace pedal::turtle {
+namespace peepo::turtle {
 namespace {
 constexpr std::string_view rdf_type = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 constexpr std::string_view xsd = "http://www.w3.org/2001/XMLSchema#";

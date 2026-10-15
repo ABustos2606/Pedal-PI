@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include <string>
 #include <string_view>
@@ -8,7 +8,7 @@
 
 // Just enough JSON for the project's own generated files: strict, bounded in
 // depth, and with no dependency to pin on two platforms.
-namespace pedal::json {
+namespace peepo::json {
 struct Value {
     enum class Kind { Null, Boolean, Number, String, Array, Object };
     Kind kind = Kind::Null;

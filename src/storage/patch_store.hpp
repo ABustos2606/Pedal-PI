@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include "storage/bundle.hpp"
 #include <filesystem>
 #include <map>
 #include <optional>
 
-namespace pedal {
+namespace peepo {
 // Saved patches on disk, one directory per patch identity:
 //
 //   <root>/<id>/r000007.ingen/           the newest complete revision

@@ -24,8 +24,8 @@ The new interface is written from scratch (decision D01). These observations fro
 | UI technology | `digit_ui/README.md`, PySide2 imports in `show_widget.py` | Beebo uses Qt 5/PySide2 on X11; our toolkit is chosen independently (D12) and should not need a desktop session |
 | Screen geometry | 27 QML files reference `1280`, including `TopLevelWindow.qml`, `TitleFooter.qml`, `PatchBay.qml` | Beebo is designed for 1280 × 720; design natively for 800 × 480 |
 | Custom controls | About 60 QML files import `"controls"`; that directory is absent in the inspected checkout | Beebo's UI would not launch unchanged; not relevant to a new interface |
-| Hardware controls | `pedal_hardware.py` | Fixed device paths and two-encoder model; design our own hardware adapter |
-| Hardware bypass | `pedal_hardware.py` | Original GPIO numbers do not describe Raspberry Pi wiring; bypass is out of scope without suitable hardware |
+| Hardware controls | `peepo_hardware.py` | Fixed device paths and two-encoder model; design our own hardware adapter |
+| Hardware bypass | `peepo_hardware.py` | Original GPIO numbers do not describe Raspberry Pi wiring; bypass is out of scope without suitable hardware |
 | Input gain | `show_widget.py:set_input_level` | Beebo-specific codec commands; use the chosen audio interface's own controls |
 | Persistent paths | `show_widget.py`, `ingen_wrapper.py`, asset-browser modules | Define our own storage layout |
 | Maintenance actions | Firmware/reset/import routines in `show_widget.py` | Not carried over; design Pi equivalents only if needed |
@@ -53,7 +53,7 @@ The local Poly NAM fork is an older NAM Core integration. Current upstream plugi
 - The Poly NAM LV2 fork includes GPLv3 text in `LICENCE.md`; dependency and file notices remain authoritative for their respective parts.
 - The pinned Casette snapshot has no root license file or license notice in its inspected README and C++ files. It remains a technical reference; copying its code or bundled model/IR assets requires establishing the applicable permissions.
 
-**Project license — agreed 13 October 2026:** original Pedal PI code and documentation use GPL-3.0-or-later. The root [LICENSE](../LICENSE) contains the complete GPLv3 text. [Third-party notices](../THIRD_PARTY_NOTICES.md) define its scope and record the inspected upstream evidence. The repository license does not relicense reference sources, dependencies, models, IRs, fonts or other third-party assets. Phase 11 includes a license/source inventory for the actual release components.
+**Project license — agreed 13 October 2026:** original Peepo code and documentation use GPL-3.0-or-later. The root [LICENSE](../LICENSE) contains the complete GPLv3 text. [Third-party notices](../THIRD_PARTY_NOTICES.md) define its scope and record the inspected upstream evidence. The repository license does not relicense reference sources, dependencies, models, IRs, fonts or other third-party assets. Phase 11 includes a license/source inventory for the actual release components.
 
 ## Engine dependency observations
 
@@ -82,7 +82,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D03 | Design for the user's 5-inch 800 × 480 screen | Agreed and verified on Pi, 14 October 2026: HDMI-A-1 at 800 × 480, QDtech MPI5001 USB touch, native DRM interface with correct touch positioning ([record](23-pi-bring-up.md)) |
 | D04 | Include Poly's Mutable Instruments-derived modules and compatible MODEP effects | Agreed ambition; individual compatibility unverified |
 | D05 | Documentation before implementation | Agreed |
-| D06 | OS/dependency baseline | Current baseline verified on Pi: Patchbox OS / Debian 12 bookworm arm64; matching bookworm build root with lilv 0.24.24 and zix 0.4.2 in /opt/pedalpi. The rebuilt package runs there; a later final OS decision remains separate ([record](23-pi-bring-up.md)) |
+| D06 | OS/dependency baseline | Current baseline verified on Pi: Patchbox OS / Debian 12 bookworm arm64; matching bookworm build root with lilv 0.24.24 and zix 0.4.2 in /opt/peepo. The rebuilt package runs there; a later final OS decision remains separate ([record](23-pi-bring-up.md)) |
 | D07 | Audio interface, channels, sample rate and buffers | Current development path verified: Tascam US-100 / CODEC, stereo at 48 kHz / 128 frames × 3 periods. Guitar and short UI-restart continuity are confirmed; final interface choice, gain/latency and buffer budgets remain open |
 | D08 | Knob/switch counts and transport | Counts agreed 14 October 2026: four push encoders the user owns, three momentary SPST footswitches. Transport proposed: direct GPIO through the kernel's rotary-encoder and gpio-key drivers, to verify on the Pi ([physical controls](18-physical-controls.md)) |
 | D09 | Numeric cold-boot and latency targets | Open; measure first |
@@ -90,7 +90,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D11 | Four encoders and three stomp switches | Agreed 14 October 2026, matching the user's hardware |
 | D12 | UI toolkit and programming language | Agreed: LVGL (C/C++ on Linux DRM/KMS or framebuffer with evdev touch) |
 | D13 | Storage of UI data (positions, assignments) | Agreed, revised 13 October 2026: stored as properties on blocks, ports and the graph inside the engine and its saved bundle. The earlier companion JSON file is dropped |
-| D14 | Visual interaction and identity | Agreed interaction: drag-and-drop square modules, tap to enter parameter page, series/parallel audio routing; visual styling and name open |
+| D14 | Visual interaction and identity | Agreed interaction: drag-and-drop square modules, tap to enter parameter page, series/parallel audio routing; name agreed as **Peepo** on 14 October 2026; visual styling open |
 | D15 | Keep Poly's Ingen fork as the engine | Current direction; the engine client layer keeps substitution possible |
 | D16 | Routing cable types | Agreed, revised 13 October 2026: audio cables and control (CV) cables, each patched connector by connector. Audio and control are not joined to each other in the interface. MIDI cables remain deferred |
 | D17 | Retain Casette as another unchanged technical reference and update project documentation | Agreed 13 October 2026; downloaded and recorded in the reference manifest |
@@ -99,7 +99,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D20 | Shared Windows 800 × 480 LVGL simulator and Pi UI workflow | Implemented: pinned LVGL v9.5.0, C++20/CMake, Windows and Linux DRM/evdev backends; native Pi screen/touch and UI-only restart verified. Debugger session remains P1.1 |
 | D21 | Detailed phase/task implementation plan | Implementation under way since 13 October 2026. Reconciled 14 October with actual task checkboxes, native evidence, partial checks and next actions; the plan is the authoritative progress record ([plan](10-technical-implementation-plan.md)) |
 | D23 | Engine build and protocol | Verified working baseline: upstream Ingen 13a045d0 + Poly MIDI-learn fix + project patches 0001–0005, Turtle protocol. ARM build and Pi guitar/Clouds/save/load/UI-reconnect checks pass; remaining native host/routing cases stay P3.4–P3.7 ([record](23-pi-bring-up.md)) |
-| D22 | Project license | Agreed 13 October 2026: GPL-3.0-or-later for original Pedal PI files; preserve upstream licenses, including Ingen's AGPL-3.0-or-later |
+| D22 | Project license | Agreed 13 October 2026: GPL-3.0-or-later for original Peepo files; preserve upstream licenses, including Ingen's AGPL-3.0-or-later |
 
 ## Remaining information and resolved implementation inputs
 

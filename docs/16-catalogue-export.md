@@ -23,17 +23,17 @@ The interface no longer needs a hand-written entry to use a real plugin. A Linux
 
 **Clouds, Warps and Rings are silent until switched on.** Each has a control named `enabled` whose default is 0, and with it at 0 the plugin writes silence. Poly's interface sets that control instead of using the engine's bypass. Loaded with default values, all three measured 0.0000 out.
 
-The catalogue now records such a control as the module's on/off switch, and the adapter uses it: adding the module sets it to 1, **Software bypass** clears it, and a module reads as bypassed when it is 0. Other modules keep using the engine's own bypass. The switch is not shown as a parameter. For these three families bypass therefore mutes the module, as it does on Beebo; it does not pass the dry signal.
+The catalogue now records such a control as the module's on/off switch. Adding the module sets it to 1, and it stays at 1. **Software bypass** uses the engine's own bypass, as for every other module, which passes each input to its output. (Clearing the switch instead only muted the module, which made bypass act as a kill switch.) A module whose switch is 0, from a patch saved before this change, reads as bypassed, and enabling it sets the switch back to 1. The switch is not shown as a parameter.
 
 ## How it works
 
 | Part | Role |
 | --- | --- |
-| `tools/catalogue-export/` (`pedal_catalogue_export`) | Linux tool. Reads plugins through Lilv, as the engine does, following the same `LV2_PATH`. Writes the catalogue file. Loads no plugin code. |
+| `tools/catalogue-export/` (`peepo_catalogue_export`) | Linux tool. Reads plugins through Lilv, as the engine does, following the same `LV2_PATH`. Writes the catalogue file. Loads no plugin code. |
 | `src/catalogue/` | Reads and writes the file on every platform, applies the overlay, and holds a small strict JSON reader. |
 | `config/catalogue/wsl-debian.json` | The exported file for the WSL engine: the fixture Windows uses. |
 | `config/catalogue/overlay.json` | Project-owned presentation rules, kept apart so a new export does not undo them. |
-| `tests/catalogue_live.cpp` (`pedal_catalogue_live`) | Loads every offered entry in a running engine and compares it with the file. |
+| `tests/catalogue_live.cpp` (`peepo_catalogue_live`) | Loads every offered entry in a running engine and compares it with the file. |
 | `tools/ingen-spike/02-plugins.sh` | Builds Poly's Mutable-derived plugins and installs Debian's MDA effects for the development engine. |
 | `tools/ingen-spike/09-sound.py` | Measures a sine through chosen modules. |
 
@@ -57,10 +57,10 @@ bash tools/ingen-spike/08-catalogue.sh   # export, load everything, measure
 The second command rewrites `config/catalogue/wsl-debian.json`. The Windows build copies it beside the program as `catalogue.json`, with the overlay as `catalogue-overlay.json`, and `--engine` loads both. `--catalogue file.json` names another file.
 
 ```powershell
-& '.\build\Debug\pedal_pi.exe' --engine tcp://127.0.0.1:16180
+& '.\build\Debug\peepo.exe' --engine tcp://127.0.0.1:16180
 ```
 
-The exporter alone: `LV2_PATH=/usr/lib/lv2 pedal_catalogue_export -o catalogue.json`, with `--exclude` to leave plugins out by part of their address and `--sample-rate` for the few controls whose range depends on it.
+The exporter alone: `LV2_PATH=/usr/lib/lv2 peepo_catalogue_export -o catalogue.json`, with `--exclude` to leave plugins out by part of their address and `--sample-rate` for the few controls whose range depends on it.
 
 ## Limits and open points
 
@@ -70,4 +70,4 @@ The exporter alone: `LV2_PATH=/usr/lib/lv2 pedal_catalogue_export -o catalogue.j
 - **The browser is long.** Since 14 October 2026 the export offers only the selected inventory (`--only config/catalogue/inventory.txt`), but that is still about 180 modules. Categories keep it navigable; filtering belongs to P9.5.
 - **Per-control presentation.** Since 14 October 2026 the overlay can rename, reorder, hide and retype individual controls and choose their defaults; Clouds uses it ([Clouds](20-clouds.md)). Other modules still show their controls as exported.
 - **File parameters.** Plugins that take a file through an LV2 patch property, such as a NAM model, are exported with their ordinary controls only.
-- **Added to the WSL Debian:** `mda-lv2`, `gettext-base`, and the plugin build under `/opt/pedalpi`.
+- **Added to the WSL Debian:** `mda-lv2`, `gettext-base`, and the plugin build under `/opt/peepo`.

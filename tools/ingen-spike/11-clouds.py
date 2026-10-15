@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """Clouds in the engine with test signals (P6.2 host side, P6.4 in part).
 
 Builds stereo IN -> Clouds -> OUT in a running engine, feeds generated
@@ -181,6 +181,11 @@ def main():
     off = rig.record(0.5)
     report(rms(off) < 1e-6, "its own switch at 0 silences it -- %.6f RMS (it does not pass the dry signal)" % rms(off))
     set_control(c, "enabled", 1)
+    # So Peepo's bypass is the engine's, which passes each input through.
+    c.set(BLOCK, "ingen:enabled", "false")
+    through = rig.record(0.5)
+    report(abs(rms(through[0]) - direct) < 0.003, "the engine's bypass passes the input -- %.4f RMS for %.4f direct" % (rms(through[0]), direct))
+    c.set(BLOCK, "ingen:enabled", "true")
 
     set_control(c, "blend_param", 0)
     out = rig.record(1.0, settle=1.0)
@@ -284,7 +289,7 @@ def main():
 
     # --- saved values come back
     print("==== state restoration through a bundle")
-    root = sys.argv[1] if len(sys.argv) > 1 else "/tmp/pedalpi-clouds"
+    root = sys.argv[1] if len(sys.argv) > 1 else "/tmp/peepo-clouds"
     shutil.rmtree(root, ignore_errors=True)
     os.makedirs(root)
     bundle = os.path.join(root, "clouds.ingen")

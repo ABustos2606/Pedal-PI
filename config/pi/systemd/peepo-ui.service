@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# The touch interface. It only wants the engine: stopping or restarting it
+# never touches the engine, and it reconnects by itself when the engine
+# restarts.
+[Unit]
+Description=Peepo touch interface
+PartOf=peepo.target
+Wants=peepo-engine.service
+After=peepo-engine.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=peepo
+StateDirectory=peepo
+EnvironmentFile=/etc/peepo/peepo.conf
+ExecStart=/opt/peepo/bin/peepo --engine unix:///run/peepo/ingen.sock --patches /var/lib/peepo/patches --controls /etc/peepo/controls.conf $UI_OPTIONS
+Restart=always
+RestartSec=1

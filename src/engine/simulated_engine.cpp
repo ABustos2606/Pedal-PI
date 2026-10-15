@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "engine/simulated_engine.hpp"
 #include "storage/bundle.hpp"
 #include <algorithm>
@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <limits>
 
-namespace pedal {
+namespace peepo {
 namespace {
 // file:///C:/x or file:///home/x as a local path; empty for anything else.
 std::filesystem::path local_path(const std::string& location) {

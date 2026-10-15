@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 #
 # Give the development engine real plugins to load: Poly's Mutable
 # Instruments-derived modules, built at the commit pinned in
@@ -12,7 +12,7 @@
 # runs the same script in an arm64 root for the Pi.
 set -euo pipefail
 
-PREFIX=/opt/pedalpi
+PREFIX=/opt/peepo
 SRC=$PREFIX/src
 LENTICULAR_COMMIT=141fdc89e250987bae421664132ddaedae735107
 

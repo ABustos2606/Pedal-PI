@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 # Build (if needed) and run every engine check. Run as root inside Debian:
 #   bash run-all.sh
 D="$(dirname "$(readlink -f "$0")")"

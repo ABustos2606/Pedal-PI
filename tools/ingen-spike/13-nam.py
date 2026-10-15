@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 """A NAM candidate in the engine (P8.2): models, worker, state, errors.
 
 Loads the candidate whose bundle is on the engine's LV2_PATH, gives it models

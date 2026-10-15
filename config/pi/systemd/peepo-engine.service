@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# The audio engine. Bound to JACK, independent of the interface: the
+# interface can stop, crash or restart while the engine keeps playing.
+[Unit]
+Description=Peepo audio engine (Ingen)
+PartOf=peepo.target
+BindsTo=peepo-jack.service
+After=peepo-jack.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=peepo
+RuntimeDirectory=peepo
+StateDirectory=peepo
+ExecStart=/opt/peepo/bin/peepo-engine
+ExecStartPost=/bin/sh -c 'for i in $(seq 100); do [ -S /run/peepo/ingen.sock ] && exit 0; sleep 0.1; done; exit 1'
+LimitRTPRIO=95
+LimitMEMLOCK=infinity
+Restart=on-failure
+RestartSec=2

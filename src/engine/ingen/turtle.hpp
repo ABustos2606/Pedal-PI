@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include <map>
 #include <string>
@@ -9,7 +9,7 @@
 // The Turtle subset Ingen writes on its socket: prefix directives, blank-node
 // subjects, nested anonymous nodes and typed literals. A tokenizing reader, so
 // a period or bracket inside a string never ends a statement.
-namespace pedal::turtle {
+namespace peepo::turtle {
 struct Term {
     enum class Kind { Iri, Blank, Literal };
     Kind kind = Kind::Iri;

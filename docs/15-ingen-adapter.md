@@ -2,7 +2,7 @@
 
 **Implemented:** 13 October 2026, on the Windows PC. **Scope:** P4.1 (protocol adapter), P4.2 (communication threading) and P4.3 (state synchronization), and, since 14 October 2026, the rest of P4.6 and patches on disk ([patch storage](17-patch-storage.md)). **Verified against:** the patched Ingen of [the engine evidence](14-ingen-engine-evidence.md), running under WSL2 on JACK's dummy backend, with the LV2 example amplifier. **Not covered:** the Pi, an ARM build, a real audio interface and physical controls.
 
-`IngenEngine` implements the same `Engine` contract as the simulated engine, so the interface code is unchanged. The interface now runs against a real engine: `pedal_pi.exe --engine tcp://127.0.0.1:16180` shows and edits the graph of an Ingen started under WSL.
+`IngenEngine` implements the same `Engine` contract as the simulated engine, so the interface code is unchanged. The interface now runs against a real engine: `peepo.exe --engine tcp://127.0.0.1:16180` shows and edits the graph of an Ingen started under WSL.
 
 ![The Windows interface showing a live engine graph](images/ui-ingen-engine.png)
 
@@ -29,11 +29,11 @@ The stand-in engine in `tests/ingen_tests.cpp` covers what a live run cannot pro
 | --- | --- |
 | IN and OUT modules | The graph's own audio ports `in_l`, `in_r`, `out_l`, `out_r`, created on first connection. They appear to JACK as `ingen:in_l` and so on. |
 | Module with ID *n* | Block `ingen:/main/m`*n*. A block with any other name gets an unused number for as long as it exists. |
-| Module name, position | `urn:pedalpi:ns#displayName`, `ingen:canvasX`, `ingen:canvasY` on the block |
+| Module name, position | `urn:peepo:ns#displayName`, `ingen:canvasX`, `ingen:canvasY` on the block |
 | Software bypass | `ingen:enabled false` on the block; for a plugin with its own on/off control, that control (see [catalogue export](16-catalogue-export.md)) |
 | Parameter | `ingen:value` on a control input port. Name, unit and range come from the catalogue; the engine supplies only the value. |
 | Cable | One `ingen:Arc` between two ports |
-| Patch name | `urn:pedalpi:ns#patchName` on the graph, set with `patch:context ingen:internalContext` |
+| Patch name | `urn:peepo:ns#patchName` on the graph, set with `patch:context ingen:internalContext` |
 | Duplicate | `patch:Copy` inside the engine, then a `Get` of the copy |
 | CPU reading | `ingen:meanRunLoad`: the share of the audio period spent processing, averaged since the engine started. Unknown until the engine first reports it. No tempo reading yet. |
 
@@ -64,18 +64,18 @@ Inside Debian (WSL), start an engine and leave it running:
 Then on Windows:
 
 ```powershell
-& '.\build\Debug\pedal_pi.exe' --engine tcp://127.0.0.1:16180
+& '.\build\Debug\peepo.exe' --engine tcp://127.0.0.1:16180
 ```
 
 **+ Add** lists the modules exported from that engine's installed plugins; see [catalogue export](16-catalogue-export.md). No sound is produced; the dummy backend has no audio device. Without `--engine` the application runs the simulation as before.
 
-A Unix socket address (`unix:///tmp/pedalpi-ingen.sock`) is the route on Linux and the one intended for the Pi. TCP exists so the Windows build can reach an engine in WSL.
+A Unix socket address (`unix:///tmp/peepo-ingen.sock`) is the route on Linux and the one intended for the Pi. TCP exists so the Windows build can reach an engine in WSL.
 
 ## Limits and open points
 
 - **The engine's TCP port is open to the network** when it is started with one: Ingen listens on every interface with no authentication. Since 14 October 2026 engine patch 0004 lets `--engine-port 0` turn it off, and the Pi's service does ([Linux and Pi](19-linux-and-pi.md)). The development engine in WSL keeps port 16180 for the Windows build.
 - **Catalogue.** Exported from the installed plugins since 13 October 2026 ([record](16-catalogue-export.md)); 58 modules are offered on the WSL engine. A control the catalogue leaves out is not shown.
-- **Unsaved-changes marker.** Since 14 October 2026 it is a property of the engine's graph (`pedalpi:modified`), so a restarted interface and a second client see it. Another client's edits set it only if that client sets it too.
+- **Unsaved-changes marker.** Since 14 October 2026 it is a property of the engine's graph (`peepo:modified`), so a restarted interface and a second client see it. Another client's edits set it only if that client sets it too.
 - **Control assignments** stored on ports are not read yet; that belongs with Phase 7.
 - **Merge level.** The engine still sums several cables into one input at unity. The adapter passes them through; the merge rule of P3.7 is undecided.
 - **Windows timing.** Round trips measured from Windows (16 ms to the WSL address, 56 ms through `127.0.0.1`) are dominated by the Windows timer and the WSL relay, not by the adapter; the same code measures 5.9 ms over TCP inside Linux.

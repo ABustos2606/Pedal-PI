@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "catalogue/json.hpp"
 #include <charconv>
 #include <cmath>
 #include <stdexcept>
 
-namespace pedal::json {
+namespace peepo::json {
 namespace {
 constexpr unsigned max_depth = 32;
 struct Failure : std::runtime_error { using std::runtime_error::runtime_error; };

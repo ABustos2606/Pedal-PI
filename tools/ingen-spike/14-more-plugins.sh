@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 #
 # Build the rest of the catalogue inventory (P9.2) for the development engine:
 # Poly's remaining plugin repositories at the commits pinned in
@@ -14,7 +14,7 @@
 # variable given here, never an edit to upstream files.
 set -uo pipefail
 
-PREFIX=/opt/pedalpi
+PREFIX=/opt/peepo
 SRC=$PREFIX/src/more-plugins
 LV2DIR=$PREFIX/lib/lv2
 JOBS=$(nproc)

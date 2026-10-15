@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pedal PI contributors
+# Copyright (C) 2026 Peepo contributors
 #
 # Build the two NAM candidates of P8.1 for the development engine:
 #   current  mikeoliphant/neural-amp-modeler-lv2 on NeuralAudio
 #   poly     the Poly fork pinned in reference/manifest.json, on NAM Core
 # Both declare the same plugin URI, so each goes into its own directory and
 # the engine is started with one of them on LV2_PATH at a time:
-#   LV2_PATH=$LV2_PATH:/opt/pedalpi/nam/current
+#   LV2_PATH=$LV2_PATH:/opt/peepo/nam/current
 # Run as root inside Debian (or the arm64 root), after 01-build.sh:
 #   bash 12-nam.sh
 # Nothing under reference/ is touched; sources are cloned fresh.
 set -euo pipefail
 
-PREFIX=/opt/pedalpi
+PREFIX=/opt/peepo
 SRC=$PREFIX/src
 CURRENT_COMMIT=96924205f9cbfbbf0e63f7fe7f4b6d2f1b60c402
 POLY_COMMIT=a3a6520ea519513a6ca1e82d350d47e3c7891732
@@ -35,13 +35,13 @@ fetch() { # url dir commit
 }
 
 build() { # dir install-dir
-    cmake -S "$SRC/$1" -B "$SRC/$1/build-pedalpi" -DCMAKE_BUILD_TYPE=Release "${ARCH_FLAGS[@]}" >"$SRC/$1-cmake.log" 2>&1 \
+    cmake -S "$SRC/$1" -B "$SRC/$1/build-peepo" -DCMAKE_BUILD_TYPE=Release "${ARCH_FLAGS[@]}" >"$SRC/$1-cmake.log" 2>&1 \
         || { tail -30 "$SRC/$1-cmake.log"; exit 1; }
-    cmake --build "$SRC/$1/build-pedalpi" -j"$JOBS" >"$SRC/$1-build.log" 2>&1 \
+    cmake --build "$SRC/$1/build-peepo" -j"$JOBS" >"$SRC/$1-build.log" 2>&1 \
         || { grep -E "error|Error" "$SRC/$1-build.log" | head -30; exit 1; }
     rm -rf "$2"; mkdir -p "$2"
     # Both projects leave a finished bundle in their build tree.
-    bundle=$(find "$SRC/$1/build-pedalpi" -name manifest.ttl -path '*neural_amp_modeler.lv2*' -printf '%h\n' | head -1)
+    bundle=$(find "$SRC/$1/build-peepo" -name manifest.ttl -path '*neural_amp_modeler.lv2*' -printf '%h\n' | head -1)
     [ -n "$bundle" ] || { echo "no bundle produced for $1"; exit 1; }
     cp -r "$bundle" "$2/"
 }

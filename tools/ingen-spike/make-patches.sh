@@ -3,7 +3,7 @@
 # patches that 01-build.sh applies. Kept so the patches can be regenerated.
 set -euo pipefail
 out="$(dirname "$(readlink -f "$0")")/patches"
-cd /opt/pedalpi/src/ingen
+cd /opt/peepo/src/ingen
 git checkout -q -- src
 python3 - <<'PY'
 def edit(path, pairs):

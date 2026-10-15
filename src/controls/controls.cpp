@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "controls/controls.hpp"
 #include <algorithm>
 #include <cmath>
 
-namespace pedal {
+namespace peepo {
 std::vector<std::string> ControlLayout::ids() const {
     std::vector<std::string> out;
     for (unsigned i = 1; i <= encoders; ++i) out.push_back("enc" + std::to_string(i));

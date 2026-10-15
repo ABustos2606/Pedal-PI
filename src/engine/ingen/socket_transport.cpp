@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "engine/ingen/transport.hpp"
 #include <condition_variable>
 #include <deque>
@@ -36,7 +36,7 @@ constexpr socket_t no_socket = -1;
 constexpr int send_flags = MSG_NOSIGNAL;
 #endif
 
-namespace pedal::ingen {
+namespace peepo::ingen {
 namespace {
 void close_socket(socket_t fd) {
 #ifdef _WIN32

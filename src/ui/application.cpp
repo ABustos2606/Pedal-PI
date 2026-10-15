@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "ui/application.hpp"
 #include "core/tuning.hpp"
 // v9.5.0 exposes the hit-test payload through this header. Keep this usage
@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace pedal {
+namespace peepo {
 namespace {
 constexpr std::uint32_t background = 0x10171f, surface = 0x1a2530, border = 0x2b3b4a;
 constexpr std::uint32_t text = 0xe9eef2, muted = 0x94a7b8, accent = 0x8edbc2;
@@ -52,8 +52,8 @@ ModuleLayout module_layout(const Module& m) {
         if (it == m.parameters.end() || it->kind != expected.kind || it->choices != expected.choices || !validate_parameter(*it).empty())
             return ModuleLayout::Generic;
     }
-    if (m.uri == "urn:pedalpi:demo:clouds") return ModuleLayout::Clouds;
-    if (m.uri == "urn:pedalpi:demo:delay") return ModuleLayout::Delay;
+    if (m.uri == "urn:peepo:demo:clouds") return ModuleLayout::Clouds;
+    if (m.uri == "urn:peepo:demo:delay") return ModuleLayout::Delay;
     if (tuner_uri(m.uri) && std::any_of(m.parameters.begin(), m.parameters.end(), [](const Parameter& p) { return p.symbol == "tuning"; })) return ModuleLayout::Tuner;
     return ModuleLayout::Generic;
 }
@@ -676,7 +676,7 @@ void Application::rebuild() {
     lv_obj_set_style_radius(header, 0, 0);
     const bool patch = page_ == Page::Patch;
     if (patch) {
-        label(header, "PEDAL / PI", 24, 10, 0, accent, &lv_font_montserrat_14);
+        label(header, "Peepo", 24, 10, 0, accent, &lv_font_montserrat_14);
         auto* title = label(header, graph_.name + (graph_.dirty ? " *" : ""), 24, 32, 200, text, &lv_font_montserrat_24);
         lv_label_set_long_mode(title, LV_LABEL_LONG_DOT);
         lv_obj_set_height(title, 28);

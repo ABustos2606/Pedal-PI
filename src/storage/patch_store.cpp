@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #include "storage/patch_store.hpp"
 #include "engine/ingen/turtle.hpp"
 #include <algorithm>
@@ -10,7 +10,7 @@
 #include <random>
 #include <sstream>
 
-namespace pedal {
+namespace peepo {
 namespace fs = std::filesystem;
 namespace {
 std::string revision_name(unsigned revision) {
@@ -118,7 +118,7 @@ std::optional<StoredPatch> PatchStore::read(const std::string& id) const {
         // Without its project properties a bundle is still a usable graph,
         // and its folder says whose it is. Another identity is a misplaced copy.
         else if (!bundle.id.empty() && bundle.id != id) issue = "main.ttl belongs to another patch (" + bundle.id + ")";
-        else if (bundle.schema > bundle_schema_version) issue = "saved by a newer Pedal PI (schema " + std::to_string(bundle.schema) + ")";
+        else if (bundle.schema > bundle_schema_version) issue = "saved by a newer Peepo (schema " + std::to_string(bundle.schema) + ")";
         if (issue.empty()) {
             patch.revision = revision;
             patch.path = path;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 // Physical controls without the hardware: gestures from raw events, the
 // mapping rules, soft takeover, and assignments kept with the patch.
 #include "controls/controls.hpp"
@@ -9,7 +9,7 @@
 #include <iostream>
 #include <stdexcept>
 
-using namespace pedal;
+using namespace peepo;
 namespace {
 void check(bool result, const char* why) { if (!result) throw std::runtime_error(why); }
 bool near(double a, double b) { return std::abs(a - b) < 1e-9; }
@@ -107,7 +107,7 @@ void mapping() {
 }
 
 void assignments(const std::filesystem::path& root) {
-    Assignment a; a.control = "enc2"; a.module = 4; a.parameter = "mix"; a.minimum = 10; a.maximum = 90; a.inverted = true; a.plugin = "urn:pedalpi:demo:clouds";
+    Assignment a; a.control = "enc2"; a.module = 4; a.parameter = "mix"; a.minimum = 10; a.maximum = 90; a.inverted = true; a.plugin = "urn:peepo:demo:clouds";
     const auto text = encode_assignment(a, "m4");
     Assignment back; std::string block;
     check(decode_assignment("enc2", text, back, block) && block == "m4" && back.parameter == "mix" && back.minimum == 10 && back.maximum == 90 && back.inverted &&
@@ -119,7 +119,7 @@ void assignments(const std::filesystem::path& root) {
     SimulatedEngine engine;
     auto run = [&](Command c) { engine.submit(std::move(c)); return engine.advance(100).at(0); };
     check(run(Assign{a}).accepted && engine.snapshot().assignments.size() == 1 && engine.snapshot().dirty, "assignment not accepted or not an edit");
-    check(engine.snapshot().assignments[0].plugin == "urn:pedalpi:demo:clouds", "assignment did not record its plugin");
+    check(engine.snapshot().assignments[0].plugin == "urn:peepo:demo:clouds", "assignment did not record its plugin");
     auto over = a; over.minimum = -5;
     check(!run(Assign{over}).accepted, "out-of-range assignment accepted");
     Assignment bypass; bypass.control = "stomp1"; bypass.module = 3; bypass.action = ControlAction::Bypass;
@@ -145,7 +145,7 @@ void assignments(const std::filesystem::path& root) {
     check(engine.snapshot().assignments.size() == 1 && engine.snapshot().assignments[0].control == "enc2", "removed module left its assignment behind");
     // A different plugin under the same identity is never controlled.
     auto graph = engine.snapshot();
-    graph.assignments[0].plugin = "urn:pedalpi:demo:delay";
+    graph.assignments[0].plugin = "urn:peepo:demo:delay";
     check(!assignment_target(graph, graph.assignments[0]) && validate_graph(graph).empty(), "orphan treated as live, or refused in a graph");
 
     // Instrument-wide stomp actions live beside the patches.
@@ -156,7 +156,7 @@ void assignments(const std::filesystem::path& root) {
 }
 int main() {
     try {
-        const auto root = std::filesystem::temp_directory_path() / "pedalpi-controls-tests";
+        const auto root = std::filesystem::temp_directory_path() / "peepo-controls-tests";
         std::filesystem::remove_all(root);
         gestures();
         mapping();

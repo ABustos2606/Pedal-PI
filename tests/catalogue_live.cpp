@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 // Does the exported catalogue describe what the engine actually builds? Loads
 // every available module in a running Ingen through the adapter, compares the
 // engine's ports with the catalogue's, moves every control across its range
 // and removes the module again. Replaces whatever patch the engine holds.
-//   pedal_catalogue_live unix:///tmp/pedalpi-ingen.sock catalogue.json [overlay.json [keep-uri]]
+//   peepo_catalogue_live unix:///tmp/peepo-ingen.sock catalogue.json [overlay.json [keep-uri]]
 // With a fourth argument, that module is added once more at the end and left
 // cabled between IN and OUT on the left side, for a sound measurement.
 #include "catalogue/catalogue.hpp"
@@ -17,7 +17,7 @@
 #include <thread>
 #include <tuple>
 
-using namespace pedal;
+using namespace peepo;
 namespace {
 using Clock = std::chrono::steady_clock;
 struct Client {
@@ -57,7 +57,7 @@ std::string describe(const Connector& c) {
 }
 }
 int main(int argc, char** argv) {
-    if (argc < 3) { std::cerr << "usage: pedal_catalogue_live address catalogue.json [overlay.json]\n"; return 2; }
+    if (argc < 3) { std::cerr << "usage: peepo_catalogue_live address catalogue.json [overlay.json]\n"; return 2; }
     std::vector<ModuleDefinition> offered;
     if (const auto issue = load_catalogue(argv[2], argc > 3 ? argv[3] : "", offered); !issue.empty()) { std::cerr << issue << std::endl; return 2; }
     const auto modules = offered;

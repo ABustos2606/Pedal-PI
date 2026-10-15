@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 Pedal PI contributors
+// Copyright (C) 2026 Peepo contributors
 #pragma once
 #include <cstddef>
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace pedal::ingen {
+namespace peepo::ingen {
 // A byte stream to the engine whose blocking work happens elsewhere: no call
 // here waits on the network, so the thread that draws never does either.
 class Transport {
