@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The touch interface (user peepo) may power the instrument off: its
+// Settings page has a Shut down button. Nothing else is granted.
+polkit.addRule(function(action, subject) {
+    if (subject.user == "peepo" &&
+        (action.id == "org.freedesktop.login1.power-off" ||
+         action.id == "org.freedesktop.login1.power-off-multiple-sessions")) {
+        return polkit.Result.YES;
+    }
+});

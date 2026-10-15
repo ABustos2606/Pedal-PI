@@ -67,7 +67,7 @@ rm -rf "$STAGE"; mkdir -p "$STAGE/peepo/root/opt"
 # The prefix without its sources and build trees, and what installs it.
 tar -C /opt --exclude=peepo/src --exclude=peepo/build -cf - peepo | tar -C "$STAGE/peepo/root/opt" -xf -
 cp -r "$REPO/config/pi" "$STAGE/peepo/config"
-cp "$REPO/tools/pi/install.sh" "$REPO/tools/pi/instrument-boot.sh" "$REPO/tools/pi/check-services.sh" "$REPO/tools/pi/export-catalogue.sh" \
+cp "$REPO/tools/pi/install.sh" "$REPO/tools/pi/instrument-boot.sh" "$REPO/tools/pi/splash.sh" "$REPO/tools/pi/slim-boot.sh" "$REPO/tools/pi/check-services.sh" "$REPO/tools/pi/export-catalogue.sh" \
     "$REPO/tools/pi/check-ui-restart.sh" "$REPO/tools/pi/monitor-ui-restart.py" "$STAGE/peepo/"
 cp -r "$REPO/licenses" "$REPO/LICENSE" "$REPO/THIRD_PARTY_NOTICES.md" "$STAGE/peepo/"
 echo "$VERSION $ARCH $(date -u +%Y-%m-%dT%H:%MZ)" > "$STAGE/peepo/VERSION"

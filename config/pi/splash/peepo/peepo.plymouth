@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=peepo
+Description=Peepo boot screen
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/peepo
+ScriptFile=/usr/share/plymouth/themes/peepo/peepo.script

@@ -60,3 +60,48 @@ A passive 22-second post-boot monitor observed 8,250 blocks with no frame gaps o
 Phase 10 remains partial: physical offline boot, five cold power cycles, late physical USB availability, native UI-crash/controller recovery, missing-plugin/asset startup cases and shutdown/power-loss storage acceptance remain open. Existing undervoltage history (`throttled=0x50000`) remains a performance limitation.
 
 Evidence: [instrument boot results](evidence/pi-instrument-boot-results.txt). The boot utility and service changes were deployed without rebuilding or replacing the engine, plugins or touchscreen application; the patch-preservation CLI was compiled natively against the already deployed core library. Bash syntax and systemd unit verification passed on the Pi.
+
+## Boot screen, slimmer boot and shutdown (15 October 2026)
+
+**Boot screen.** `peepo-splash` (`tools/pi/splash.sh`) shows the Peepo logo from the initramfs until the interface draws:
+- It installs the Plymouth theme in `config/pi/splash/peepo` (placeholder logo from `tools/pi/make-splash-logo.py`).
+- It makes the kernel command line quiet and moves the console to tty3.
+- It adds a marked `disable_splash=1` block to `config.txt`.
+- Plymouth quits with `--retain-splash` only when the interface starts.
+
+The first try left the screen black. The quit ran as the service user, and Plymouth ignored it, so Plymouth still owned the DRM card when the interface opened it. LVGL then waited forever for a page flip and ignored `SIGTERM`. Two fixes followed:
+- The quit now runs privileged (`ExecStartPre=-+`).
+- The interface waits until the card is free, and says so on stderr.
+
+The reboot after the fix showed the interface as DRM master, with no restarts. The originals are kept in `/etc/peepo/splash-state`; `--restore` puts them back.
+
+**Slimmer boot.** `peepo-slim-boot` (`tools/pi/slim-boot.sh`) disables and masks 29 desktop and Patchbox units the instrument does not use. Among them:
+- the wait for the network (7 to 11 s per boot);
+- printing, Bluetooth and the modem manager;
+- Patchbox's module starter and telemetry;
+- the Pisound services;
+- swap on the SD card, file-system scrubbing, and background apt/man-db timers.
+
+SSH, Wi-Fi, avahi and time sync stay on. Each unit's previous policy is saved in `/etc/peepo/slim-boot-state`; `--restore` re-enables them.
+
+| Measured on the Pi | Before | After |
+| --- | ---: | ---: |
+| `systemd-analyze` (kernel + userspace) | 16.0 s | 6.1 s |
+| All four audio connections made (since kernel start) | 11.9 s | 8.5 s |
+
+Firmware time is still excluded. This was one warm reboot, not five cold power cycles.
+
+**Shutdown.** Settings has a **Shut down** button on the instrument (DRM or framebuffer display only, never on a desktop). It asks first, warns about unsaved edits, then runs `systemctl poweroff`. The polkit rule `config/pi/polkit/50-peepo-power.rules` allows the `peepo` user that one action. Saves now `fsync` the revision's files and directories, and the startup and control files, before and after each rename, so a power cut right after a save keeps it. These changes are built and tested on Windows and Linux (WSL), and on arm64 (8/8 suites).
+
+**On the Pi.** `peepo-arm64-20261015-98fe06c-dirty.tar.gz` replaced the pre-rename `pedalpi` install. The old files are kept in `/opt/pedalpi`, `/etc/pedalpi` (unit files in `units-backup`) and `/var/lib/pedalpi`. The migration copied:
+- the audio interface and display settings;
+- the boot policy saved before the first instrument boot;
+- both saved patches, with their project namespace rewritten from `urn:pedalpi:ns#` to `urn:peepo:ns#`.
+
+After a reboot:
+- Linux took 5.9 s.
+- The startup patch began loading at 7.3 s, and the four audio connections were made by 8.3 s.
+- The interface held the DRM card on its first start.
+- `pkcheck` granted power-off to `peepo` and refused it to other users.
+
+The Shut down button itself has not been pressed yet.

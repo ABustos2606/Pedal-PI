@@ -9,6 +9,10 @@
 #include <fstream>
 #include <random>
 #include <sstream>
+#ifndef _WIN32
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 
 namespace peepo {
 namespace fs = std::filesystem;
@@ -34,6 +38,24 @@ std::optional<std::string> slurp(const fs::path& path) {
     std::ostringstream text;
     text << in.rdbuf();
     return text.str();
+}
+// Pull the power right after a save and the card may not have it yet: a
+// rename is atomic, but only what was flushed survives. Flush each file, then
+// the directory that names it. Windows (the simulator) is left to itself.
+void flush(const fs::path& path) {
+#ifndef _WIN32
+    const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
+    if (fd < 0) return;
+    ::fsync(fd);
+    ::close(fd);
+#else
+    (void)path;
+#endif
+}
+void flush_tree(const fs::path& directory) {
+    std::error_code error;
+    for (const auto& entry : fs::recursive_directory_iterator(directory, error)) flush(entry.path());
+    flush(directory);
 }
 std::string lower(std::string text) {
     for (auto& c : text) if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
@@ -233,8 +255,11 @@ std::string PatchStore::publish(const Staging& staging) {
     const auto directory = staging.path.parent_path();
     const auto final_path = directory / revision_name(staging.revision);
     if (fs::exists(final_path, error)) return "Revision r" + std::to_string(staging.revision) + " already exists";
+    flush_tree(staging.path);
     fs::rename(staging.path, final_path, error);
     if (error) return "Could not publish the saved revision: " + error.message();
+    flush(directory);
+    flush(directory.parent_path());
     // The new revision is complete; older ones beyond the fallback can go.
     const auto found = revisions(directory);
     for (std::size_t i = kept_revisions; i < found.size(); ++i) fs::remove_all(directory / revision_name(found[i]), error);
@@ -256,6 +281,7 @@ std::string PatchStore::remove(const std::string& id) {
     fs::remove_all(trash, error);
     fs::rename(directory, trash, error);
     if (error) return "Could not delete the patch: " + error.message();
+    flush(root_);
     fs::remove_all(trash, error);
     if (startup() == id) set_startup({});
     return {};
@@ -281,7 +307,9 @@ std::string PatchStore::set_global_control(const std::string& control, const std
         if (!out) return "Could not write the control settings";
     }
     std::error_code error;
+    flush(temporary);
     fs::rename(temporary, root_ / "controls", error);
+    flush(root_);
     return error ? "Could not record the control settings: " + error.message() : std::string();
 }
 std::string PatchStore::startup() const {
@@ -293,7 +321,7 @@ std::string PatchStore::startup() const {
 std::string PatchStore::set_startup(const std::string& id) {
     if (!usable_) return "Patch storage is not available";
     std::error_code error;
-    if (id.empty()) { fs::remove(root_ / "startup", error); return error ? error.message() : std::string(); }
+    if (id.empty()) { fs::remove(root_ / "startup", error); flush(root_); return error ? error.message() : std::string(); }
     if (!valid_patch_id(id)) return "Invalid patch identity";
     const auto temporary = root_ / ".startup.tmp";
     {
@@ -301,7 +329,9 @@ std::string PatchStore::set_startup(const std::string& id) {
         out << id << "\n";
         if (!out) return "Could not write the startup choice";
     }
+    flush(temporary);
     fs::rename(temporary, root_ / "startup", error);
+    flush(root_);
     return error ? "Could not record the startup choice: " + error.message() : std::string();
 }
 }

@@ -26,13 +26,16 @@ public:
     // A raw event from a physical control, or from keys standing in for one.
     void control(const ControlEvent&);
     const ControlLayout& control_layout() const { return layout_; }
+    // How the instrument powers off, returning why it could not. Left unset
+    // where the interface must never do it, such as on a desktop.
+    void set_power_off(std::function<std::string()> power_off) { power_off_ = std::move(power_off); rebuild_ = true; }
 private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
                         NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserGroup, MissingFixture,
                         ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage,
                         SavePatch, LoadStored, DeleteStored, StartupStored, PatchPage, ConfirmAction, CancelAction,
-                        AssignControl, EditControl, ClearControl, PickModule, PickTarget, PickerPage, InvertControl, SwitchModeChoice, RangeEnd };
+                        AssignControl, EditControl, ClearControl, PickModule, PickTarget, PickerPage, InvertControl, SwitchModeChoice, RangeEnd, PowerOff };
     struct Binding {
         Application* app;
         Action action;
@@ -118,8 +121,9 @@ private:
     bool ever_ready_ = false;
     EngineState last_state_ = EngineState::Ready;
     std::string engine_note_;
-    struct Confirmation { std::string title, heading, body, button; std::function<void()> act; };
+    struct Confirmation { std::string title, heading, body, button; std::function<void()> act; Page back = Page::Patches; };
     Confirmation confirmation_;
+    std::function<std::string()> power_off_;
     // Physical controls: gestures, and what the encoders follow on a parameter page.
     ControlLayout layout_;
     ControlRecognizer recognizer_;

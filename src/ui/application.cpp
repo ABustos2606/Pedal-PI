@@ -553,7 +553,18 @@ void Application::handle(Binding& b, lv_event_t* e) {
         if (const auto* a = pinned(editing_control_)) { auto changed = *a; changed.mode = b.number ? SwitchMode::Momentary : SwitchMode::Toggle; submit(Assign{changed}); }
         break;
     case Action::ConfirmAction: if (confirmation_.act) { auto act = std::move(confirmation_.act); confirmation_.act = nullptr; act(); } break;
-    case Action::CancelAction: confirmation_.act = nullptr; navigate(Page::Patches); break;
+    case Action::CancelAction: confirmation_.act = nullptr; navigate(confirmation_.back); break;
+    case Action::PowerOff:
+        if (!power_off_) break;
+        if (pending()) { message("Wait for pending edits before shutting down."); break; }
+        ask("Shut down", "Shut down Peepo?", std::string(graph_.dirty ? "This patch has unsaved edits; they will be lost.\n" : "") +
+            "Saved patches are safe. Unplug when the screen goes dark.", "Shut down", [this] {
+            if (const auto issue = power_off_(); !issue.empty()) message(issue);
+            else message("Shutting down. Unplug when the screen goes dark.");
+            navigate(Page::Settings);
+        });
+        confirmation_.back = Page::Settings;
+        break;
     case Action::CommitName: commit_name(); break;
     case Action::Confirm:
         if (replacement_ && !pending()) submit(*replacement_);
@@ -1338,6 +1349,7 @@ void Application::settings(lv_obj_t* parent) {
         button(parent, "Connect", 24, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Ready));
         button(parent, "Disconnect", 200, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Disconnected));
         button(parent, "Controls", 376, 142, 160, Action::Navigate, 0, {}, static_cast<int>(Page::Controls));
+        if (power_off_) button(parent, "Shut down", 552, 142, 224, Action::PowerOff);
         label(parent, store_ ? "Patches are stored in " + store_->root().generic_string() : "Patch storage is not available: session snapshots only.", 24, 216, 752, muted, &lv_font_montserrat_14);
         label(parent, "CPU is the engine's mean run load. Xruns, memory and temperature: not measured", 24, 300, 752, muted, &lv_font_montserrat_14);
         return;

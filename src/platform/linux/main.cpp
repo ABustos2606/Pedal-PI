@@ -20,6 +20,10 @@
 #include <memory>
 #include <sstream>
 #include <unistd.h>
+#ifdef PEEPO_LVGL_DRM
+#include <fcntl.h>
+#include <xf86drm.h>
+#endif
 #ifdef PEEPO_LVGL_SDL
 #include <SDL2/SDL.h>
 #endif
@@ -68,6 +72,21 @@ std::size_t pick_mode(lv_display_t*, const lv_linux_drm_mode_t* modes, std::size
     if (chosen != count) return chosen;
     for (std::size_t i = 0; i < count; ++i) if (modes[i].type & DRM_MODE_TYPE_PREFERRED) return i;
     return 0;
+}
+// Only one program at a time may draw on a DRM card. If another still holds
+// it (the boot splash, say), LVGL would wait forever for a frame that is
+// never shown, so wait here until the card is free.
+bool wait_for_screen(const std::string& card) {
+    for (bool told = false; !stopping; usleep(100000)) {
+        const int fd = open(card.c_str(), O_RDWR | O_CLOEXEC);
+        if (fd < 0) return false;
+        const bool free = drmIsMaster(fd);
+        close(fd);
+        if (free) return true;
+        if (!told) std::cerr << "waiting for " << card << ": another program is drawing on it\n";
+        told = true;
+    }
+    return false;
 }
 #endif
 #ifdef PEEPO_LVGL_SDL
@@ -196,6 +215,7 @@ int main(int argc, char** argv) {
         lv_linux_drm_set_mode_cb(display, pick_mode);
         std::string card = drm_device;
         if (card.empty()) if (char* found = lv_linux_drm_find_device_path()) { card = found; lv_free(found); }
+        if (!card.empty() && !wait_for_screen(card)) return stopping ? 0 : 1;
         if (card.empty() || lv_linux_drm_set_file(display, card.c_str(), -1) != LV_RESULT_OK) {
             std::cerr << "no usable DRM device" << (card.empty() ? "" : " at " + card) << "\n";
             return 1;
@@ -248,6 +268,9 @@ int main(int argc, char** argv) {
         if (const auto issue = store->open(); !issue.empty()) std::cerr << "patches: " << issue << "\n";
     }
     peepo::Application app(*engine, store.get());
+    // Only the instrument, drawing on its own screen, may power the machine off.
+    if (display_name == "drm" || display_name == "fbdev")
+        app.set_power_off([] { return std::system("systemctl poweroff") == 0 ? std::string() : std::string("Could not shut down: the system refused."); });
 
     const auto started = now_ms();
     auto last = started;

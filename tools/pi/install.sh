@@ -33,7 +33,10 @@ if [ $action = remove ]; then
     if [ -f /etc/peepo/instrument-boot-state/units ] && [ -x "$PREFIX/bin/peepo-instrument-boot" ] && [ "$(systemctl show -p LoadState --value peepo.target)" = loaded ]; then
         run "$PREFIX/bin/peepo-instrument-boot" --restore
     fi
+    if [ -f /etc/peepo/splash-state/cmdline.txt ] && [ -x "$PREFIX/bin/peepo-splash" ]; then run "$PREFIX/bin/peepo-splash" --restore; fi
+    if [ -f /etc/peepo/slim-boot-state/units ] && [ -x "$PREFIX/bin/peepo-slim-boot" ]; then run "$PREFIX/bin/peepo-slim-boot" --restore; fi
     for unit in $UNITS; do run systemctl disable --now "$unit" 2>/dev/null || true; run rm -f "/etc/systemd/system/$unit"; done
+    run rm -f /etc/polkit-1/rules.d/50-peepo-power.rules
     run systemctl daemon-reload
     echo "Removed the services. $PREFIX, /etc/peepo and /var/lib/peepo are kept."
     exit 0
@@ -80,6 +83,10 @@ run cp -a "$HERE/root/opt/peepo" "$PREFIX"
 run install -m 0755 "$HERE/config/bin/peepo-engine" "$HERE/config/bin/peepo-route" "$PREFIX/bin/"
 run install -m 0755 "$HERE/export-catalogue.sh" "$PREFIX/bin/peepo-export-catalogue"
 run install -m 0755 "$HERE/instrument-boot.sh" "$PREFIX/bin/peepo-instrument-boot"
+run install -m 0755 "$HERE/splash.sh" "$PREFIX/bin/peepo-splash"
+run install -m 0755 "$HERE/slim-boot.sh" "$PREFIX/bin/peepo-slim-boot"
+run install -d -m 0755 "$PREFIX/share/peepo/splash"
+run cp -r "$HERE/config/splash/peepo" "$PREFIX/share/peepo/splash/"
 run install -m 0755 "$HERE/check-ui-restart.sh" "$HERE/monitor-ui-restart.py" "$PREFIX/libexec/peepo/"
 run "$PREFIX/bin/peepo-export-catalogue"
 
@@ -94,6 +101,9 @@ run install -m 0644 "$HERE/config/config.txt" "$PREFIX/share/peepo/config.txt"
 run install -d -o peepo -g peepo -m 0755 /var/lib/peepo /var/lib/peepo/patches
 
 for unit in $UNITS; do run install -m 0644 "$HERE/config/systemd/$unit" "/etc/systemd/system/$unit"; done
+# The interface's Shut down button.
+run install -d -m 0755 /etc/polkit-1/rules.d
+run install -m 0644 "$HERE/config/polkit/50-peepo-power.rules" /etc/polkit-1/rules.d/
 run systemctl daemon-reload
 if [ $instrument = 1 ]; then
     if [ $dry = 1 ]; then run "$PREFIX/bin/peepo-instrument-boot" --dry-run
@@ -109,5 +119,7 @@ to /boot/firmware/config.txt yourself, then reboot.
 Start now:          sudo systemctl start peepo.target
 Start at every boot: sudo systemctl enable peepo.target
 Direct instrument boot (saves previous desktop/MODEP policy): sudo $PREFIX/bin/peepo-instrument-boot
+Peepo boot screen instead of boot messages: sudo $PREFIX/bin/peepo-splash
+Faster boot without the desktop's services: sudo $PREFIX/bin/peepo-slim-boot
 Restart only the interface (audio keeps playing): sudo systemctl restart peepo-ui
 EOF

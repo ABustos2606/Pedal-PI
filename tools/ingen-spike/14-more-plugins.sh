@@ -13,6 +13,7 @@
 # touched: sources are cloned fresh, and any build fix is a make or cmake
 # variable given here, never an edit to upstream files.
 set -uo pipefail
+HERE="$(dirname "$(readlink -f "$0")")"
 
 PREFIX=/opt/peepo
 SRC=$PREFIX/src/more-plugins

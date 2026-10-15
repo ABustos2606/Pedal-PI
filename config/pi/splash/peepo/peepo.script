@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The logo, centred on the interface's background colour (#10171f).
+Window.SetBackgroundTopColor(0.063, 0.090, 0.122);
+Window.SetBackgroundBottomColor(0.063, 0.090, 0.122);
+logo.image = Image("logo.png");
+logo.sprite = Sprite(logo.image);
+logo.sprite.SetX(Window.GetX() + Window.GetWidth() / 2 - logo.image.GetWidth() / 2);
+logo.sprite.SetY(Window.GetY() + Window.GetHeight() / 2 - logo.image.GetHeight() / 2);
