@@ -141,6 +141,15 @@ void fixture(const std::string& folder) {
         check(d.availability == Availability::Available || !d.availability_reason.empty(), "a withheld entry gives no reason");
     }
     check(amp && amp->availability == Availability::Available && amp->ports.size() == 2 && amp->parameters.size() == 1, "example amplifier missing from the exported fixture");
+    unsigned visible_tuners = 0, retained_tuners = 0;
+    for (const auto& d : offered) if (d.uri.starts_with("http://gareus.org/oss/lv2/tuna#")) {
+        ++retained_tuners;
+        if (!d.hidden) {
+            ++visible_tuners;
+            check(d.uri.ends_with("#mod") && d.parameters.size() == 1 && d.parameters[0].symbol == "tuning", "the offered tuner is not automatic with an A reference");
+        }
+    }
+    check(visible_tuners == 1 && retained_tuners == 3, "duplicate tuners offered, or legacy tuner identities lost");
     const auto& gain = amp->parameters[0];
     check(gain.symbol == "gain" && gain.minimum == -90 && gain.maximum == 24 && gain.value == 0 && gain.unit == "dB" && gain.kind == ParameterKind::Continuous, "exported range or unit wrong");
 

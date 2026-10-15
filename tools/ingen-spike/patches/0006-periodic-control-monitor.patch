@@ -1,0 +1,16 @@
+diff --git a/src/server/PortImpl.cpp b/src/server/PortImpl.cpp
+--- a/src/server/PortImpl.cpp
++++ b/src/server/PortImpl.cpp
+@@ -513,7 +513,11 @@ PortImpl::monitor(RunContext& ctx, bool send_now)
+ 	}
+ 
+ 	_frames_since_monitor = _frames_since_monitor % period;
+-	if (key && val != _monitor_value) {
++	// Explicit control monitors (for example tuner pitch) need an initial
++	// reading and a heartbeat even when the value remains exactly constant.
++	// Ordinary unmonitored ports retain changed-only notifications.
++	if (key && (val != _monitor_value ||
++	            (_monitored && _type == PortType::CONTROL && time_to_send))) {
+ 		if (ctx.notify(key, ctx.start(), this, sizeof(float), forge.Float, &val)) {
+ 			/* Update frames since last update to conceptually zero, but keep
+ 			   the remainder to preserve load balancing. */

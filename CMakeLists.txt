@@ -156,6 +156,9 @@ if(BUILD_TESTING)
   add_executable(pedal_catalogue_live tests/catalogue_live.cpp)
   target_link_libraries(pedal_catalogue_live PRIVATE pedal_core)
   install(TARGETS pedal_catalogue_live RUNTIME DESTINATION libexec/pedalpi)
+  # Needs an isolated engine and a controlled JACK test tone; not a CTest.
+  add_executable(pedal_tuner_live tests/tuner_live.cpp)
+  target_link_libraries(pedal_tuner_live PRIVATE pedal_core)
   if(UNIX AND NOT APPLE)
     # Operates on the real Pi patch store only when explicitly invoked.
     add_executable(pedal_pi_patch_live tests/pi_patch_live.cpp)

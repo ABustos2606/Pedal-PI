@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pedal PI contributors
 #include "ui/application.hpp"
+#include "core/tuning.hpp"
 // v9.5.0 exposes the hit-test payload through this header. Keep this usage
 // isolated and recheck it when upgrading the pinned LVGL dependency.
 #include "src/core/lv_obj_event_private.h"
@@ -40,7 +41,7 @@ std::string metric_text(std::optional<double> reading, bool cpu) {
     if (cpu) value << '%';
     return value.str();
 }
-enum class ModuleLayout { Generic, Clouds, Delay };
+enum class ModuleLayout { Generic, Clouds, Delay, Tuner };
 ModuleLayout module_layout(const Module& m) {
     // Match by stable URI and parameter schema, never by the editable name.
     // An unexpected/extended schema must keep every control in the generic view.
@@ -53,6 +54,7 @@ ModuleLayout module_layout(const Module& m) {
     }
     if (m.uri == "urn:pedalpi:demo:clouds") return ModuleLayout::Clouds;
     if (m.uri == "urn:pedalpi:demo:delay") return ModuleLayout::Delay;
+    if (tuner_uri(m.uri) && std::any_of(m.parameters.begin(), m.parameters.end(), [](const Parameter& p) { return p.symbol == "tuning"; })) return ModuleLayout::Tuner;
     return ModuleLayout::Generic;
 }
 // Vertical placement of one connector on its edge of the square. Every audio
@@ -109,7 +111,7 @@ std::string Application::engine_banner() const {
     default: return "Engine error" + reason + ". Edits are paused.";
     }
 }
-Application::~Application() { if (screen_) lv_obj_delete(screen_); }
+Application::~Application() { engine_.watch_tuner(std::nullopt); if (screen_) lv_obj_delete(screen_); }
 void Application::message(std::string value) {
     message_ = std::move(value);
     if (footer_) lv_label_set_text(footer_, message_.c_str());
@@ -215,6 +217,9 @@ void Application::tick(unsigned ms) {
     if (stream_ && !stream_->in_flight && !pressed) stream_.reset();
     if (rebuild_ && !dragging_ && !panning_ && !cable_source_ && !pressed) rebuild();
     update_metrics();
+    const auto* shown = page_ == Page::Parameters && !generic_parameters_ ? find_module(graph_, selected_) : nullptr;
+    engine_.watch_tuner(shown && module_layout(*shown) == ModuleLayout::Tuner ? std::optional<InstanceId>{shown->id} : std::nullopt);
+    update_tuner();
 }
 void Application::update_metrics() {
     if (!tempo_value_ || !cpu_value_) return;
@@ -666,6 +671,7 @@ void Application::rebuild() {
     visible_.clear();
     bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); cv_inputs_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
     tempo_value_ = cpu_value_ = nullptr;
+    tuner_note_ = tuner_detail_ = tuner_status_ = tuner_needle_ = nullptr;
     auto* header = panel(screen_, 0, 0, 800, 72, background);
     lv_obj_set_style_radius(header, 0, 0);
     const bool patch = page_ == Page::Patch;
@@ -918,7 +924,7 @@ void Application::browser(lv_obj_t* parent) {
         return static_cast<std::size_t>(std::find(order.begin(), order.end(), category) - order.begin());
     };
     std::map<std::string, std::vector<const ModuleDefinition*>> groups;
-    for (const auto& d : catalogue()) if (d.category != "Endpoint") groups[d.category].push_back(&d);
+    for (const auto& d : catalogue()) if (d.category != "Endpoint" && !d.hidden) groups[d.category].push_back(&d);
     std::vector<std::string> categories;
     for (const auto& [category, _] : groups) categories.push_back(category);
     std::stable_sort(categories.begin(), categories.end(), [&](const auto& a, const auto& b) { return rank(a) < rank(b); });
@@ -950,7 +956,8 @@ void Application::browser(lv_obj_t* parent) {
         lv_obj_align(chevron, LV_ALIGN_LEFT_MID, 18, 0);
         auto* name = label(header, category, 0, 0, 560, ink, &lv_font_montserrat_20);
         lv_obj_align(name, LV_ALIGN_LEFT_MID, 52, 0);
-        auto* count = label(header, std::to_string(entries.size()), 0, 0, 80, muted, &lv_font_montserrat_14);
+        const auto available = std::count_if(entries.begin(), entries.end(), [](const auto* d) { return d->availability == Availability::Available; });
+        auto* count = label(header, std::to_string(available) + " ready / " + std::to_string(entries.size()), 0, 0, 160, muted, &lv_font_montserrat_14);
         lv_obj_set_style_text_align(count, LV_TEXT_ALIGN_RIGHT, 0);
         lv_obj_align(count, LV_ALIGN_RIGHT_MID, -20, 0);
         bind(header, Action::BrowserGroup, 0, category);
@@ -973,7 +980,7 @@ void Application::browser(lv_obj_t* parent) {
             lv_label_set_long_mode(title, LV_LABEL_LONG_DOT); lv_obj_set_height(title, 22);
             lv_obj_align(title, LV_ALIGN_LEFT_MID, 36, 0);
             // An entry that cannot be added says why instead of what it does.
-            const auto& about = usable || d->availability_reason.empty() ? d->description : d->availability_reason;
+            const auto about = usable ? d->description : "Needs setup: " + (d->availability_reason.empty() ? d->description : d->availability_reason);
             auto* description = label(row, about, 0, 0, 488, muted, &lv_font_montserrat_14);
             // At most two lines, centred against the name.
             lv_label_set_long_mode(description, LV_LABEL_LONG_DOT);
@@ -1011,6 +1018,7 @@ void Application::parameters(lv_obj_t* parent) {
     const auto layout = module_layout(*m);
     if (!generic_parameters_ && layout == ModuleLayout::Clouds) { clouds_parameters(parent, *m); return; }
     if (!generic_parameters_ && layout == ModuleLayout::Delay) { delay_parameters(parent, *m); return; }
+    if (!generic_parameters_ && layout == ModuleLayout::Tuner) { tuner_parameters(parent, *m); return; }
     auto* bypass = button(parent, m->bypassed ? "Enable" : "Bypass", 24, 12, 104, Action::Bypass, m->id);
     (void)bypass;
     button(parent, "Delete", 140, 12, 104, Action::Remove, m->id);
@@ -1023,7 +1031,7 @@ void Application::parameters(lv_obj_t* parent) {
         auto* next = button(parent, ">", 472, 12, 48, Action::ParameterPage, 0, {}, static_cast<int>(std::min(parameter_page_ + 1, page_count - 1)));
         if (parameter_page_ + 1 >= page_count) lv_obj_add_state(next, LV_STATE_DISABLED);
         if (layout == ModuleLayout::Generic) label(parent, "Software\nbypass", 536, 18, 100, muted, &lv_font_montserrat_14);
-    } else label(parent, "Demo values", 272, 27, 0, muted, &lv_font_montserrat_14);
+    } else label(parent, engine_.capabilities().simulation ? "Simulated controls" : "Live controls", 272, 27, 0, muted, &lv_font_montserrat_14);
     if (layout != ModuleLayout::Generic) button(parent, "Custom", 536, 12, 96, Action::ParameterLayout);
     button(parent, "Actions", 640, 12, 136, Action::OpenActions, m->id);
     const auto begin = parameter_page_ * 4, end = std::min(m->parameters.size(), begin + 4);
@@ -1033,6 +1041,60 @@ void Application::parameters(lv_obj_t* parent) {
         const int x = 24 + static_cast<int>(slot % 2) * 384, y = 76 + static_cast<int>(slot / 2) * 136;
         parameter_tile(parent, *m, p, x, y);
     }
+}
+void Application::tuner_parameters(lv_obj_t* parent, const Module& m) {
+    auto* meter = panel(parent, 24, 12, 752, 242);
+    tuner_note_ = label(meter, "--", 0, 8, 752, text, &lv_font_montserrat_48);
+    lv_obj_set_style_text_align(tuner_note_, LV_TEXT_ALIGN_CENTER, 0);
+    tuner_detail_ = label(meter, "-- Hz", 0, 64, 752, muted);
+    lv_obj_set_style_text_align(tuner_detail_, LV_TEXT_ALIGN_CENTER, 0);
+    tuner_status_ = label(meter, "Play one string", 0, 98, 752, muted);
+    lv_obj_set_style_text_align(tuner_status_, LV_TEXT_ALIGN_CENTER, 0);
+    // +/- 5 cents is the green target; the scale spans a whole semitone.
+    auto* target = panel(meter, 346, 142, 60, 58, 0x264b43);
+    lv_obj_set_style_border_width(target, 0, 0);
+    for (int i = 0; i <= 10; ++i) {
+        auto* mark = panel(meter, 76 + i * 60 - 1, i == 5 ? 146 : 158, 2, i == 5 ? 48 : 24, i == 5 ? accent : muted);
+        lv_obj_set_style_border_width(mark, 0, 0);
+    }
+    label(meter, "-50  FLAT", 42, 208, 150, muted, &lv_font_montserrat_14);
+    auto* centre = label(meter, "0", 346, 208, 60, accent, &lv_font_montserrat_14);
+    lv_obj_set_style_text_align(centre, LV_TEXT_ALIGN_CENTER, 0);
+    auto* sharp = label(meter, "SHARP  +50", 560, 208, 150, muted, &lv_font_montserrat_14);
+    lv_obj_set_style_text_align(sharp, LV_TEXT_ALIGN_RIGHT, 0);
+    tuner_needle_ = panel(meter, 372, 142, 8, 58, accent);
+    lv_obj_set_style_border_width(tuner_needle_, 0, 0);
+    lv_obj_remove_flag(tuner_needle_, LV_OBJ_FLAG_CLICKABLE);
+    parameter_tile(parent, m, parameter(m, "tuning"), 24, 268, 72);
+    button(parent, "All", 408, 280, 80, Action::ParameterLayout);
+    button(parent, m.bypassed ? "Enable" : "Bypass", 500, 280, 112, Action::Bypass, m.id);
+    button(parent, "Actions", 640, 280, 136, Action::OpenActions, m.id);
+    update_tuner();
+}
+void Application::update_tuner() {
+    if (!tuner_note_) return;
+    const auto* m = find_module(graph_, selected_);
+    if (!m) return;
+    const bool ready = engine_.state() == EngineState::Ready && !m->bypassed && !engine_.capabilities().simulation;
+    const auto reading = tuning_from_frequency(ready ? engine_.tuner_frequency(m->id) : std::nullopt, parameter(*m, "tuning").value);
+    std::string detail = "Connect IN to this tuner; play one string.";
+    std::string status = engine_.capabilities().simulation ? "No audio in simulator" : !ready ? (m->bypassed ? "Tuner bypassed" : "Engine offline") : "Waiting for a note";
+    if (reading) {
+        std::ostringstream value;
+        value << std::fixed << std::setprecision(1) << reading->frequency << " Hz   |   " << std::showpos << reading->cents << " cents";
+        detail = value.str();
+        status = std::abs(reading->cents) <= 5 ? "In tune" : reading->cents < 0 ? "Flat - tighten string" : "Sharp - loosen string";
+        lv_obj_set_x(tuner_needle_, 372 + static_cast<int>(std::round(std::clamp(reading->cents, -50.0, 50.0) * 6)));
+        lv_obj_remove_flag(tuner_needle_, LV_OBJ_FLAG_HIDDEN);
+    } else lv_obj_add_flag(tuner_needle_, LV_OBJ_FLAG_HIDDEN);
+    const auto ink = reading ? (std::abs(reading->cents) <= 5 ? accent : 0xf0aa72) : muted;
+    lv_obj_set_style_text_color(tuner_note_, color(ink), 0);
+    lv_obj_set_style_text_color(tuner_status_, color(ink), 0);
+    lv_obj_set_style_bg_color(tuner_needle_, color(ink), 0);
+    const std::string note = reading ? reading->note : "--";
+    if (note != lv_label_get_text(tuner_note_)) lv_label_set_text(tuner_note_, note.c_str());
+    if (detail != lv_label_get_text(tuner_detail_)) lv_label_set_text(tuner_detail_, detail.c_str());
+    if (status != lv_label_get_text(tuner_status_)) lv_label_set_text(tuner_status_, status.c_str());
 }
 void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parameter& p, int x, int y, int height, std::uint32_t ink) {
     auto* tile = panel(parent, x, y, 368, height);
@@ -1303,6 +1365,7 @@ std::size_t Application::parameter_pages(const Module& m) const {
     const auto layout = module_layout(m);
     if (!generic_parameters_ && layout == ModuleLayout::Clouds) return 2;
     if (!generic_parameters_ && layout == ModuleLayout::Delay) return 1;
+    if (!generic_parameters_ && layout == ModuleLayout::Tuner) return 1;
     return std::max<std::size_t>(1, (m.parameters.size() + 3) / 4);
 }
 void Application::gesture(const Gesture& g) {

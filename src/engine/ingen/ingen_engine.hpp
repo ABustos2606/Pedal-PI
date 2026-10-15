@@ -25,6 +25,8 @@ public:
     // No tempo yet. CPU is Ingen's mean run load: the share of the audio
     // period spent processing, averaged since the engine started.
     EngineTelemetry telemetry() const override { return session_.telemetry(); }
+    void watch_tuner(std::optional<InstanceId> id) override { session_.watch_tuner(id); flush(); }
+    std::optional<double> tuner_frequency(InstanceId id) const override { return session_.tuner_frequency(id); }
 private:
     void attempt();
     void lost(std::string reason);

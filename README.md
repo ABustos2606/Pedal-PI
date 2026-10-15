@@ -39,7 +39,7 @@ To drive a real engine instead of the simulation, start Ingen under WSL and pass
 
 Drag empty space to pan; **Home** restores the original view. Hold a module for parameters, software bypass, duplication or deletion. Tap a cable to select it, then use **Delete cable** in the footer. These editor features work entirely with the simulated engine.
 
-Clouds and Delay have their own parameter layouts; **All** opens the generic editor. **Patches → Parallel demo** loads an editable split/merge example: Drive feeds Clouds and Delay, then both connect to OUT. Loading it guards unsaved edits. This demonstrates routing and UI behavior; audio summing still requires Pi verification.
+Clouds and Delay have their own parameter layouts; the Tuner has a live note, cents and flat/sharp meter with an adjustable A reference. **All** opens the generic editor. The Add list offers one tuner and explains effect categories and setup requirements; see [effects and tuner](docs/25-effects-and-tuner.md). **Patches → Parallel demo** loads an editable split/merge example: Drive feeds Clouds and Delay, then both connect to OUT. Loading it guards unsaved edits. This demonstrates routing and UI behavior; audio summing still requires Pi verification.
 
 Global BPM and CPU readouts stay in the bottom-right footer on every page. The simulator displays 120 BPM / 12% CPU SIM as fixed display fixtures; real tempo synchronization and processor measurements await engine integration. CPU is shown as `--` when the simulator is unavailable.
 

@@ -46,6 +46,8 @@ struct ModuleDefinition {
     // Controls whose default the project chose over the plugin's own. The
     // plugin starts at its own value, so adding the module sets these.
     std::vector<std::string> project_defaults;
+    // Keep legacy identities loadable without offering duplicates in Add.
+    bool hidden = false;
 };
 struct Module {
     InstanceId id;

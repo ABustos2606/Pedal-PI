@@ -95,6 +95,12 @@ step convoLV2 "$SRC/convoLV2" make -j"$JOBS" OPTIMIZATIONS="$OPT" PREFIX="$PREFI
 
 # --- Poly: tuner, the MOD variant Beebo maps (no OpenGL interface)
 poly tuna.lv2 cfdfb6aeb065b278f58b6c6d4c23b5d82ae34279
+TUNA_PATCH="$HERE/../plugin-patches/tuna-fast-fft-plan.patch"
+if git -C "$SRC/tuna.lv2" apply --check "$TUNA_PATCH" 2>/dev/null; then
+    git -C "$SRC/tuna.lv2" apply "$TUNA_PATCH"
+else
+    git -C "$SRC/tuna.lv2" apply --reverse --check "$TUNA_PATCH"
+fi
 step tuna.lv2 "$SRC/tuna.lv2" make -j"$JOBS" MOD=1 BUILDOPENGL=no BUILDJACKAPP=no OPTIMIZATIONS="$OPT" PREFIX="$PREFIX" LV2DIR="$LV2DIR" install \
     && record tuna.lv2 built "make MOD=1" || record tuna.lv2 FAILED "$(grep -m1 -E 'error' "$SRC/tuna.lv2.log" | cut -c1-120)"
 

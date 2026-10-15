@@ -671,11 +671,51 @@ void relative_paths() {
     check(rig.result(Connect{{1, 3, "out", "in"}}).accepted && rig.graph().connections.size() == 3, "relative engine's new cable not seen");
     check(rig.result(NewPatch{"Again"}).accepted && rig.graph().modules.size() == 2 && rig.graph().connections.size() == 2, "replacing a patch on a relative engine failed");
 }
+void tuner_monitor() {
+    using namespace pedal;
+    using namespace pedal::ingen;
+    FakeEngine fake;
+    const std::string path = "ingen:/main/m3", plugin = "http://gareus.org/oss/lv2/tuna#mod";
+    fake.plugins.insert(plugin);
+    fake.objects[path] = {{rdf_type, iri_value(full(uri::ingen, "Block"))}, {full(uri::lv2, "prototype"), iri_value(plugin)}};
+    fake.objects[path + "/freq_out"] = {{rdf_type, iri_value(full(uri::lv2, "OutputPort"))},
+        {rdf_type, iri_value(full(uri::lv2, "ControlPort"))}, {full(uri::ingen, "value"), number_value(440)}};
+    Rig rig(fake);
+    auto& engine = *rig.engine;
+    engine.connect(); rig.settle();
+    check(!engine.tuner_frequency(3), "unwatched tuner exposed a reading");
+    engine.watch_tuner(3);
+    check(rig.settle().empty() && !engine.tuner_frequency(3), "monitor setup rebuilt the patch or used an initial port value as live pitch");
+    const auto* enabled = property(fake, path + "/freq_out", full(uri::ingen, "broadcast"));
+    check(enabled && enabled->boolean, "tuner output was not subscribed");
+    rig.transport->deliver(fake.put(1, path + "/freq_out", {{full(uri::ingen, "value"), number_value(442)}}));
+    check(rig.settle().empty() && engine.tuner_frequency(3) == 442 && !rig.graph().dirty, "pitch update rebuilt/modified the patch");
+    rig.transport->deliver(fake.put(1, path + "/freq_out", {{full(uri::ingen, "value"), number_value(0)}}));
+    check(rig.settle().empty() && engine.tuner_frequency(3) == 0, "silence retained a note");
+    // Get descriptions contain initialization values, not current DSP output.
+    rig.transport->deliver(fake.put(1, path + "/freq_out", fake.objects.at(path + "/freq_out")));
+    check(rig.settle().empty() && engine.tuner_frequency(3) == 0, "port description overwrote live pitch");
+    // Explicit monitoring sends unchanged readings too (engine patch 0006).
+    rig.transport->deliver(fake.put(1, path + "/freq_out", {{full(uri::ingen, "value"), number_value(440)}}));
+    rig.settle();
+    check(engine.tuner_frequency(3) == 440, "live pitch did not refresh");
+    fake.mute = 1;
+    engine.advance(800); rig.settle();
+    check(!engine.tuner_frequency(3), "stalled engine retained a stale pitch");
+    fake.mute = 0;
+    engine.watch_tuner(std::nullopt); rig.settle();
+    check(!engine.tuner_frequency(3), "leaving tuner retained its reading");
+    enabled = property(fake, path + "/freq_out", full(uri::ingen, "broadcast"));
+    check(enabled && !enabled->boolean, "leaving tuner kept monitoring enabled");
+    engine.watch_tuner(3); rig.settle(); engine.disconnect();
+    check(!engine.tuner_frequency(3), "offline tuner retained a reading");
+}
 int main() {
     try {
         turtle_and_protocol();
         adapter();
         relative_paths();
+        tuner_monitor();
         std::cout << "Ingen protocol reading, command mapping, acknowledgment, second client, timeout, reconnect and restart passed.\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

@@ -1,0 +1,14 @@
+diff --git a/src/fft.c b/src/fft.c
+--- a/src/fft.c
++++ b/src/fft.c
+@@ -231,7 +231,9 @@ fftx_init(struct FFTAnalysis* ft, const uint32_t window_size, const double rate, con
+ 	fftx_reset (ft);
+ 
+ 	pthread_mutex_lock (&fftw_planner_lock);
+-	ft->fftplan = fftwf_plan_r2r_1d (window_size, ft->fft_in, ft->fft_out, FFTW_R2HC, FFTW_MEASURE);
++	/* Planning happens while the host instantiates the plugin. Avoid an
++	 * on-device benchmark that can exceed the host's add-module timeout. */
++	ft->fftplan = fftwf_plan_r2r_1d (window_size, ft->fft_in, ft->fft_out, FFTW_R2HC, FFTW_ESTIMATE);
+ 	++instance_count;
+ 	pthread_mutex_unlock (&fftw_planner_lock);
+ }

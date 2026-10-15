@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pedal PI contributors
 #include "engine/ingen/session.hpp"
+#include "core/tuning.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -78,6 +79,7 @@ void Session::closed(std::string reason, bool retrying) {
     fail_edits("Engine disconnected");
     transactions_.clear(); sequences_.clear(); outgoing_.clear(); buffer_.clear(); expected_copies_.clear();
     depth_ = 0; cpu_.reset(); fault_.reset(); sent_modified_.reset();
+    tuner_.reset(); tuner_port_.clear(); tuner_frequency_.reset();
     emit(0, true, std::move(reason));
 }
 void Session::fail_edits(const std::string& message) {
@@ -152,11 +154,50 @@ void Session::handle(const Message& message) {
 }
 void Session::merge(const std::string& path, const Properties& properties) {
     auto& object = objects_[path];
+    const bool output_value = properties.size() == 1 && properties.front().first == value_key &&
+        has(object, type, iri(uri::lv2, "OutputPort")) && has(object, type, iri(uri::lv2, "ControlPort"));
     // A Put or Set replaces every value of the predicates it names.
     for (const auto& [key, ignored] : properties) std::erase_if(object, [&](const auto& entry) { return entry.first == key; });
     for (const auto& entry : properties)
         if (std::find(object.begin(), object.end(), entry) == object.end()) object.push_back(entry);
-    mirror_changed_ = unreported_ = true;
+    // A Get returns the port's initial value in Ingen, not its DSP output.
+    // Only single-value output notifications carry current pitch.
+    if (path == tuner_port_ && output_value) {
+        if (const auto* value = find(properties, value_key)) {
+            tuner_frequency_ = finite(value); tuner_age_ = 0;
+        }
+    }
+    // Output meters must not rebuild the graph or interrupt touch gestures.
+    if (!output_value && path != tuner_port_) mirror_changed_ = unreported_ = true;
+}
+void Session::watch_tuner(std::optional<InstanceId> id) {
+    std::string port;
+    if (id && state_ == EngineState::Ready) {
+        const auto* module = find_module(graph_, *id);
+        const auto path = paths_.find(*id);
+        if (module && !module->bypassed && tuner_uri(module->uri) && path != paths_.end()) {
+            const auto candidate = child(path->second, "freq_out");
+            const auto found = objects_.find(candidate);
+            if (found != objects_.end() && has(found->second, type, iri(uri::lv2, "OutputPort")) &&
+                has(found->second, type, iri(uri::lv2, "ControlPort"))) port = candidate;
+        }
+    }
+    if (port == tuner_port_) return;
+    if (state_ == EngineState::Ready && !tuner_port_.empty() && objects_.contains(tuner_port_)) {
+        auto& tx = begin(0, Purpose::Monitor);
+        const auto seq = sequence();
+        send(tx, set(seq, tuner_port_, "ingen:broadcast", "false"), seq);
+    }
+    tuner_port_ = port; tuner_ = port.empty() ? std::nullopt : id;
+    tuner_frequency_.reset(); tuner_age_ = 0;
+    if (!port.empty()) {
+        auto& tx = begin(0, Purpose::Monitor);
+        const auto seq = sequence();
+        send(tx, set(seq, port, "ingen:broadcast", "true"), seq);
+    }
+}
+std::optional<double> Session::tuner_frequency(InstanceId id) const {
+    return state_ == EngineState::Ready && tuner_ == id && tuner_age_ < 750 ? tuner_frequency_ : std::nullopt;
 }
 void Session::erase(const std::string& path) {
     const auto prefix = path + "/";
@@ -269,6 +310,9 @@ void Session::finish(Transaction& done) {
     case Purpose::Refresh:
         // A single object may have vanished again; only a failed full refresh matters.
         if (!ok && done.replaces) fault_ = std::string("Engine refused to describe its graph: ") + status_text(done.status);
+        break;
+    case Purpose::Monitor:
+        if (!ok) tuner_frequency_.reset();
         break;
     }
 }
@@ -730,6 +774,9 @@ RequestId Session::submit(Command command) {
     return id;
 }
 std::vector<EngineEvent> Session::advance(unsigned milliseconds) {
+    if (!tuner_port_.empty() && state_ == EngineState::Ready) {
+        tuner_age_ = std::min(10000u, tuner_age_ + milliseconds);
+    }
     std::vector<TransactionId> late;
     for (auto& [id, pending] : transactions_) if ((pending.age += milliseconds) >= options_.request_timeout_ms) late.push_back(id);
     bool resynchronize = false;
@@ -737,6 +784,7 @@ std::vector<EngineEvent> Session::advance(unsigned milliseconds) {
         auto node = transactions_.extract(id);
         for (const auto number : node.mapped().sequences) sequences_.erase(number);
         if (node.mapped().purpose == Purpose::Edit) { emit(node.mapped().request, false, "Engine did not answer in time"); resynchronize = true; }
+        else if (node.mapped().purpose == Purpose::Monitor) tuner_frequency_.reset();
         else fault_ = "Engine did not answer while synchronizing";
     }
     // What a late edit did is unknown; read the graph again instead of guessing.

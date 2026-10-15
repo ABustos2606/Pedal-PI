@@ -118,11 +118,11 @@ The overlay (`config/catalogue/overlay.json`) now presents the whole offered cat
   - the convolvers and NAM, until a file can be chosen;
   - Clouds' beat repeat;
   - the Moog ladder;
-  - x42's second build of the same tuner.
+  - duplicate tuner identities are hidden from Add while retained for saved patches; see [effects and tuner](25-effects-and-tuner.md).
 
   The export may already offer them; withholding them is presentation, so the records above still show the host results.
 
-Per-control presentation exists for Clouds only ([Clouds](20-clouds.md)); the rest use their generic pages. That is what P9.4 asks first; custom editors wait until a module needs one.
+Clouds has per-control presentation ([Clouds](20-clouds.md)). The tuner has a dedicated note/cents display. Conventional effects now have explicit categories and descriptions even when Pi metadata classifies them as Utility. See [effects and tuner](25-effects-and-tuner.md).
 
 ## arm64
 

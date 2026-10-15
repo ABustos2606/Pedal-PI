@@ -54,6 +54,8 @@ private:
     void parameter_tile(lv_obj_t*, const Module&, const Parameter&, int x, int y, int height = 120, std::uint32_t ink = 0x8edbc2);
     void clouds_parameters(lv_obj_t*, const Module&);
     void delay_parameters(lv_obj_t*, const Module&);
+    void tuner_parameters(lv_obj_t*, const Module&);
+    void update_tuner();
     void patches(lv_obj_t*);
     void settings(lv_obj_t*);
     void module_actions(lv_obj_t*);
@@ -140,6 +142,7 @@ private:
     Page confirm_origin_ = Page::Patches;
     lv_obj_t *screen_ = nullptr, *canvas_ = nullptr, *footer_ = nullptr;
     lv_obj_t *tempo_value_ = nullptr, *cpu_value_ = nullptr;
+    lv_obj_t *tuner_note_ = nullptr, *tuner_detail_ = nullptr, *tuner_status_ = nullptr, *tuner_needle_ = nullptr;
     lv_indev_t* pointer_input_ = nullptr;
     lv_indev_t* keypad_input_ = nullptr;
     std::deque<Binding> bindings_;

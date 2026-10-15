@@ -39,8 +39,10 @@ public:
     EngineState state() const { return state_; }
     const Graph& snapshot() const { return graph_; }
     EngineTelemetry telemetry() const { return {std::nullopt, state_ == EngineState::Ready ? cpu_ : std::nullopt}; }
+    void watch_tuner(std::optional<InstanceId>);
+    std::optional<double> tuner_frequency(InstanceId) const;
 private:
-    enum class Purpose { Edit, Sync, Endpoints, Refresh };
+    enum class Purpose { Edit, Sync, Endpoints, Refresh, Monitor };
     struct Local { std::string path, predicate; Value value; };
     using TransactionId = unsigned long long;
     struct Transaction {
@@ -106,6 +108,10 @@ private:
     // restarted interface sees it. The last value sent, until it is echoed.
     std::optional<bool> sent_modified_;
     std::optional<double> cpu_;
+    std::optional<InstanceId> tuner_;
+    std::string tuner_port_;
+    std::optional<double> tuner_frequency_;
+    unsigned tuner_age_ = 0;
 
     // The engine's objects under ingen:/main, by path.
     std::map<std::string, Properties> objects_;

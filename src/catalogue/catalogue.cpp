@@ -273,6 +273,8 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
         const auto name = rule.text("name", false, 96), category = rule.text("category", false, 48), description = rule.text("description", false);
         const auto color = rule.text("color", false), reason = rule.text("reason", false), prefix = rule.text("strip_prefix", false, 48);
         const bool has_availability = item.get("availability") != nullptr;
+        const bool has_hidden = item.get("hidden") != nullptr;
+        const bool hidden = rule.flag("hidden");
         const auto availability = has_availability ? static_cast<Availability>(rule.choice("availability", availabilities)) : Availability::Available;
         std::uint32_t parsed = 0;
         if (!rule.issue.empty()) return rule.issue;
@@ -290,6 +292,7 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
             if (!prefix.empty() && d.name.size() > prefix.size() && d.name.starts_with(prefix)) d.name.erase(0, prefix.size());
             if (!name.empty()) d.name = name;
             if (!description.empty()) d.description = description;
+            if (has_hidden) d.hidden = hidden;
             if (!category.empty()) { d.category = category; d.color = category_color(category); }
             if (!color.empty()) d.color = parsed;
             if (has_availability && static_cast<int>(availability) > static_cast<int>(d.availability)) { d.availability = availability; d.availability_reason = reason; }

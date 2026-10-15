@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Pedal PI contributors
 #include "ui/application.hpp"
 #include "engine/simulated_engine.hpp"
+#include "core/tuning.hpp"
 // Test-only geometry access for real pointer presses on the pinned keyboard.
 #include "src/widgets/buttonmatrix/lv_buttonmatrix_private.h"
 #include <filesystem>
@@ -655,6 +656,60 @@ int main(int argc, char** argv) {
             // A removed module takes its assignment along.
             engine2.submit(pedal::RemoveModule{4}); step(app, 256);
             check(app.graph().assignments.size() == 1 && app.graph().assignments[0].control == "stomp2", "removed module kept its stomp");
+        }
+        // Drive the real tuner page with test telemetry through the engine contract.
+        {
+            struct TunerEngine : pedal::Engine {
+                pedal::SimulatedEngine backing;
+                std::optional<double> frequency = 440;
+                std::optional<pedal::InstanceId> watched;
+                pedal::RequestId submit(pedal::Command c) override { return backing.submit(std::move(c)); }
+                void connect() override { backing.connect(); }
+                void disconnect() override { backing.disconnect(); }
+                std::vector<pedal::EngineEvent> advance(unsigned ms) override { return backing.advance(ms); }
+                pedal::EngineState state() const override { return backing.state(); }
+                const pedal::Graph& snapshot() const override { return backing.snapshot(); }
+                pedal::EngineCapabilities capabilities() const override { return {false, true, false, false, true}; }
+                void watch_tuner(std::optional<pedal::InstanceId> id) override { watched = id; }
+                std::optional<double> tuner_frequency(pedal::InstanceId id) const override { return watched == id ? frequency : std::nullopt; }
+            } live;
+            const std::string uri = "http://gareus.org/oss/lv2/tuna#mod";
+            pedal::register_definitions({{uri, "Tuner", "Utility", "Tune an instrument", 0x93a4b5,
+                {{"in", pedal::Direction::Input}, {"out", pedal::Direction::Output}},
+                {{"tuning", "A reference", "Hz", pedal::ParameterKind::Continuous, 220, 880, 440}}},
+                {"http://gareus.org/oss/lv2/tuna#two", "Legacy tuner", "Utility", "Duplicate", 0x93a4b5, {}, {},
+                 pedal::Availability::Available, {}, true, {}, {}, true}});
+            live.submit(pedal::LoadGraph{pedal::empty_graph("Tuning")}); live.advance(100);
+            live.submit(pedal::AddModule{uri, 184, 132}); live.advance(100);
+            pedal::Application app(live); step(app);
+            const auto tuner = app.graph().modules.back();
+            click(app, tuner.x + 48, tuner.y + 72 + 48);
+            check(text_label(app.screen(), "A4") && text_label(app.screen(), "In tune"), "tuner did not show live note and target");
+            capture(app, output / "39-tuner-in-tune.bmp");
+            auto* slider = widget(app.screen(), &lv_slider_class);
+            live.frequency = 440 * std::pow(2.0, -23.0 / 1200); step(app);
+            check(text_label(app.screen(), "Flat - tighten string") && widget(app.screen(), &lv_slider_class) == slider, "flat pitch missing or rebuilt controls");
+            capture(app, output / "40-tuner-flat.bmp");
+            live.frequency = 440 * std::pow(2.0, 19.0 / 1200); step(app);
+            check(text_label(app.screen(), "Sharp - loosen string"), "sharp indication missing");
+            capture(app, output / "41-tuner-sharp.bmp");
+            live.frequency = 82.4069; step(app);
+            check(text_label(app.screen(), "E2"), "low guitar E octave incorrect");
+            live.frequency = 0; step(app);
+            check(text_label(app.screen(), "Waiting for a note") && !text_label(app.screen(), "E2"), "silence retained previous note");
+            capture(app, output / "42-tuner-silence.bmp");
+            live.frequency = 440; live.submit(pedal::SetParameter{tuner.id, "tuning", 442}); step(app);
+            check(text_label(app.screen(), "Flat - tighten string"), "A reference did not affect tuning");
+            live.submit(pedal::SetBypass{tuner.id, true}); step(app);
+            check(text_label(app.screen(), "Tuner bypassed"), "bypassed tuner displayed a pitch");
+            live.disconnect(); step(app);
+            check(!text_label(app.screen(), "A4"), "offline tuner displayed a pitch");
+            click(app, 68, 36); check(!live.watched, "leaving tuner did not stop monitoring");
+            live.connect(); step(app, 500);
+            click(app, 490, 36); tap(app, "Utility");
+            check(!text_label(app.screen(), "Legacy tuner"), "hidden duplicate in Add list");
+            const auto invalid = pedal::tuning_from_frequency(std::nan(""), 440);
+            check(!invalid && !pedal::tuning_from_frequency(440, 0), "invalid pitch/reference accepted");
         }
         // Release the headless devices before the global runtime.
         lv_indev_delete(indev);
