@@ -5,6 +5,17 @@
 #include <cmath>
 
 namespace peepo {
+std::optional<double> TapTempo::tap(unsigned long long ms) {
+    const auto longest = static_cast<unsigned long long>(60000 / minimum_tempo);
+    if (!taps_.empty() && (ms <= taps_.back() || ms - taps_.back() > longest)) taps_.clear();
+    taps_.push_back(ms);
+    if (taps_.size() > 5) taps_.erase(taps_.begin());
+    if (taps_.size() < 2) return std::nullopt;
+    const double beat = static_cast<double>(taps_.back() - taps_.front()) / static_cast<double>(taps_.size() - 1);
+    const double bpm = 60000 / beat;
+    if (bpm < minimum_tempo || bpm > maximum_tempo) return std::nullopt;
+    return std::round(bpm * 10) / 10;
+}
 std::vector<std::string> ControlLayout::ids() const {
     std::vector<std::string> out;
     for (unsigned i = 1; i <= encoders; ++i) out.push_back("enc" + std::to_string(i));

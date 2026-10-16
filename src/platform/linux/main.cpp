@@ -59,6 +59,7 @@ void usage() {
         "  --rotate 0|90|180|270   rotate the display\n"
         "  --controls FILE         physical control bindings (default /etc/peepo/controls.conf if present)\n"
         "  --patches DIR           saved patches; --engine-patches PATH if the engine sees them elsewhere\n"
+        "  --files DIR             models and impulse responses to offer (default beside the patches)\n"
         "  --catalogue FILE        modules on offer (default catalogue.json beside the program)\n"
         "  --smoke                 run one second, check that something was drawn, and exit\n"
         "  --screenshot FILE       with --smoke and --display offscreen: save what was drawn as BMP\n";
@@ -126,7 +127,7 @@ void write_bmp(lv_display_t* display, const std::string& path) {
 }
 
 int main(int argc, char** argv) {
-    std::string address, catalogue_path, overlay_path, patches_path, engine_patches, display_name, drm_device, fbdev_path = "/dev/fb0",
+    std::string address, catalogue_path, overlay_path, patches_path, engine_patches, files_path, display_name, drm_device, fbdev_path = "/dev/fb0",
         touch_path, controls_path, screenshot;
     int rotation = 0;
     bool smoke = false;
@@ -140,6 +141,7 @@ int main(int argc, char** argv) {
         else if (option == "--catalogue") catalogue_path = value();
         else if (option == "--patches") patches_path = value();
         else if (option == "--engine-patches") engine_patches = value();
+        else if (option == "--files") files_path = value();
         else if (option == "--display") display_name = value();
         else if (option == "--drm-device") drm_device = value();
         else if (option == "--fbdev") fbdev_path = value();
@@ -269,7 +271,14 @@ int main(int argc, char** argv) {
         store = std::make_unique<peepo::PatchStore>(root, engine_patches);
         if (const auto issue = store->open(); !issue.empty()) std::cerr << "patches: " << issue << "\n";
     }
+    // Models and impulse responses, on the same machine as the engine here.
+    std::unique_ptr<peepo::FileStore> files;
+    if (!smoke) {
+        files = std::make_unique<peepo::FileStore>(!files_path.empty() ? std::filesystem::path(files_path) : data_home() / "peepo" / "files");
+        if (const auto issue = files->open(); !issue.empty()) std::cerr << "files: " << issue << "\n";
+    }
     peepo::Application app(*engine, store.get());
+    app.set_files(files.get());
     // Only the instrument, drawing on its own screen, may power the machine off or restart it.
     if (display_name == "drm" || display_name == "fbdev") {
         app.set_power_off([] { return std::system("systemctl poweroff") == 0 ? std::string() : std::string("Could not shut down: the system refused."); });

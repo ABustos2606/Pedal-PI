@@ -4,6 +4,7 @@
 // interrupted saves, fallback to an older revision, identity, the startup
 // choice, and the simulator saving and loading through the same store.
 #include "engine/simulated_engine.hpp"
+#include "storage/file_store.hpp"
 #include "storage/patch_store.hpp"
 #include <algorithm>
 #include <fstream>
@@ -158,6 +159,38 @@ void bundles() {
         for (std::size_t i = 0; i < m.parameters.size(); ++i) check(r->parameters[i].value == m.parameters[i].value, "round trip lost a value");
     }
     for (const auto& c : demo.connections) check(std::find(back.connections.begin(), back.connections.end(), c) != back.connections.end(), "round trip lost a cable");
+
+    // The patch tempo and a module's file come back; a bundle from before
+    // tempo was saved plays at the default one.
+    auto timed = demo;
+    timed.tempo = 87.5;
+    timed.modules[3].file = "/files/nam/A \"quoted\" amp.nam";
+    Bundle with_tempo;
+    check(read_bundle(write_main_ttl(timed), with_tempo).empty() && with_tempo.tempo == 87.5, "tempo not written to the bundle");
+    const auto timed_back = bundle_graph(with_tempo);
+    check(timed_back.tempo == 87.5 && find_module(timed_back, timed.modules[3].id)->file == timed.modules[3].file && find_module(timed_back, timed.modules[2].id)->file.empty(),
+          "tempo or file lost in a round trip");
+    auto text = write_main_ttl(timed);
+    text.erase(text.find(" ;\n\tpeepo:tempo "), std::string(" ;\n\tpeepo:tempo \"87.5\"^^xsd:double").size());
+    Bundle older;
+    check(read_bundle(text, older).empty() && !older.tempo && bundle_graph(older).tempo == default_tempo, "a bundle without tempo did not play at the default");
+    // Files are listed from the store's folder, by name, with the extension asked for.
+    const auto files_root = fs::temp_directory_path() / "peepo-file-store-tests";
+    fs::remove_all(files_root);
+    FileStore files(files_root, "/engine/files");
+    check(files.open().empty() && fs::is_directory(files_root / "nam") && fs::is_directory(files_root / "ir" / "cab") && fs::is_directory(files_root / "ir" / "reverb"),
+          "file store folders not made");
+    for (const char* name : {"b amp.NAM", "a amp.nam", ".hidden.nam", "notes.txt", "cab.wav"}) write(files_root / (std::string(name).ends_with(".wav") ? "ir/cab" : "nam") / name, "x");
+    write(files_root / "ir" / "reverb" / "Hall.wav", "x");
+    const auto listed = files.list("nam", {"nam"});
+    check(listed.size() == 2 && listed[0].name == "a amp.nam" && listed[1].name == "b amp.NAM" && listed[0].engine_path == "/engine/files/nam/a amp.nam",
+          "models not listed by name, with their engine path");
+    const auto cabs = files.list("ir/cab", {"wav", "flac"});
+    check(cabs.size() == 1 && cabs[0].engine_path == "/engine/files/ir/cab/cab.wav" && files.list("ir/reverb", {"wav"}).size() == 1 && files.list("ir/reverb", {"wav"})[0].name == "Hall.wav" &&
+          files.list("ir", {"wav"}).empty() && files.list("../nam", {"nam"}).empty() && files.list("ir/../nam", {"nam"}).empty() && files.list("ir/cab/x", {"wav"}).empty() &&
+          files.list("/ir", {"wav"}).empty() && files.list("ir/cab", {"nam"}).empty(), "impulse responses listed wrongly, or outside the store");
+    check(file_name("/engine/files/nam/a amp.nam") == "a amp.nam" && file_name("C:\\x\\y.wav") == "y.wav" && file_name("plain") == "plain", "file names misread");
+    fs::remove_all(files_root);
 }
 
 void store(const fs::path& root) {
@@ -276,6 +309,14 @@ void foreign_bundles(const fs::path& root) {
     check(elsewhere.open().empty() && elsewhere.find("p-0001")->missing_files.empty(), "engine-side path checked on the wrong filesystem");
     fs::remove(stateful / "m4" / "state.ttl");
     check(patches.find("p-0001")->missing_files == std::vector<std::string>{"m4: m4/state.ttl"}, "missing state file not reported");
+    // A saved model whose name has a space, as the engine names it: escaped.
+    write(stateful / "m4" / "state.ttl",
+          "@prefix lv2: <http://lv2plug.in/ns/lv2core#> .\n@prefix pset: <http://lv2plug.in/ns/ext/presets#> .\n@prefix state: <http://lv2plug.in/ns/ext/state#> .\n"
+          "<> a pset:Preset ; lv2:appliesTo <http://lv2plug.in/plugins/eg-params> ;\n\tstate:state [ <http://lv2plug.in/plugins/eg-params#path> <A1%20standard.nam> ] .\n");
+    write(stateful / "m4" / "A1 standard.nam", "x");
+    check(patches.find("p-0001")->missing_files.empty(), "an escaped file name kept with the bundle reported missing");
+    fs::remove(stateful / "m4" / "A1 standard.nam");
+    check(patches.find("p-0001")->missing_files == std::vector<std::string>{"m4: A1%20standard.nam"}, "a missing escaped file not reported");
 }
 
 void simulated(const fs::path& root) {

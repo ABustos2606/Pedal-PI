@@ -3,6 +3,7 @@
 #pragma once
 #include "controls/controls.hpp"
 #include "engine/engine.hpp"
+#include "storage/file_store.hpp"
 #include "storage/patch_store.hpp"
 #include "lvgl.h"
 #include <deque>
@@ -11,7 +12,7 @@
 
 namespace peepo {
 enum class Page { Patch, Browser, Parameters, Patches, Settings, ModuleActions, NamePatch, ConfirmReplace, CvConnect, ConfirmAction,
-                  Controls, AssignPicker, AssignmentDetail, Diagnostics, Power, Halting };
+                  Controls, AssignPicker, AssignmentDetail, Diagnostics, Power, Halting, FilePicker, Tempo };
 class Application {
 public:
     // Without a store the Patches page offers the in-memory session snapshot.
@@ -45,6 +46,8 @@ public:
         std::optional<double> uptime_s;
     };
     void set_system(std::function<System()> system) { system_ = std::move(system); system_age_ = 2000; }
+    // The files plugins can be given (models, impulse responses); none without a store.
+    void set_files(FileStore* files) { files_ = files && files->usable() ? files : nullptr; rebuild_ = true; }
 private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
@@ -52,7 +55,7 @@ private:
                         ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage,
                         SavePatch, LoadStored, DeleteStored, StartupStored, PatchPage, ConfirmAction, CancelAction,
                         AssignControl, EditControl, ClearControl, PickModule, PickTarget, PickerPage, InvertControl, SwitchModeChoice, RangeEnd, PowerOff,
-                        Restart, BrowserCategory, Revert };
+                        Restart, BrowserCategory, Revert, ParameterStep, ChooseFile, PickFile, FilePage, TempoStep, TempoSlider, Tap };
     struct Binding {
         Application* app;
         Action action;
@@ -74,6 +77,11 @@ private:
     void add_module(const std::string& uri);
     void parameters(lv_obj_t*);
     void parameter_tile(lv_obj_t*, const Module&, const Parameter&, int x, int y, int height = 120, std::uint32_t ink = 0);
+    void file_tile(lv_obj_t*, const Module&, int x, int y);
+    void file_picker(lv_obj_t*);
+    void tempo(lv_obj_t*);
+    void tap_tempo();
+    void set_tempo(double bpm);
     void clouds_parameters(lv_obj_t*, const Module&);
     void delay_parameters(lv_obj_t*, const Module&);
     void tuner_parameters(lv_obj_t*, const Module&);
@@ -152,6 +160,12 @@ private:
     std::function<std::string()> restart_;
     std::function<Network()> network_;
     std::function<System()> system_;
+    FileStore* files_ = nullptr;
+    TapTempo tapper_;
+    unsigned long long clock_ms_ = 0;
+    // A tempo on its way to the engine, so steps build on it rather than on the last answer.
+    std::optional<double> tempo_sent_;
+    std::size_t file_page_ = 0;
     System reading_;
     // Whether the supply was ever too low while the interface ran.
     bool low_voltage_seen_ = false;

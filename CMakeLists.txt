@@ -11,7 +11,7 @@ add_library(peepo_core src/core/model.cpp src/core/reference_catalogue.cpp src/e
   src/engine/ingen/turtle.cpp src/engine/ingen/protocol.cpp src/engine/ingen/session.cpp
   src/engine/ingen/socket_transport.cpp src/engine/ingen/ingen_engine.cpp
   src/catalogue/json.cpp src/catalogue/catalogue.cpp
-  src/storage/bundle.cpp src/storage/patch_store.cpp src/controls/controls.cpp)
+  src/storage/bundle.cpp src/storage/patch_store.cpp src/storage/file_store.cpp src/controls/controls.cpp)
 target_include_directories(peepo_core PUBLIC src)
 find_package(Threads REQUIRED)
 target_link_libraries(peepo_core PUBLIC Threads::Threads)
@@ -171,6 +171,10 @@ if(BUILD_TESTING)
   add_executable(peepo_output_level_live tests/output_level_live.cpp)
   target_link_libraries(peepo_output_level_live PRIVATE peepo_core)
   install(TARGETS peepo_output_level_live RUNTIME DESTINATION libexec/peepo)
+  # A module's file (model, impulse response) through the adapter: see tools/pi/check-engine.sh.
+  add_executable(peepo_file_live tests/file_live.cpp)
+  target_link_libraries(peepo_file_live PRIVATE peepo_core)
+  install(TARGETS peepo_file_live RUNTIME DESTINATION libexec/peepo)
   add_executable(peepo_catalogue_live tests/catalogue_live.cpp)
   target_link_libraries(peepo_catalogue_live PRIVATE peepo_core)
   install(TARGETS peepo_catalogue_live RUNTIME DESTINATION libexec/peepo)

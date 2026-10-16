@@ -109,9 +109,22 @@ std::string apply_parameter_rules(const Value& entries, const std::string& where
         if (item.get("unit")) p.unit = entry.text("unit", false, 16);
         if (item.get("kind")) {
             const auto kind = static_cast<ParameterKind>(entry.choice("kind", kinds));
-            if (kind == ParameterKind::Enumeration) return entry.where + ": choices come from the plugin, not the overlay";
+            if (kind == ParameterKind::Enumeration) return entry.where + ": name the choices instead";
             p.kind = kind;
         }
+        // Names for the values of a whole-number control that counts from 0,
+        // which the plugin gives only as numbers: shown as a list of choices.
+        if (const auto* choices = entry.find("choices", Value::Kind::Array, false)) {
+            if (p.kind != ParameterKind::Integer || p.minimum != 0 || p.maximum + 1 != static_cast<double>(choices->items.size()))
+                return entry.where + ": choices need a whole-number control from 0 with one name per value";
+            p.choices.clear();
+            for (const auto& choice : choices->items) {
+                if (choice.kind != Value::Kind::String || choice.text.empty() || !plain(choice.text, 48)) return entry.where + ": a choice is not a short name";
+                p.choices.push_back(choice.text);
+            }
+            p.kind = ParameterKind::Enumeration;
+        }
+        if (item.get("logarithmic")) p.logarithmic = entry.flag("logarithmic");
         const bool has_default = item.get("default") != nullptr;
         if (has_default) p.value = entry.number("default");
         if (!entry.issue.empty()) return entry.issue;
@@ -272,7 +285,7 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
         if (uri.empty() == match.empty()) return rule.where + ": needs exactly one of \"uri\" and \"match\"";
         const auto name = rule.text("name", false, 96), category = rule.text("category", false, 48), description = rule.text("description", false);
         const auto color = rule.text("color", false), reason = rule.text("reason", false), prefix = rule.text("strip_prefix", false, 48);
-        const auto output = rule.text("output", false, 256);
+        const auto output = rule.text("output", false, 256), tempo = rule.text("tempo", false, 256);
         const bool has_availability = item.get("availability") != nullptr;
         const bool has_hidden = item.get("hidden") != nullptr;
         const bool hidden = rule.flag("hidden");
@@ -285,10 +298,59 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
         // own metadata can say a plugin is loadable.
         if (has_availability && availability == Availability::Available) return rule.where + ": an overlay can restrict availability, not grant it";
         const auto* parameters = rule.find("parameters", Value::Kind::Array, false);
+        const auto* group_list = rule.find("groups", Value::Kind::Array, false);
+        const auto* file_entry = rule.find("file", Value::Kind::Object, false);
         if (!rule.issue.empty()) return rule.issue;
+        // The plugin's file parameter: which patch:writable path it is, how the
+        // page names it, and which files of which folder to offer.
+        FileParameter file;
+        if (file_entry) {
+            Fields entry{*file_entry, rule.where + " file", {}};
+            file.property = entry.text("property", true, 1024);
+            file.label = entry.text("label", true, 24);
+            file.folder = entry.text("folder", true, 32);
+            const auto* listed = entry.find("extensions", Value::Kind::Array, true);
+            if (!entry.issue.empty()) return entry.issue;
+            if (!address(file.property)) return entry.where + ": \"property\" is not a URI";
+            // A folder of the file store, one level deep at most: nam, ir/cab.
+            const auto slash = file.folder.find('/');
+            const bool plain_folder = slash == std::string::npos ? symbol(file.folder) :
+                symbol(file.folder.substr(0, slash)) && symbol(file.folder.substr(slash + 1));
+            if (file.label.empty() || !plain_folder) return entry.where + ": needs a label and a plain folder name";
+            for (const auto& type : listed->items) {
+                if (type.kind != Value::Kind::String || !symbol(type.text) || type.text.size() > 16) return entry.where + ": an extension is not a plain word";
+                file.extensions.push_back(type.text);
+            }
+            if (file.extensions.empty()) return entry.where + ": names no extension";
+        }
+        std::vector<ParameterGroup> groups;
+        if (group_list) for (const auto& entry : group_list->items) {
+            if (entry.kind != Value::Kind::Object) return rule.where + ": a group is not an object";
+            Fields group{entry, rule.where + " group", {}};
+            ParameterGroup made;
+            made.name = group.text("name", true, 24);
+            const auto* symbols = group.find("parameters", Value::Kind::Array, true);
+            if (!group.issue.empty()) return group.issue;
+            if (made.name.empty()) return group.where + ": needs a name";
+            for (const auto& s : symbols->items) {
+                if (s.kind != Value::Kind::String || !symbol(s.text)) return group.where + " " + made.name + ": a control is not a symbol";
+                made.symbols.push_back(s.text);
+            }
+            groups.push_back(std::move(made));
+        }
         for (auto& d : changed) {
             if (uri.empty() ? d.uri.find(match) == std::string::npos : d.uri != uri) continue;
             if (parameters) if (auto issue = apply_parameter_rules(*parameters, rule.where, d); !issue.empty()) return issue;
+            if (group_list) {
+                // A rule for one plugin must name its controls; a rule matching
+                // several leaves out what a module does not have.
+                d.groups = groups;
+                for (auto& g : d.groups)
+                    std::erase_if(g.symbols, [&](const std::string& s) {
+                        return !uri.empty() ? false : s != general_output_symbol && std::none_of(d.parameters.begin(), d.parameters.end(), [&](const Parameter& p) { return p.symbol == s; });
+                    });
+                std::erase_if(d.groups, [](const ParameterGroup& g) { return g.symbols.empty(); });
+            }
             // A maker's name in front of every module says nothing on a small square.
             if (!prefix.empty() && d.name.size() > prefix.size() && d.name.starts_with(prefix)) d.name.erase(0, prefix.size());
             if (!name.empty()) d.name = name;
@@ -298,22 +360,47 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
             if (!color.empty()) d.color = parsed;
             if (has_availability && static_cast<int>(availability) > static_cast<int>(d.availability)) { d.availability = availability; d.availability_reason = reason; }
             if (!output.empty()) d.output_symbol = output;
+            if (file_entry) d.file = file;
+            if (!tempo.empty()) d.tempo_symbol = tempo;
         }
     }
     // Every module that makes sound has one Output: the plugin's own level
     // control where the overlay names one, the general one otherwise. "none"
     // is for modules that only pass their input on, such as a tuner.
     for (auto& d : changed) {
-        if (d.output_symbol == "none") continue;
-        if (!d.output_symbol.empty()) {
+        if (!d.output_symbol.empty() && d.output_symbol != "none") {
             const auto own = std::find_if(d.parameters.begin(), d.parameters.end(), [&](const Parameter& p) { return p.symbol == d.output_symbol; });
             if (own == d.parameters.end()) return d.uri + ": its output control " + d.output_symbol + " is not one of its shown controls";
             own->name = "Output";
-        } else if (std::any_of(d.ports.begin(), d.ports.end(), [](const Port& p) { return p.type == PortType::Audio && p.direction == Direction::Output; }) &&
+        } else if (d.output_symbol.empty() && std::any_of(d.ports.begin(), d.ports.end(), [](const Port& p) { return p.type == PortType::Audio && p.direction == Direction::Output; }) &&
                    std::none_of(d.parameters.begin(), d.parameters.end(), [](const Parameter& p) { return p.symbol == general_output_symbol; })) {
             if (std::any_of(d.ports.begin(), d.ports.end(), [](const Port& p) { return p.symbol == general_output_symbol; }))
                 return d.uri + ": a port is named " + general_output_symbol + ", which the general Output needs";
             d.parameters.push_back(general_output_parameter());
+        }
+        // A tempo control: a shown number whose range reaches into the tempo range.
+        if (!d.tempo_symbol.empty()) {
+            const auto it = std::find_if(d.parameters.begin(), d.parameters.end(), [&](const Parameter& p) { return p.symbol == d.tempo_symbol; });
+            if (it == d.parameters.end() || it->kind == ParameterKind::Toggle || it->kind == ParameterKind::Enumeration ||
+                it->maximum < minimum_tempo || it->minimum > maximum_tempo)
+                return d.uri + ": its tempo control " + d.tempo_symbol + " is not a shown BPM control";
+        }
+        // The file takes the first tile of the first page, and is sent on the
+        // plugin's atom input.
+        if (!d.file.property.empty()) {
+            if (std::none_of(d.ports.begin(), d.ports.end(), [](const Port& p) { return p.type == PortType::Midi && p.direction == Direction::Input; }))
+                return d.uri + ": it reads a file but has no input for messages";
+            if (!d.groups.empty() && d.groups.front().symbols.size() > 3) return d.uri + ": its first group must leave a tile for the " + d.file.label;
+        }
+        // Each group: up to four shown controls, none in two groups.
+        std::set<std::string> grouped;
+        for (const auto& g : d.groups) {
+            if (g.symbols.size() > 4) return d.uri + ": group " + g.name + " has more than four controls";
+            for (const auto& s : g.symbols) {
+                if (std::none_of(d.parameters.begin(), d.parameters.end(), [&](const Parameter& p) { return p.symbol == s; }))
+                    return d.uri + ": group " + g.name + " names " + s + ", which is not one of its shown controls";
+                if (!grouped.insert(s).second) return d.uri + ": " + s + " is in two groups";
+            }
         }
     }
     modules = std::move(changed);

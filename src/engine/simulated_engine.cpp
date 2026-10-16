@@ -76,6 +76,7 @@ std::string SimulatedEngine::apply(const Command& command) {
             if (next_instance_ == std::numeric_limits<InstanceId>::max()) return "Instance ID space exhausted";
             graph_.modules.push_back({next_instance_++, d->uri, d->name, std::clamp(c.x, module_min_x, module_max_x),
                 std::clamp(c.y, module_min_y, module_max_y), false, false, d->parameters, d->ports});
+            for (auto& p : graph_.modules.back().parameters) if (p.symbol == d->tempo_symbol) p.value = tempo_value(p, graph_.tempo);
         } else if constexpr (std::is_same_v<T, Connect>) {
             auto issue = validate_connection(graph_, c.connection);
             if (!issue.empty()) return issue;
@@ -87,6 +88,12 @@ std::string SimulatedEngine::apply(const Command& command) {
             if (auto issue = validate_graph(c.graph); !issue.empty()) return issue;
             graph_ = c.graph;
             for (const auto& m : graph_.modules) next_instance_ = std::max(next_instance_, m.id + 1);
+        } else if constexpr (std::is_same_v<T, SetTempo>) {
+            if (!std::isfinite(c.bpm) || c.bpm < minimum_tempo || c.bpm > maximum_tempo) return "Tempo is outside 30 to 300 BPM";
+            graph_.tempo = c.bpm;
+            for (auto& m : graph_.modules)
+                if (const auto* d = definition(m.uri); d && !d->tempo_symbol.empty() && module_available(m))
+                    for (auto& p : m.parameters) if (p.symbol == d->tempo_symbol) p.value = tempo_value(p, c.bpm);
         } else if constexpr (std::is_same_v<T, NewPatch>) {
             if (auto issue = validate_patch_name(c.name); !issue.empty()) return issue;
             graph_ = empty_graph(c.name);
@@ -177,6 +184,13 @@ std::string SimulatedEngine::apply(const Command& command) {
                 if (m->fixed) return "Endpoints cannot be bypassed";
                 if (!module_available(*m)) return "Module is unavailable";
                 m->bypassed = c.value;
+            } else if constexpr (std::is_same_v<T, SetFile>) {
+                // No audio here: the file is only recorded, as the engine records it.
+                if (!module_available(*m)) return "Module is unavailable";
+                const auto* d = definition(m->uri);
+                if (!d || d->file.property.empty()) return "This module reads no file";
+                if (c.path.empty() || c.path.size() > 1024) return "Invalid file path";
+                m->file = c.path;
             } else if constexpr (std::is_same_v<T, SetParameter>) {
                 if (!module_available(*m)) return "Module is unavailable";
                 auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == c.symbol; });

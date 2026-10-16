@@ -12,6 +12,8 @@ using InstanceId = std::uint64_t;
 inline constexpr int canvas_width = 4096, canvas_height = 2048;
 inline constexpr int module_size = 96;
 inline constexpr int module_min_x = 24, module_min_y = 24;
+// The patch tempo, in beats per minute, and its range.
+inline constexpr double default_tempo = 120, minimum_tempo = 30, maximum_tempo = 300;
 inline constexpr int module_max_x = 3984, module_max_y = 1920;
 enum class ParameterKind { Continuous, Integer, Toggle, Enumeration };
 struct Parameter {
@@ -31,6 +33,19 @@ struct Port {
     std::vector<std::string> channel_symbols;
 };
 enum class Availability { Available, Untested, Unavailable };
+// A file the plugin reads, chosen on its page: a NAM model or an impulse
+// response. `property` is the plugin's patch:writable parameter (an
+// atom:Path); the files offered are those in `folder` of the instrument's
+// file store with one of `extensions`.
+struct FileParameter {
+    std::string property, label, folder;
+    std::vector<std::string> extensions;
+};
+// One named page of a module's parameters, of up to four controls.
+struct ParameterGroup {
+    std::string name;
+    std::vector<std::string> symbols;
+};
 struct ModuleDefinition {
     std::string uri, name, category, description;
     std::uint32_t color;
@@ -53,6 +68,13 @@ struct ModuleDefinition {
     // with audio outputs and none of its own gets the general Output instead;
     // "none" leaves a pass-through module, such as a tuner, without either.
     std::string output_symbol;
+    // Named pages for the parameter page, from the catalogue overlay. Controls
+    // no group names follow on pages of their own.
+    std::vector<ParameterGroup> groups;
+    // The file it reads, when it has one; `property` is empty otherwise.
+    FileParameter file;
+    // The control that follows the patch tempo, in BPM, when it has one.
+    std::string tempo_symbol;
 };
 // The general Output: not a plugin port but the block's own level, which the
 // engine applies to its audio outputs (urn:peepo:ns#outputLevel, in dB).
@@ -66,6 +88,8 @@ struct Module {
     std::vector<Parameter> parameters;
     // Retain a snapshot of ports, including when the plugin is unavailable.
     std::vector<Port> ports;
+    // The file given to its file parameter, as the engine sees it; empty for none.
+    std::string file;
 };
 struct Connection {
     InstanceId from, to;
@@ -100,7 +124,12 @@ struct Graph {
     std::vector<Connection> connections;
     std::vector<Assignment> assignments;
     bool dirty = false;
+    // Beats per minute, for every module that follows the tempo.
+    double tempo = default_tempo;
 };
+// The value a module's tempo control takes for a tempo: the tempo, inside the
+// control's own range.
+double tempo_value(const Parameter&, double tempo);
 struct PhysicalConnection {
     InstanceId from, to;
     std::string output, input;

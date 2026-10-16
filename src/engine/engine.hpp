@@ -27,6 +27,10 @@ struct MoveModule { InstanceId id; int x, y; };
 struct DuplicateModule { InstanceId id; int x, y; };
 struct SetParameter { InstanceId id; std::string symbol; double value; };
 struct SetBypass { InstanceId id; bool value; };
+// The patch tempo: stored with the patch, and given to every module that follows it.
+struct SetTempo { double bpm; };
+// Give a module's file parameter a file, by its path on the engine's machine.
+struct SetFile { InstanceId id; std::string path; };
 struct Connect { Connection connection; };
 struct Disconnect { Connection connection; };
 struct LoadGraph { Graph graph; };
@@ -59,7 +63,7 @@ struct LoadPatch {
 // Pin a physical control, replacing whatever it had in this patch; saved with it.
 struct Assign { Assignment assignment; };
 struct Unassign { std::string control; };
-using Command = std::variant<AddModule, RemoveModule, MoveModule, DuplicateModule, SetParameter, SetBypass, Connect, Disconnect,
+using Command = std::variant<AddModule, RemoveModule, MoveModule, DuplicateModule, SetParameter, SetBypass, SetFile, SetTempo, Connect, Disconnect,
                              LoadGraph, NewPatch, RenamePatch, SaveGraph, LoadSession, LoadPatch, Assign, Unassign>;
 struct EngineEvent {
     RequestId request = 0;

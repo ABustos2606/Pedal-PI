@@ -122,6 +122,41 @@ std::uint32_t module_ink(const Module& m) {
 const Parameter& parameter(const Module& m, const std::string& symbol) {
     return *std::find_if(m.parameters.begin(), m.parameters.end(), [&](const Parameter& p) { return p.symbol == symbol; });
 }
+// The generic editor in pages of up to four controls: the overlay's named
+// groups first, then whatever they leave out, four to a page ("More" when
+// the module has groups at all).
+// A module that reads a file shows it in the first tile of the first page.
+struct ParameterPage { std::string name; std::vector<const Parameter*> parameters; bool file = false; };
+std::vector<ParameterPage> parameter_pages_of(const Module& m) {
+    std::vector<ParameterPage> pages;
+    std::vector<std::string> placed;
+    const auto* known = definition(m.uri);
+    const bool file = known && !known->file.property.empty();
+    const auto full = [&](const ParameterPage& page) { return page.parameters.size() + (page.file ? 1 : 0) >= 4; };
+    if (const auto* d = known)
+        for (const auto& g : d->groups) {
+            ParameterPage page{g.name, {}};
+            for (const auto& s : g.symbols)
+                for (const auto& p : m.parameters)
+                    if (p.symbol == s && std::find(placed.begin(), placed.end(), s) == placed.end()) { placed.push_back(s); page.parameters.push_back(&p); }
+            page.file = file && pages.empty();
+            if (!page.parameters.empty()) pages.push_back(std::move(page));
+        }
+    const bool named = !pages.empty();
+    for (const auto& p : m.parameters) {
+        if (std::find(placed.begin(), placed.end(), p.symbol) != placed.end()) continue;
+        if (pages.empty() || full(pages.back()) || (named && pages.back().name != "More")) pages.push_back({named ? "More" : "", {}, file && pages.empty()});
+        pages.back().parameters.push_back(&p);
+    }
+    if (pages.empty()) pages.push_back({{}, {}, file});
+    return pages;
+}
+std::size_t page_of(const Module& m, const std::string& symbol) {
+    const auto pages = parameter_pages_of(m);
+    for (std::size_t i = 0; i < pages.size(); ++i)
+        for (const auto* p : pages[i].parameters) if (p->symbol == symbol) return i;
+    return 0;
+}
 }
 Application::Application(Engine& engine, PatchStore* store) : engine_(engine), graph_(engine.snapshot()), store_(store && store->usable() ? store : nullptr) {
     last_state_ = engine_.state();
@@ -196,12 +231,14 @@ void Application::send_stream() {
     if (!stream_->in_flight) stream_.reset();
 }
 void Application::tick(unsigned ms) {
+    clock_ms_ += ms;
     for (auto& e : engine_.advance(ms)) {
         const auto it = pending_.find(e.request);
         const auto kind = it == pending_.end() ? PendingKind::Edit : it->second;
         pending_.erase(e.request);
         if (stream_ && e.request && e.request == stream_->in_flight) { stream_->in_flight = 0; send_stream(); }
         if (e.snapshot) graph_ = *e.snapshot;
+        if (e.request && tempo_sent_ && pending_.empty()) tempo_sent_.reset();
         if (e.saved_session) { saved_ = *e.saved_session; has_saved_ = true; }
         if (!e.request) {
             // The connection's own news: keep the reason for the banner.
@@ -335,6 +372,18 @@ lv_obj_t* pill(lv_obj_t* b) {
 lv_obj_t* slim(lv_obj_t* b) {
     lv_obj_set_y(b, 6); lv_obj_set_height(b, 36);
     return b;
+}
+// Whether a list of modes fits as buttons across a parameter tile.
+bool segments_fit(const Parameter& p) {
+    const int count = static_cast<int>(p.choices.size());
+    if (count < 2 || count > 4) return false;
+    const int width = (328 - 8 * (count - 1)) / count;
+    return std::all_of(p.choices.begin(), p.choices.end(), [&](const std::string& c) {
+        const auto shown = upper(c);
+        lv_point_t size;
+        lv_text_get_size(&size, shown.c_str(), &peepo_bold_14, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+        return size.x <= width - 16;
+    });
 }
 // The emphasis a chosen option gets: its border and text in the given colour.
 void mark(lv_obj_t* b, std::uint32_t ink) {
@@ -502,6 +551,14 @@ void Application::handle(Binding& b, lv_event_t* e) {
         }
         return;
     }
+    if (b.action == Action::TempoSlider) {
+        // Whole beats per minute; the value follows the finger, the engine hears the release.
+        if (code != LV_EVENT_VALUE_CHANGED && code != LV_EVENT_RELEASED) return;
+        const auto bpm = static_cast<double>(lv_slider_get_value(target));
+        if (b.value_label) lv_label_set_text(b.value_label, metric_text(bpm, false).c_str());
+        if (code == LV_EVENT_RELEASED) set_tempo(bpm);
+        return;
+    }
     if (b.action == Action::RangeEnd) {
         // The From (0) and To (1) ends of an assignment's range, sent on release.
         const auto* a = pinned(editing_control_);
@@ -556,6 +613,24 @@ void Application::handle(Binding& b, lv_event_t* e) {
     case Action::ParallelDemo: replace_patch(LoadGraph{parallel_demo_graph()}, Page::Patches); break;
     case Action::ParameterLayout: generic_parameters_ = !generic_parameters_; parameter_page_ = 0; rebuild_ = true; break;
     case Action::ParameterChoice: submit(SetParameter{b.id, b.symbol, static_cast<double>(b.number)}); break;
+    case Action::TempoStep: set_tempo((tempo_sent_ ? *tempo_sent_ : graph_.tempo) + b.number); break;
+    case Action::Tap: tap_tempo(); break;
+    case Action::ChooseFile: selected_ = b.id; file_page_ = 0; navigate(Page::FilePicker); break;
+    case Action::FilePage: file_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
+    case Action::PickFile:
+        if (submit(SetFile{b.id, b.symbol})) message("Loading " + file_name(b.symbol) + ". The plugin reads it in the background.");
+        navigate(Page::Parameters);
+        break;
+    case Action::ParameterStep: {
+        // One whole step of an integer control, from a value still on its way if there is one.
+        const auto* m = find_module(graph_, b.id); if (!m) break;
+        const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == b.symbol; });
+        if (it == m->parameters.end()) break;
+        const bool streaming = stream_ && stream_->id == b.id && stream_->symbol == b.symbol;
+        const auto next = std::clamp(std::round(streaming ? stream_->latest : it->value) + b.number, it->minimum, it->maximum);
+        if (next != it->value || streaming) stream_parameter(b.id, b.symbol, next);
+        break;
+    }
     case Action::State:
         if (static_cast<EngineState>(b.number) == EngineState::Ready) engine_.connect();
         else if (static_cast<EngineState>(b.number) == EngineState::Disconnected) engine_.disconnect();
@@ -611,9 +686,10 @@ void Application::handle(Binding& b, lv_event_t* e) {
     case Action::PickModule: picking_module_ = b.id; picker_page_ = 0; rebuild_ = true; break;
     case Action::PickerPage: picker_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
     case Action::PickTarget: {
-        if (b.symbol == "@next-patch" || b.symbol == "@previous-patch") {
+        if (b.symbol == "@next-patch" || b.symbol == "@previous-patch" || b.symbol == "@tap-tempo") {
             const auto issue = store_ ? store_->set_global_control(editing_control_, b.symbol.substr(1)) : std::string("Patch storage is not available");
-            message(issue.empty() ? control_label(editing_control_) + " changes patch in every patch that does not use it otherwise." : issue);
+            message(!issue.empty() ? issue : b.symbol == "@tap-tempo" ? control_label(editing_control_) + " taps the tempo in every patch that does not use it otherwise." :
+                    control_label(editing_control_) + " changes patch in every patch that does not use it otherwise.");
             navigate(Page::Controls); break;
         }
         const auto* m = find_module(graph_, picking_module_);
@@ -825,6 +901,14 @@ void Application::rebuild() {
         break;
     case Page::AssignmentDetail: section = "CONTROLS"; title = control_label(editing_control_); break;
     case Page::Diagnostics: section = "SETTINGS"; title = "Diagnostics"; break;
+    case Page::Tempo: section = "TEMPO"; title = "Tempo"; break;
+    case Page::FilePicker: {
+        section = "PARAMETERS";
+        const auto* m = find_module(graph_, selected_);
+        const auto* d = m ? definition(m->uri) : nullptr;
+        title = d && !d->file.label.empty() ? d->file.label + " for " + m->name : "Choose a file";
+        break;
+    }
     case Page::Power: section = "SETTINGS"; title = "Power"; break;
     case Page::Halting: section = "POWER"; title = restarting_ ? "Restarting" : "Shutting down"; break;
     }
@@ -893,6 +977,8 @@ void Application::rebuild() {
     case Page::AssignPicker: assign_picker(content); break;
     case Page::AssignmentDetail: assignment_detail(content); break;
     case Page::Diagnostics: diagnostics(content); break;
+    case Page::FilePicker: file_picker(content); break;
+    case Page::Tempo: tempo(content); break;
     case Page::Power: power(content); break;
     case Page::Halting: halting(content); break;
     }
@@ -913,7 +999,7 @@ void Application::rebuild() {
         // Back returns to where the page was opened from.
         const auto back = page_ == Page::NamePatch ? Page::Patches :
             page_ == Page::Controls || page_ == Page::Diagnostics || page_ == Page::Power ? Page::Settings :
-            page_ == Page::AssignPicker || page_ == Page::AssignmentDetail ? Page::Controls : Page::Patch;
+            page_ == Page::AssignPicker || page_ == Page::AssignmentDetail ? Page::Controls : page_ == Page::FilePicker ? Page::Parameters : Page::Patch;
         slim(button(foot, "< Back", 14, 0, 112, Action::Navigate, 0, {}, static_cast<int>(back)));
     }
     const int message_x = patch || page_ == Page::Halting ? 24 : 142;
@@ -931,6 +1017,11 @@ void Application::rebuild() {
     for (auto* value : {tempo_value_, cpu_value_}) {
         lv_obj_set_height(value, 22); lv_label_set_long_mode(value, LV_LABEL_LONG_DOT);
         lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_RIGHT, 0);
+    }
+    // The tempo reading opens its page, wherever it is shown.
+    if (page_ != Page::Tempo && page_ != Page::Halting && page_ != Page::NamePatch) {
+        lv_obj_add_flag(tempo_value_, LV_OBJ_FLAG_CLICKABLE); lv_obj_set_ext_click_area(tempo_value_, 14);
+        bind(tempo_value_, Action::Navigate, 0, {}, static_cast<int>(Page::Tempo));
     }
     for (auto* caption : {label(metrics, "BPM", 8, 22, 76, faint, &peepo_mono_14),
                           label(metrics, engine_.capabilities().simulation ? "CPU SIM" : "CPU", 92, 22, 80, faint, &peepo_mono_14)})
@@ -1270,24 +1361,34 @@ void Application::parameters(lv_obj_t* parent) {
     auto* bypass = button(parent, m->bypassed ? "Enable" : "Bypass", 24, 12, 104, Action::Bypass, m->id);
     (void)bypass;
     button(parent, "Delete", 140, 12, 104, Action::Remove, m->id);
-    const auto page_count = std::max<std::size_t>(1, (m->parameters.size() + 3) / 4);
+    const auto pages = parameter_pages_of(*m);
+    const auto page_count = pages.size();
     parameter_page_ = std::min(parameter_page_, page_count - 1);
+    const auto& shown = pages[parameter_page_];
     if (page_count > 1) {
         auto* prev = button(parent, "<", 272, 12, 48, Action::ParameterPage, 0, {}, static_cast<int>(parameter_page_ ? parameter_page_ - 1 : 0));
         if (!parameter_page_) lv_obj_add_state(prev, LV_STATE_DISABLED);
-        label(parent, std::to_string(parameter_page_ + 1) + " / " + std::to_string(page_count), 348, 27, 104, muted, &lv_font_montserrat_14);
+        // A named group shows its name above the page count.
+        const auto count = std::to_string(parameter_page_ + 1) + " / " + std::to_string(page_count);
+        if (!shown.name.empty()) {
+            auto* name = label(parent, upper(shown.name), 328, 14, 136, module_ink(*m), &peepo_bold_14);
+            lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, 18);
+            lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
+        }
+        auto* numbers = label(parent, count, 328, shown.name.empty() ? 27 : 36, 136, muted, &lv_font_montserrat_14);
+        lv_obj_set_style_text_align(numbers, LV_TEXT_ALIGN_CENTER, 0);
         auto* next = button(parent, ">", 472, 12, 48, Action::ParameterPage, 0, {}, static_cast<int>(std::min(parameter_page_ + 1, page_count - 1)));
         if (parameter_page_ + 1 >= page_count) lv_obj_add_state(next, LV_STATE_DISABLED);
         if (layout == ModuleLayout::Generic) label(parent, "Software\nbypass", 536, 18, 100, muted, &lv_font_montserrat_14);
     } else label(parent, engine_.capabilities().simulation ? "Simulated controls" : "Live controls", 272, 27, 0, muted, &lv_font_montserrat_14);
     if (layout != ModuleLayout::Generic) button(parent, "Custom", 536, 12, 96, Action::ParameterLayout);
     button(parent, "Actions", 640, 12, 136, Action::OpenActions, m->id);
-    const auto begin = parameter_page_ * 4, end = std::min(m->parameters.size(), begin + 4);
-    for (std::size_t i = begin; i < end; ++i) {
-        const auto& p = m->parameters[i];
-        const auto slot = i - begin;
+    const std::size_t first = shown.file ? 1 : 0;
+    if (shown.file) file_tile(parent, *m, 24, 76);
+    for (std::size_t i = 0; i < shown.parameters.size(); ++i) {
+        const auto slot = i + first;
         const int x = 24 + static_cast<int>(slot % 2) * 384, y = 76 + static_cast<int>(slot / 2) * 136;
-        parameter_tile(parent, *m, p, x, y);
+        parameter_tile(parent, *m, *shown.parameters[i], x, y);
     }
 }
 void Application::tuner_parameters(lv_obj_t* parent, const Module& m) {
@@ -1382,6 +1483,17 @@ void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parame
         lv_obj_set_style_bg_color(control, color(ink), checked_indicator);
         lv_obj_set_style_bg_opa(control, LV_OPA_COVER, checked_indicator);
         lv_obj_set_style_radius(control, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
+    } else if (p.kind == ParameterKind::Enumeration && segments_fit(p) && height >= 100) {
+        // A short list of modes: one button each, the chosen one marked, so a
+        // mode is one tap rather than a menu to open.
+        const int count = static_cast<int>(p.choices.size()), gap = 8, width = (328 - gap * (count - 1)) / count;
+        for (int i = 0; i < count; ++i) {
+            auto* choice = button(tile, p.choices[static_cast<std::size_t>(i)], 20 + i * (width + gap), 50, width, Action::ParameterChoice, m.id, p.symbol, i);
+            lv_obj_set_height(choice, 44);
+            if (auto* l = lv_obj_get_child(choice, 0)) lv_obj_set_style_text_letter_space(l, 0, 0);
+            if (static_cast<int>(p.value) == i) mark(choice, ink);
+        }
+        return;
     } else if (p.kind == ParameterKind::Enumeration) {
         control = lv_dropdown_create(tile); lv_obj_set_pos(control, 20, 54); lv_obj_set_size(control, 328, 48);
         std::string options; for (const auto& choice : p.choices) { if (!options.empty()) options += '\n'; options += choice; }
@@ -1399,7 +1511,16 @@ void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parame
         lv_obj_set_style_bg_color(list, color(ink), chosen); lv_obj_set_style_text_color(list, color(background), chosen);
         lv_obj_set_style_bg_color(list, color(pressed_fill), static_cast<lv_style_selector_t>(LV_PART_SELECTED) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
     } else {
-        control = lv_slider_create(tile); lv_obj_set_pos(control, 30, height < 110 ? 48 : 70); lv_obj_set_size(control, 308, 12);
+        // Whole numbers also step one at a time, which a slider alone makes fiddly.
+        const bool steps = p.kind == ParameterKind::Integer && height >= 100;
+        control = lv_slider_create(tile); lv_obj_set_pos(control, steps ? 96 : 30, height < 110 ? 48 : 70); lv_obj_set_size(control, steps ? 176 : 308, 12);
+        if (steps) {
+            for (const int direction : {-1, 1}) {
+                auto* step = button(tile, direction < 0 ? "-" : "+", direction < 0 ? 20 : 300, 52, 48, Action::ParameterStep, m.id, p.symbol, direction);
+                lv_obj_set_height(step, 44);
+                if ((direction < 0 && p.value <= p.minimum) || (direction > 0 && p.value >= p.maximum)) lv_obj_add_state(step, LV_STATE_DISABLED);
+            }
+        }
         lv_slider_set_range(control, 0, 1000); lv_slider_set_value(control, static_cast<int>(normalized_value(p) * 1000), LV_ANIM_OFF);
         lv_obj_set_style_bg_color(control, color(border), LV_PART_MAIN); lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_MAIN);
         lv_obj_set_style_bg_color(control, color(ink), LV_PART_INDICATOR); lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_INDICATOR);
@@ -1409,6 +1530,101 @@ void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parame
     }
     if (auto* group = lv_group_get_default()) lv_group_add_obj(group, control);
     bind(control, Action::Parameter, m.id, p.symbol, 0, value);
+}
+void Application::set_tempo(double bpm) {
+    // Whole beats per minute: what a module's BPM control needs, and what the screen shows.
+    bpm = std::round(std::clamp(bpm, minimum_tempo, maximum_tempo));
+    if (bpm == (tempo_sent_ ? *tempo_sent_ : graph_.tempo)) return;
+    if (submit(SetTempo{bpm})) tempo_sent_ = bpm;
+}
+void Application::tap_tempo() {
+    const auto bpm = tapper_.tap(clock_ms_);
+    if (bpm) { set_tempo(*bpm); message("Tap tempo: " + metric_text(*bpm, false) + " BPM."); }
+    else message(tapper_.taps() < 2 ? "Tap tempo: keep tapping." : "Tap tempo: too fast or too slow; keep tapping.");
+    if (page_ == Page::Tempo) rebuild_ = true;
+}
+void Application::tempo(lv_obj_t* parent) {
+    const auto shown = tempo_sent_ ? *tempo_sent_ : graph_.tempo;
+    auto* card = panel(parent, 24, 12, 752, 150);
+    label(card, "PATCH TEMPO", 24, 18, 300, faint, &peepo_mono_14);
+    auto* value = label(card, metric_text(shown, false), 24, 44, 260, accent, &peepo_bold_48);
+    label(card, "BPM", 24, 104, 100, muted, &peepo_bold_14);
+    for (int i = 0; i < 4; ++i) {
+        static const int steps[] = {-5, -1, 1, 5};
+        auto* step = button(card, (steps[i] > 0 ? "+" : "") + std::to_string(steps[i]), 300 + i * 108, 24, 96, Action::TempoStep, 0, {}, steps[i]);
+        lv_obj_set_height(step, 44);
+    }
+    auto* slider = lv_slider_create(card); lv_obj_set_pos(slider, 310, 100); lv_obj_set_size(slider, 410, 12);
+    lv_slider_set_range(slider, static_cast<int>(minimum_tempo), static_cast<int>(maximum_tempo));
+    lv_slider_set_value(slider, static_cast<int>(std::round(shown)), LV_ANIM_OFF);
+    lv_obj_set_style_bg_color(slider, color(border), LV_PART_MAIN); lv_obj_set_style_bg_opa(slider, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_bg_color(slider, color(accent), LV_PART_INDICATOR); lv_obj_set_style_bg_opa(slider, LV_OPA_COVER, LV_PART_INDICATOR);
+    lv_obj_set_style_bg_color(slider, color(text), LV_PART_KNOB); lv_obj_set_style_pad_all(slider, 10, LV_PART_KNOB);
+    lv_obj_set_style_bg_opa(slider, LV_OPA_COVER, LV_PART_KNOB); lv_obj_set_style_radius(slider, LV_RADIUS_CIRCLE, LV_PART_KNOB);
+    lv_obj_set_ext_click_area(slider, 20);
+    bind(slider, Action::TempoSlider, 0, {}, 0, value);
+    if (auto* group = lv_group_get_default()) lv_group_add_obj(group, slider);
+    // A big pad to tap on the beat, as a footswitch set to Tap tempo does.
+    auto* tap = primary(button(parent, "Tap", 24, 178, 360, Action::Tap));
+    lv_obj_set_height(tap, 150);
+    std::string following;
+    unsigned count = 0;
+    for (const auto& m : graph_.modules)
+        if (const auto* d = definition(m.uri); d && !d->tempo_symbol.empty() && module_available(m)) { following += (count++ ? ", " : "") + m.name; }
+    label(parent, count ? "Follow the tempo" : "Nothing follows it yet", 408, 186, 368, text, &peepo_bold_20);
+    auto* who = label(parent, count ? following : "Modules with a tempo, such as Chorus, Flanger or the sequencers, take it when they are added.",
+                      408, 222, 368, muted, &lv_font_montserrat_14);
+    lv_label_set_long_mode(who, LV_LABEL_LONG_DOT); lv_obj_set_height(who, 60);
+    label(parent, "Saved with the patch. Encoder 1 turns it; a footswitch can tap it.", 408, 292, 368, faint, &lv_font_montserrat_14);
+}
+void Application::file_tile(lv_obj_t* parent, const Module& m, int x, int y) {
+    const auto& file = definition(m.uri)->file;
+    auto* tile = panel(parent, x, y, 368, 120);
+    auto* caption = label(tile, upper(file.label), 20, 16, 200, muted, &peepo_bold_14);
+    lv_obj_set_style_text_letter_space(caption, 1, 0);
+    // The file's name only: where it lives says nothing on a small screen.
+    auto* name = label(tile, m.file.empty() ? "None chosen" : file_name(m.file), 20, 44, 328, m.file.empty() ? faint : text, &peepo_bold_20);
+    lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, 26);
+    auto* choose = button(tile, m.file.empty() ? "Choose" : "Change", 208, 70, 140, Action::ChooseFile, m.id);
+    lv_obj_set_height(choose, 40);
+    if (!files_ || engine_.state() != EngineState::Ready) lv_obj_add_state(choose, LV_STATE_DISABLED);
+}
+void Application::file_picker(lv_obj_t* parent) {
+    const auto* m = find_module(graph_, selected_);
+    const auto* d = m ? definition(m->uri) : nullptr;
+    if (!d || d->file.property.empty() || !files_) { label(parent, "Nothing to choose here.", 24, 24, 752, muted); return; }
+    std::string types;
+    for (const auto& e : d->file.extensions) types += (types.empty() ? "." : ", .") + e;
+    const auto found = files_->list(d->file.folder, d->file.extensions);
+    if (found.empty()) {
+        label(parent, "No " + types + " files yet", 24, 20, 752, text, &peepo_bold_24);
+        auto* where = label(parent, "Copy them into " + (files_->root() / d->file.folder).generic_string() + "\n(for example over SSH), then open this page again.", 24, 68, 752, muted);
+        lv_label_set_long_mode(where, LV_LABEL_LONG_WRAP);
+        return;
+    }
+    constexpr std::size_t per_page = 8;
+    const auto pages = (found.size() + per_page - 1) / per_page;
+    file_page_ = std::min(file_page_, pages - 1);
+    auto* prompt = label(parent, std::to_string(found.size()) + (found.size() == 1 ? " file" : " files") + " in " + d->file.folder + "/", 24, 18, 560, muted, &lv_font_montserrat_14);
+    lv_label_set_long_mode(prompt, LV_LABEL_LONG_DOT); lv_obj_set_height(prompt, 18);
+    if (pages > 1) {
+        auto* previous = button(parent, "<", 600, 4, 48, Action::FilePage, 0, {}, static_cast<int>(file_page_ ? file_page_ - 1 : 0));
+        if (!file_page_) lv_obj_add_state(previous, LV_STATE_DISABLED);
+        label(parent, std::to_string(file_page_ + 1) + " / " + std::to_string(pages), 664, 18, 56, muted, &lv_font_montserrat_14);
+        auto* next = button(parent, ">", 728, 4, 48, Action::FilePage, 0, {}, static_cast<int>(std::min(file_page_ + 1, pages - 1)));
+        if (file_page_ + 1 >= pages) lv_obj_add_state(next, LV_STATE_DISABLED);
+    }
+    const auto ink = module_ink(*m);
+    for (std::size_t i = file_page_ * per_page; i < std::min(found.size(), file_page_ * per_page + per_page); ++i) {
+        const auto slot = i - file_page_ * per_page;
+        auto* choice = button(parent, found[i].name, 24 + static_cast<int>(slot % 2) * 384, 64 + static_cast<int>(slot / 2) * 68, 368, Action::PickFile, m->id, found[i].engine_path);
+        // File names keep their case, and long ones end in dots.
+        if (auto* title = lv_obj_get_child(choice, 0)) {
+            lv_label_set_text(title, found[i].name.c_str());
+            lv_label_set_long_mode(title, LV_LABEL_LONG_DOT); lv_obj_set_width(title, 340); lv_obj_center(title);
+        }
+        if (found[i].engine_path == m->file) mark(choice, ink);
+    }
 }
 void Application::clouds_parameters(lv_obj_t* parent, const Module& m) {
     const auto ink = module_ink(m);
@@ -1719,7 +1935,7 @@ std::size_t Application::parameter_pages(const Module& m) const {
     if (!generic_parameters_ && layout == ModuleLayout::Clouds) return 2;
     if (!generic_parameters_ && layout == ModuleLayout::Delay) return 1;
     if (!generic_parameters_ && layout == ModuleLayout::Tuner) return 1;
-    return std::max<std::size_t>(1, (m.parameters.size() + 3) / 4);
+    return parameter_pages_of(m).size();
 }
 void Application::gesture(const Gesture& g) {
     // Typing a name: the keys standing in for controls are text there.
@@ -1750,6 +1966,11 @@ void Application::encoder(const Gesture& g) {
             const int at = it == browser_order_.end() ? (g.steps > 0 ? -1 : last + 1) : static_cast<int>(it - browser_order_.begin());
             browser_pick(browser_order_[static_cast<std::size_t>(std::clamp(at + g.steps, 0, last))], true);
         }
+        return;
+    }
+    // On the Tempo page an unpinned encoder 1 sets the tempo, a beat per minute a detent.
+    if (!pin && page_ == Page::Tempo && g.control == "enc1" && g.kind == Gesture::Kind::Turn) {
+        set_tempo((tempo_sent_ ? *tempo_sent_ : graph_.tempo) + g.steps);
         return;
     }
     InstanceId id = 0;
@@ -1784,8 +2005,7 @@ void Application::encoder(const Gesture& g) {
         if (pin && m) {
             // Show what the pinned encoder controls.
             selected_ = m->id; generic_parameters_ = false;
-            const auto index = static_cast<std::size_t>(std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& q) { return q.symbol == symbol; }) - m->parameters.begin());
-            parameter_page_ = module_layout(*m) == ModuleLayout::Generic ? index / 4 : 0;
+            parameter_page_ = module_layout(*m) == ModuleLayout::Generic ? page_of(*m, symbol) : 0;
             navigate(Page::Parameters);
         } else if (page_ == Page::Parameters) {
             if (const auto* shown = find_module(graph_, selected_)) { parameter_page_ = (parameter_page_ + 1) % parameter_pages(*shown); rebuild_ = true; }
@@ -1826,7 +2046,11 @@ void Application::stomp(const Gesture& g) {
     }
     if (!pressed) return;
     const auto global = store_ ? store_->global_controls() : std::map<std::string, std::string>{};
-    if (const auto it = global.find(g.control); it != global.end()) { step_patch(it->second == "next-patch" ? 1 : -1); return; }
+    if (const auto it = global.find(g.control); it != global.end()) {
+        if (it->second == "tap-tempo") tap_tempo();
+        else step_patch(it->second == "next-patch" ? 1 : -1);
+        return;
+    }
     message(name + " is not assigned. Settings > Controls.");
 }
 void Application::step_patch(int direction) {
@@ -1855,7 +2079,7 @@ std::string Application::assignment_text(const std::string& control) const {
         return summary;
     }
     if (store_) if (const auto global = store_->global_controls(); global.contains(control))
-        return global.at(control) == "next-patch" ? "Next patch (every patch)" : "Previous patch (every patch)";
+        return global.at(control) == "next-patch" ? "Next patch (every patch)" : global.at(control) == "tap-tempo" ? "Tap tempo (every patch)" : "Previous patch (every patch)";
     return is_encoder(control) ? "Follows the parameter page" : "Not assigned";
 }
 void Application::controls(lv_obj_t* parent) {
@@ -1883,6 +2107,7 @@ void Application::assign_picker(lv_obj_t* parent) {
         if (stomp && store_) {
             choices.push_back({"Next patch", Action::PickTarget, 0, "@next-patch"});
             choices.push_back({"Previous patch", Action::PickTarget, 0, "@previous-patch"});
+            choices.push_back({"Tap tempo", Action::PickTarget, 0, "@tap-tempo"});
         }
         for (const auto& m : graph_.modules)
             if (!m.fixed && module_available(m) && (stomp || !m.parameters.empty())) choices.push_back({m.name, Action::PickModule, m.id, {}});

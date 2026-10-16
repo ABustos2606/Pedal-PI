@@ -41,6 +41,17 @@ struct Gesture {
     // Since this encoder's previous detent; drives acceleration.
     unsigned interval_ms = 0;
 };
+// Tap tempo: the beats per minute of the latest taps. Two taps give a tempo;
+// up to four intervals are averaged. A pause longer than the slowest tempo
+// starts again, and a tempo outside the patch range is not given.
+class TapTempo {
+public:
+    std::optional<double> tap(unsigned long long milliseconds);
+    void reset() { taps_.clear(); }
+    std::size_t taps() const { return taps_.size(); }
+private:
+    std::vector<unsigned long long> taps_;
+};
 class ControlRecognizer {
 public:
     static constexpr unsigned hold_ms = 700;

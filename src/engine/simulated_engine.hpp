@@ -16,8 +16,8 @@ public:
     // Persistent saves write main.ttl only: simulated modules have no plugin state.
     EngineCapabilities capabilities() const override { return {true, true, true, false, false}; }
     EngineTelemetry telemetry() const override {
-        // Fixed display fixtures, not a clock or measured processor utilization.
-        return {120.0, state_ == EngineState::Ready ? std::optional<double>{12.0} : std::nullopt};
+        // The patch tempo; the CPU figure is a fixed display fixture, not a measurement.
+        return {graph_.tempo, state_ == EngineState::Ready ? std::optional<double>{12.0} : std::nullopt};
     }
     bool simulate_state(EngineState state) override { set_state(state); return true; }
     bool simulate_rejection() override { reject_next(); return true; }

@@ -182,9 +182,10 @@ int main(int argc, char** argv) {
             click(app, 70, 456);
             click(app, 562, 244);
             click(app, 588, 108);
-            click(app, 570, 361);
+            // A short list of modes is one button each: Tape is the second.
+            check(widget(app.screen(), &lv_dropdown_class) == nullptr && exact_label(app.screen(), "PING PONG"), "the Delay mode was not shown as buttons");
+            tap(app, "TAPE");
             capture(app, output / "09-mode-menu.bmp");
-            click(app, 534, 276);
             check(peepo::find_module(app.graph(), 5)->parameters[3].value == 1, "mode selector failed");
             capture(app, output / "08-delay.bmp");
             click(app, 70, 456);
@@ -402,7 +403,8 @@ int main(int argc, char** argv) {
             check(peepo::find_module(app.graph(), 5)->parameters[2].value > 70, "compact Delay mix failed");
             capture(app, output / "26-delay-character.bmp");
             click(app, 588, 108);
-            check(lv_dropdown_get_selected(widget(app.screen(), &lv_dropdown_class)) == 2, "generic Delay mode differs from custom mode");
+            check(lv_color_to_u32(lv_obj_get_style_text_color(exact_label(app.screen(), "PING PONG"), LV_PART_MAIN)) != 0xffffffff &&
+                  lv_color_to_u32(lv_obj_get_style_text_color(exact_label(app.screen(), "TAPE"), LV_PART_MAIN)) == 0xffffffff, "generic Delay mode differs from custom mode");
             click(app, 70, 456);
 
             auto reordered = peepo::demo_graph();
@@ -850,6 +852,110 @@ int main(int argc, char** argv) {
             tap_first(app, "AMP"); tap(app, "TIME");
             check(text_label(app.screen(), "TIME // 2 MODULES") != nullptr, "the category outlived its group");
             check(!first_label(app.screen(), "AMP"), "another group's categories shown");
+        }
+        // Named pages from the overlay's groups, whole numbers stepped with - and +,
+        // and a short list of modes as buttons.
+        {
+            const std::string uri = "urn:peepo:test:grouped";
+            auto grouped = peepo::ModuleDefinition{uri, "Grouped", "Modulation", "Test module with groups", 0xc4b5fd,
+                {{"in", peepo::Direction::Input}, {"out", peepo::Direction::Output}},
+                {{"rate", "Rate", "Hz", peepo::ParameterKind::Continuous, 0.1, 10, 1, true},
+                 {"voices", "Voices", "", peepo::ParameterKind::Integer, 1, 4, 2},
+                 {"shape", "Shape", "", peepo::ParameterKind::Enumeration, 0, 2, 0, false, {"Sine", "Square", "Random"}},
+                 {"depth", "Depth", "", peepo::ParameterKind::Continuous, 0, 1, 0.5},
+                 {"spare", "Spare", "", peepo::ParameterKind::Continuous, 0, 1, 0}}};
+            grouped.groups = {{"Motion", {"rate", "voices", "shape"}}, {"Amount", {"depth"}}};
+            peepo::register_definitions({grouped});
+            peepo::SimulatedEngine sim;
+            sim.submit(peepo::LoadGraph{peepo::empty_graph("Groups")}); sim.advance(100);
+            sim.submit(peepo::AddModule{uri, 184, 132}); sim.advance(100);
+            peepo::Application app(sim); step(app);
+            const auto id = app.graph().modules.back().id;
+            const auto value = [&](const char* symbol) {
+                const auto* m = peepo::find_module(app.graph(), id);
+                return std::find_if(m->parameters.begin(), m->parameters.end(), [&](const peepo::Parameter& p) { return p.symbol == symbol; })->value;
+            };
+            click(app, 184 + 48, 132 + 72 + 48);
+            check(app.page() == peepo::Page::Parameters && exact_label(app.screen(), "MOTION") && text_label(app.screen(), "1 / 3") &&
+                  exact_label(app.screen(), "RATE") && !exact_label(app.screen(), "DEPTH"), "the first group is not the first page");
+            check(widget(app.screen(), &lv_dropdown_class) == nullptr && exact_label(app.screen(), "RANDOM"), "three short modes not shown as buttons");
+            capture(app, output / "51-grouped-parameters.bmp");
+            tap(app, "+"); check(value("voices") == 3, "+ did not step the whole number up");
+            tap(app, "+"); check(value("voices") == 4 && disabled_button(exact_label(app.screen(), "+")), "+ not disabled at the top");
+            tap(app, "-"); check(value("voices") == 3, "- did not step down");
+            tap(app, "SQUARE"); check(value("shape") == 1, "a mode button did not choose its mode");
+            click(app, 496, 108);
+            check(exact_label(app.screen(), "AMOUNT") && exact_label(app.screen(), "DEPTH") && !exact_label(app.screen(), "RATE"), "the second group is not the second page");
+            click(app, 496, 108);
+            check(exact_label(app.screen(), "MORE") && exact_label(app.screen(), "SPARE"), "ungrouped controls not on a More page");
+            // A pushed encoder pages through the groups and wraps.
+            app.control({peepo::ControlEvent::Type::Press, "enc1"}); step(app, 64);
+            app.control({peepo::ControlEvent::Type::Release, "enc1"}); step(app, 256);
+            check(exact_label(app.screen(), "MOTION") != nullptr, "an encoder push did not wrap to the first group");
+        }
+        // The patch tempo and a module's file. The footer's BPM opens the Tempo
+        // page; steps, the TAP pad, encoder 1 and a tap-tempo footswitch set it,
+        // and a module that follows it takes it. A model is chosen from the files.
+        {
+            const std::string uri = "urn:peepo:test:model-player";
+            auto player = peepo::ModuleDefinition{uri, "Model player", "Amp", "Test module with a file and a tempo", 0xf0aa72,
+                {{"in", peepo::Direction::Input}, {"out", peepo::Direction::Output}, {"control", peepo::Direction::Input, 1, peepo::PortType::Midi}},
+                {{"rate", "Rate", "BPM", peepo::ParameterKind::Continuous, 40, 240, 100}, {"level", "Level", "dB", peepo::ParameterKind::Continuous, -20, 20, 0}}};
+            player.tempo_symbol = "rate";
+            player.file = {"urn:peepo:test:model-player#model", "Model", "nam", {"nam"}};
+            peepo::register_definitions({player});
+            const auto base = std::filesystem::temp_directory_path() / "peepo-ui-tempo";
+            std::filesystem::remove_all(base);
+            peepo::PatchStore store(base / "patches");
+            peepo::FileStore files(base / "files");
+            check(store.open().empty() && files.open().empty(), "tempo test stores did not open");
+            peepo::SimulatedEngine sim;
+            sim.submit(peepo::LoadGraph{peepo::empty_graph("Tempo")}); sim.advance(100);
+            sim.submit(peepo::AddModule{uri, 184, 132}); sim.advance(100);
+            peepo::Application app(sim, &store); app.set_files(&files); step(app);
+            const auto id = app.graph().modules.back().id;
+            const auto rate = [&] { return peepo::find_module(app.graph(), id)->parameters[0].value; };
+            check(app.graph().tempo == 120 && rate() == 120, "an added module did not follow the default tempo");
+            click(app, 660, 446);
+            check(app.page() == peepo::Page::Tempo && exact_label(app.screen(), "120") && text_label(app.screen(), "Model player"), "the footer BPM did not open the Tempo page");
+            tap(app, "+5"); check(app.graph().tempo == 125 && rate() == 125, "+5 did not reach the tempo and its follower");
+            tap(app, "-1"); check(app.graph().tempo == 124, "-1 did not step the tempo down");
+            // Taps half a second apart are 120 BPM.
+            tap(app, "TAP"); step(app, 264); tap(app, "TAP");
+            // The taps are about half a second apart, give or take the frames a
+            // click and a rebuild take; the arithmetic is checked in controls_tests.
+            check(std::abs(app.graph().tempo - 120) < 15 && app.graph().tempo != 124 && rate() == app.graph().tempo, "the TAP pad did not set about 120 BPM");
+            capture(app, output / "52-tempo.bmp");
+            const auto tapped = app.graph().tempo;
+            app.control({peepo::ControlEvent::Type::Turn, "enc1", 3}); step(app, 256);
+            check(std::abs(app.graph().tempo - (tapped + 3)) < 1e-9, "encoder 1 did not turn the tempo");
+            // A footswitch set to tap the tempo, in every patch.
+            check(store.set_global_control("stomp3", "tap-tempo").empty(), "tap-tempo footswitch not stored");
+            // After a pause longer than the slowest tempo, the taps start again.
+            click(app, 70, 456); step(app, 2100);
+            app.control({peepo::ControlEvent::Type::Press, "stomp3"}); step(app, 64);
+            app.control({peepo::ControlEvent::Type::Release, "stomp3"}); step(app, 336);
+            app.control({peepo::ControlEvent::Type::Press, "stomp3"}); step(app, 64);
+            app.control({peepo::ControlEvent::Type::Release, "stomp3"}); step(app, 256);
+            check(std::abs(app.graph().tempo - 150) < 6 && rate() == app.graph().tempo, "the tap-tempo footswitch did not set about 150 BPM");
+            // The model: none at first, then chosen from the files in nam/.
+            click(app, 184 + 48, 132 + 72 + 48);
+            check(app.page() == peepo::Page::Parameters && exact_label(app.screen(), "MODEL") && exact_label(app.screen(), "None chosen") && exact_label(app.screen(), "RATE"),
+                  "the file is not the first tile");
+            tap(app, "CHOOSE");
+            check(app.page() == peepo::Page::FilePicker && text_label(app.screen(), "No .nam files yet"), "an empty folder was not explained");
+            click(app, 70, 456);
+            for (const char* name : {"Clean.nam", "Crunch Lead.nam", "readme.txt"}) std::ofstream(base / "files" / "nam" / name) << "x";
+            tap(app, "CHOOSE");
+            check(app.page() == peepo::Page::FilePicker && exact_label(app.screen(), "Clean.nam") && !exact_label(app.screen(), "readme.txt") && text_label(app.screen(), "2 files"),
+                  "the models were not listed");
+            capture(app, output / "53-file-picker.bmp");
+            tap(app, "Crunch Lead.nam");
+            const auto chosen = (base / "files").generic_string() + "/nam/Crunch Lead.nam";
+            check(app.page() == peepo::Page::Parameters && peepo::find_module(app.graph(), id)->file == chosen && exact_label(app.screen(), "Crunch Lead.nam"),
+                  "choosing a model did not give it to the module");
+            capture(app, output / "54-file-tile.bmp");
+            std::filesystem::remove_all(base);
         }
         // A module with no output control of its own shows the general Output, in dB, on its page.
         {

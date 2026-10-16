@@ -70,6 +70,7 @@ std::string read_bundle(std::string_view text, Bundle& out) {
         else if (predicate == peepo_ns + "patchId" && object.kind == Term::Kind::Literal) out.id = object.value;
         else if (predicate == peepo_ns + "schemaVersion") out.schema = static_cast<int>(number(object).value_or(0));
         else if (predicate == peepo_ns + "modified") out.modified = boolean(object).value_or(false);
+        else if (predicate == peepo_ns + "tempo") out.tempo = number(object);
         else if (predicate.starts_with(peepo_ns + "control-") && object.kind == Term::Kind::Literal && !object.value.empty())
             out.controls[predicate.substr(peepo_ns.size() + 8)] = object.value;
         else if (predicate == ingen_ns + "arc" && object.kind == Term::Kind::Blank) {
@@ -92,6 +93,7 @@ std::string read_bundle(std::string_view text, Bundle& out) {
         for (const auto& [predicate, object] : properties) {
             if (predicate == lv2_ns + "prototype" && object.kind == Term::Kind::Iri) block.plugin = object.value;
             else if (predicate == peepo_ns + "displayName" && object.kind == Term::Kind::Literal) block.name = object.value;
+            else if (predicate == peepo_ns + "file" && object.kind == Term::Kind::Literal) block.file = object.value;
             else if (predicate == ingen_ns + "canvasX") x = number(object);
             else if (predicate == ingen_ns + "canvasY") y = number(object);
             else if (predicate == ingen_ns + "enabled") block.enabled = boolean(object).value_or(true);
@@ -130,6 +132,7 @@ std::vector<SavedBlock> saved_blocks(const Bundle& bundle) {
 Graph bundle_graph(const Bundle& bundle) {
     Graph graph;
     graph.name = validate_patch_name(bundle.name).empty() ? bundle.name : "Untitled";
+    if (bundle.tempo && *bundle.tempo >= minimum_tempo && *bundle.tempo <= maximum_tempo) graph.tempo = *bundle.tempo;
     graph.patch_id = valid_patch_id(bundle.id) ? bundle.id : std::string();
     graph.dirty = bundle.modified;
     const auto& in = demo_catalogue()[0];
@@ -151,6 +154,7 @@ Graph bundle_graph(const Bundle& bundle) {
         const auto* known = definition(block.plugin);
         Module m{ids[block.symbol], block.plugin, block.name, 0, 0, false, !block.enabled, {}, {}};
         if (m.name.empty()) m.name = known ? known->name : block.symbol;
+        m.file = block.file;
         if (block.positioned) {
             m.x = static_cast<int>(std::clamp(std::round(block.x), double(module_min_x), double(module_max_x)));
             m.y = static_cast<int>(std::clamp(std::round(block.y), double(module_min_y), double(module_max_y)));
@@ -221,7 +225,8 @@ std::string write_main_ttl(const Graph& graph) {
         std::string level;
         for (const auto& p : m.parameters) if (p.symbol == general_output_symbol) level = " ;\n\tpeepo:outputLevel " + literal_number(p.value);
         text += iri(symbol) + "\n\ta ingen:Block ;\n\tlv2:prototype " + iri(m.uri) + " ;\n\tingen:canvasX " + literal_number(m.x) + " ;\n\tingen:canvasY " +
-                literal_number(m.y) + " ;\n\tpeepo:displayName " + ingen::string_literal(m.name) + (m.bypassed ?" ;\n\tingen:enabled false" : "") + level + " .\n\n";
+                literal_number(m.y) + " ;\n\tpeepo:displayName " + ingen::string_literal(m.name) + (m.bypassed ?" ;\n\tingen:enabled false" : "") + level +
+                (m.file.empty() ? std::string() : " ;\n\tpeepo:file " + ingen::string_literal(m.file)) + " .\n\n";
         if (own_switch) text += iri(symbol + "/" + known->enable_symbol) + "\n\tingen:value " + literal_number(1) +" .\n\n";
         for (const auto& p : m.parameters)
             if (p.symbol != general_output_symbol) text += iri(symbol + "/" + p.symbol) + "\n\tingen:value " + literal_number(p.value) + " .\n\n";
@@ -241,6 +246,7 @@ std::string write_main_ttl(const Graph& graph) {
     for (const auto& a : graph.assignments)
         text += " ;\n\tpeepo:control-" + a.control + " " + ingen::string_literal(encode_assignment(a, "m" + std::to_string(a.module)));
     text += " ;\n\tpeepo:patchName " + ingen::string_literal(graph.name);
+    text += " ;\n\tpeepo:tempo " + literal_number(graph.tempo);
     if (!graph.patch_id.empty()) text += " ;\n\tpeepo:patchId " + ingen::string_literal(graph.patch_id);
     text += " ;\n\tpeepo:schemaVersion " + std::to_string(bundle_schema_version) + " ;\n\tpeepo:modified " + (graph.dirty ? "true" : "false") + " .\n";
     return text;

@@ -58,7 +58,7 @@ public:
     // An empty identity clears the startup patch.
     std::string set_startup(const std::string& id);
     // Instrument-wide control actions, kept beside the patches rather than in
-    // one: next-patch and previous-patch, by control identity. A patch's own
+    // one: next-patch, previous-patch and tap-tempo, by control identity. A patch's own
     // assignment of the same control takes precedence while that patch plays.
     std::map<std::string, std::string> global_controls() const;
     // An empty action clears the control.

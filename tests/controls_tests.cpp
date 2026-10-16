@@ -154,8 +154,21 @@ void assignments(const std::filesystem::path& root) {
     check(!store.set_global_control("stomp1", "launch-rockets").empty() && store.set_global_control("stomp2", "").empty() && store.global_controls().size() == 1, "invalid action accepted or clearing failed");
 }
 }
+void tap_tempo() {
+    TapTempo t;
+    check(!t.tap(1000), "one tap gave a tempo");
+    check(t.tap(1500) == 120, "two taps half a second apart are not 120 BPM");
+    check(t.tap(2000) == 120 && t.tap(2600) && *t.tap(3100) > 110 && *t.tap(3100 + 500) < 120, "the latest taps are not averaged");
+    t.reset();
+    check(!t.tap(10000) && t.tap(10400) == 150, "reset did not start again");
+    // A long pause starts again, rather than giving a very slow tempo.
+    check(!t.tap(10400 + 2001 + 1000) && t.taps() == 1, "a pause longer than the slowest tempo was counted");
+    // Bounce-fast taps are not a tempo, and a time going backwards starts again.
+    check(!t.tap(13401 + 100) && !t.tap(13000) && t.taps() == 1, "an impossible tap gave a tempo");
+}
 int main() {
     try {
+        tap_tempo();
         const auto root = std::filesystem::temp_directory_path() / "peepo-controls-tests";
         std::filesystem::remove_all(root);
         gestures();

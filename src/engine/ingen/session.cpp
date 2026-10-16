@@ -21,8 +21,12 @@ const std::string value_key = iri(uri::ingen, "value"), enabled_key = iri(uri::i
 const std::string x_key = iri(uri::ingen, "canvasX"), y_key = iri(uri::ingen, "canvasY");
 const std::string name_key = iri(uri::peepo, "displayName"), patch_name_key = iri(uri::peepo, "patchName");
 const std::string patch_id_key = iri(uri::peepo, "patchId"), modified_key = iri(uri::peepo, "modified");
+const std::string tempo_key = iri(uri::peepo, "tempo");
 // The general Output is the block's own property, in dB, not a plugin port.
 const std::string output_level_key = iri(uri::peepo, "outputLevel");
+// The file last given to a block's file parameter. The plugin keeps the file
+// in its own state; this names it for every client and survives a restart.
+const std::string file_key = iri(uri::peepo, "file");
 // One graph property per pinned control: peepo:control-enc1 "parameter|m3|...".
 const std::string control_prefix = iri(uri::peepo, "control-");
 // Where the engine may write or read a bundle: a plain file URI to a .ingen
@@ -48,6 +52,17 @@ std::optional<double> finite(const Value* value) {
 std::string position(int x, int y) {
     return "ingen:canvasX " + float_literal(std::clamp(x, module_min_x, module_max_x)) + " ;\n\t\tingen:canvasY " +
            float_literal(std::clamp(y, module_min_y, module_max_y));
+}
+// Paths the engine is given for a plugin to read: absolute, with nothing a
+// literal cannot carry. Spaces are fine in an atom:Path.
+bool file_path(const std::string& path) {
+    if (path.empty() || path[0] != '/' || path.size() > 1024 || path.find("/../") != std::string::npos) return false;
+    return std::none_of(path.begin(), path.end(), [](char c) { return static_cast<unsigned char>(c) < 0x20 || c == 0x7f; });
+}
+// The control port a plugin takes patch messages on: its atom input.
+std::string message_port(const ModuleDefinition& d) {
+    for (const auto& p : d.ports) if (p.type == PortType::Midi && p.direction == Direction::Input) return p.symbol;
+    return {};
 }
 std::string block(const std::string& plugin, const std::string& name, int x, int y, bool bypassed) {
     return "a ingen:Block ;\n\t\tlv2:prototype <" + plugin + "> ;\n\t\t" + position(x, y) + " ;\n\t\tpeepo:displayName " + string_literal(name) +
@@ -351,6 +366,7 @@ void Session::rebuild() {
             graph.name = name->text;
         if (const auto* id = find(root->second, patch_id_key); id && id->kind == Value::Kind::String && valid_patch_id(id->text)) graph.patch_id = id->text;
         if (const auto* modified = find(root->second, modified_key); modified && modified->kind == Value::Kind::Boolean) graph.dirty = modified->boolean;
+        if (const auto tempo = finite(find(root->second, tempo_key)); tempo && *tempo >= minimum_tempo && *tempo <= maximum_tempo) graph.tempo = *tempo;
     }
     const auto& in = demo_catalogue()[0];
     const auto& out = demo_catalogue()[1];
@@ -399,6 +415,7 @@ void Session::rebuild() {
             m.x = std::min(module_max_x, 184 + 144 * unplaced++); m.y = 276;
         }
         if (const auto* enabled = find(properties, enabled_key); enabled && enabled->kind == Value::Kind::Boolean) m.bypassed = !enabled->boolean;
+        if (const auto* file = find(properties, file_key); file && file->kind == Value::Kind::String && file_path(file->text)) m.file = file->text;
         // A plugin's own on/off control stays on: off, it writes silence. Earlier
         // versions bypassed by clearing it, so a cleared one still reads as bypassed.
         if (known && !known->enable_symbol.empty())
@@ -587,6 +604,7 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
         for (const auto& parameter : m.parameters)
             if (parameter.symbol == general_output_symbol) set_local(path, "peepo:outputLevel", output_level_key, float_literal(parameter.value), ingen::number(parameter.value));
             else set_local(child(path, parameter.symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
+        if (known && !m.file.empty()) give_file(to, path, *known, m.file);
         next_instance_ = std::max(next_instance_, m.id + 1);
     }
     for (const auto& cable : graph.connections) {
@@ -596,8 +614,24 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
     }
     name_patch(to, graph.name);
     identify(to, graph.patch_id);
+    set_tempo(to, std::clamp(graph.tempo, minimum_tempo, maximum_tempo));
     for (const auto& a : graph.assignments) control_property(to, a.control, encode_assignment(a, "m" + std::to_string(a.module)));
     return {};
+}
+void Session::set_tempo(Transaction& to, double bpm) {
+    const auto number = sequence();
+    send(to, set_on_graph(number, main_path, "peepo:tempo", float_literal(bpm)), number);
+    to.local.push_back({main_path, tempo_key, ingen::number(bpm)});
+}
+void Session::give_file(Transaction& to, const std::string& path, const ModuleDefinition& d, const std::string& file) {
+    // The plugin is told on its control port, as a patch:Set with a path; it
+    // loads the file in the background and keeps it in its own state.
+    auto number = sequence();
+    send(to, set(number, child(path, message_port(d)), "ingen:activity",
+                 "[\n\t\ta patch:Set ;\n\t\tpatch:property <" + d.file.property + "> ;\n\t\tpatch:value " + string_literal(file) + "^^atom:Path\n\t]"), number);
+    number = sequence();
+    send(to, set(number, path, "peepo:file", string_literal(file)), number);
+    to.local.push_back({path, file_key, {Value::Kind::String, 0, false, file}});
 }
 std::string Session::plan(const Command& command, Transaction& to) {
     to.dirty = true;
@@ -622,6 +656,11 @@ std::string Session::plan(const Command& command, Transaction& to) {
             for (const auto& symbol : known->project_defaults)
                 for (const auto& parameter : known->parameters)
                     if (parameter.symbol == symbol) set_local(child(path, symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
+            for (const auto& parameter : known->parameters)
+                if (parameter.symbol == known->tempo_symbol) {
+                    const auto value = tempo_value(parameter, graph_.tempo);
+                    set_local(child(path, parameter.symbol), "ingen:value", value_key, float_literal(value), ingen::number(value));
+                }
         } else if constexpr (std::is_same_v<T, Connect>) {
             if (auto issue = validate_connection(graph_, c.connection); !issue.empty()) return issue;
             const auto tail = address(c.connection.from, c.connection.output, Direction::Output, true);
@@ -641,9 +680,23 @@ std::string Session::plan(const Command& command, Transaction& to) {
             if (!saved_session_) return "No session snapshot saved";
             to.dirty = false;
             result = create_graph(*saved_session_, to);
+        } else if constexpr (std::is_same_v<T, SetTempo>) {
+            if (!std::isfinite(c.bpm) || c.bpm < minimum_tempo || c.bpm > maximum_tempo) return "Tempo is outside 30 to 300 BPM";
+            set_tempo(to, c.bpm);
+            for (const auto& m : graph_.modules) {
+                const auto* known = definition(m.uri);
+                const auto found = paths_.find(m.id);
+                if (!known || known->tempo_symbol.empty() || found == paths_.end() || !module_available(m)) continue;
+                for (const auto& p : m.parameters)
+                    if (p.symbol == known->tempo_symbol) {
+                        const auto value = tempo_value(p, c.bpm);
+                        set_local(child(found->second, p.symbol), "ingen:value", value_key, float_literal(value), ingen::number(value));
+                    }
+            }
         } else if constexpr (std::is_same_v<T, NewPatch>) {
             if (auto issue = validate_patch_name(c.name); !issue.empty()) return issue;
             clear_engine_graph(to);
+            set_tempo(to, default_tempo);
             for (const char* side : {"l", "r"}) {
                 const auto number = sequence();
                 send(to, put_arc(number, main_path + "/", main_path + "/in_" + side, main_path + "/out_" + side), number);
@@ -708,6 +761,8 @@ std::string Session::plan(const Command& command, Transaction& to) {
             // read, must not leave the emptied graph claiming the previous patch's.
             identify(to, "");
             name_patch(to, "");
+            // A bundle from before tempo was saved plays at the default one.
+            set_tempo(to, default_tempo);
             const auto number = sequence();
             send(to, copy(number, c.location, main_path), number);
             to.next = Transaction::Next::Loaded;
@@ -741,6 +796,8 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 std::string level;
                 for (const auto& p : m->parameters) if (p.symbol == general_output_symbol) level = " ;\n\t\tpeepo:outputLevel " + float_literal(p.value);
                 send(to, put(number, copy_path, position(c.x, c.y) + " ;\n\t\tpeepo:displayName " + string_literal(m->name) + level), number);
+                // Nor does it copy the plugin's file: the copy is given it again.
+                if (const auto* known = definition(m->uri); known && !m->file.empty()) give_file(to, copy_path, *known, m->file);
                 send(to, get, copy_path);
             } else if constexpr (std::is_same_v<T, SetBypass>) {
                 if (m->fixed) return "Endpoints cannot be bypassed";
@@ -750,6 +807,12 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 if (const auto* known = definition(m->uri); known && !known->enable_symbol.empty())
                     set_local(child(found->second, known->enable_symbol), "ingen:value", value_key, float_literal(1), ingen::number(1));
                 set_local(found->second, "ingen:enabled", enabled_key, c.value ? "false" : "true", {Value::Kind::Boolean, 0, !c.value, {}});
+            } else if constexpr (std::is_same_v<T, SetFile>) {
+                if (m->fixed || !module_available(*m)) return "Module is unavailable";
+                const auto* known = definition(m->uri);
+                if (!known || known->file.property.empty() || message_port(*known).empty()) return "This module reads no file";
+                if (!file_path(c.path)) return "Invalid file path";
+                give_file(to, found->second, *known, c.path);
             } else if constexpr (std::is_same_v<T, SetParameter>) {
                 if (m->fixed || !module_available(*m)) return "Module is unavailable";
                 const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == c.symbol; });

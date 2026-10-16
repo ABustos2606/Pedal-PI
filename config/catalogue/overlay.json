@@ -282,7 +282,9 @@
     {"uri": "http://guitarix.sourceforge.net/plugins/gx_ampegsvt_#_ampegsvt_", "name": "Bass amp (SVT)", "description": "Classic tube bass amp simulation."},
     {"uri": "http://guitarix.sourceforge.net/plugins/gx_CreamMachine_#_CreamMachine_", "name": "Power amp (Cream)", "description": "Cream-coloured power amp emulation with bass and treble."},
     {"uri": "http://guitarix.sourceforge.net/plugins/gx_supersonic_#_supersonic_", "name": "Power amp (Supersonic)", "description": "Vintage American power amp emulation."},
-    {"uri": "http://github.com/mikeoliphant/neural-amp-modeler-lv2", "name": "NAM", "category": "Amp", "availability": "untested", "reason": "Needs a model file, and the interface cannot choose one yet (P8.3).", "description": "Amp model player. Loads models trained on real amps and pedals."},
+    {"uri": "http://github.com/mikeoliphant/neural-amp-modeler-lv2", "name": "NAM", "category": "Amp", "description": "Amp model player. Loads models trained on real amps and pedals.",
+     "file": {"property": "http://github.com/mikeoliphant/neural-amp-modeler-lv2#model", "label": "Model", "folder": "nam", "extensions": ["nam"]},
+     "parameters": [{"symbol": "input_level", "name": "Input"}, {"symbol": "output_level"}, {"symbol": "quality_scale", "name": "Quality"}]},
     {"match": "jpcima.sdf1.org/lv2/stone-phaser", "category": "Modulation"},
     {"uri": "http://jpcima.sdf1.org/lv2/stone-phaser", "description": "Warm vintage-style phaser with an internal LFO."},
     {"uri": "http://jpcima.sdf1.org/lv2/stone-phaser-stereo", "description": "Warm vintage-style stereo phaser with an internal LFO."},
@@ -298,9 +300,11 @@
     {"uri": "http://moddevices.com/plugins/tap/sigmoid", "category": "Drive", "description": "Soft saturation and boost."},
     {"uri": "http://moddevices.com/plugins/mod-devel/mod-cv-meter", "description": "Simple CV meter that shows instant values with no smoothing."},
     {"match": "polyclouds#beat_repeat", "availability": "untested", "reason": "Most controls do nothing in this port: its beat-repeat settings are never set (see docs/20-clouds.md)."},
-    {"match": "polyeffects.com/lv2/polyconvo#", "availability": "untested", "reason": "Needs an impulse response file, and the interface cannot choose one yet (P8.3)."},
-    {"match": "gareus.org/oss/lv2/convoLV2#", "availability": "untested", "reason": "Needs an impulse response file, and the interface cannot choose one yet (P8.3)."},
-    {"match": "gareus.org/oss/lv2/zeroconvolv#", "availability": "untested", "reason": "Needs an impulse response file, and the interface cannot choose one yet (P8.3)."},
+    {"match": "polyeffects.com/lv2/polyconvo#", "file": {"property": "http://polyeffects.com/lv2/polyconvo#ir", "label": "Impulse response", "folder": "ir/reverb", "extensions": ["wav", "flac"]}},
+    {"match": "polyeffects.com/lv2/polyconvo#Cab", "file": {"property": "http://polyeffects.com/lv2/polyconvo#ir", "label": "Cabinet", "folder": "ir/cab", "extensions": ["wav", "flac"]}},
+    {"match": "gareus.org/oss/lv2/convoLV2#", "file": {"property": "http://gareus.org/oss/lv2/convoLV2#impulse", "label": "Impulse response", "folder": "ir/reverb", "extensions": ["wav", "flac"]}},
+    {"match": "gareus.org/oss/lv2/zeroconvolv#", "file": {"property": "http://gareus.org/oss/lv2/zeroconvolv#ir", "label": "Impulse response", "folder": "ir/reverb", "extensions": ["wav", "flac"]}},
+    {"match": "gareus.org/oss/lv2/zeroconvolv#", "availability": "untested", "reason": "Does not load an impulse response in this engine: its worker reports an error (docs/29)."},
     {"uri": "http://polyeffects.com/lv2/polyfilter#moog_ladder", "availability": "untested", "reason": "Produced non-finite samples from a plain sine in the compatibility check."},
     {"uri": "http://polyeffects.com/lv2/bitcrushed_delay", "availability": "untested", "reason": "Has crashed the engine; see docs/22-plugin-catalogue.md."},
     {"match": "polyclouds#", "output": "output_param"},
@@ -342,6 +346,73 @@
     {"uri": "http://lv2plug.in/plugins/eg-amp", "output": "gain"},
     {"uri": "http://moddevices.com/plugins/tap/sigmoid", "output": "Postgain"},
     {"match": "polyeffects.com/lv2/polyconvo#", "output": "gain"},
-    {"match": "gareus.org/oss/lv2/tuna#", "output": "none"}
+    {"match": "gareus.org/oss/lv2/tuna#", "output": "none"},
+
+    {"match": "polyclouds#", "groups": [
+      {"name": "Main", "parameters": ["position_param", "size_param", "density_param", "texture_param"]},
+      {"name": "Pitch and mix", "parameters": ["pitch_param", "blend_param", "output_param", "freeze_param"]},
+      {"name": "Space", "parameters": ["spread_param", "feedback_param", "reverb_param", "reverse_param"]}
+    ]},
+    {"uri": "http://gareus.org/oss/lv2/b_whirl#extended", "parameters": [
+      {"symbol": "filtafreq", "logarithmic": true}, {"symbol": "filtbfreq", "logarithmic": true}, {"symbol": "filtdfreq", "logarithmic": true}
+    ], "groups": [
+      {"name": "Speed and level", "parameters": ["rt_speed", "link", "hornlvl", "drumlvl"]},
+      {"name": "Horn motor", "parameters": ["hornrpmslow", "hornrpmfast", "hornaccel", "horndecel"]},
+      {"name": "Horn filter 1", "parameters": ["filtatype", "filtafreq", "filtaq", "filtagain"]},
+      {"name": "Horn filter 2", "parameters": ["filtbtype", "filtbfreq", "filtbq", "filtbgain"]},
+      {"name": "Drum motor", "parameters": ["drumrpmslow", "drumrpmfast", "drumaccel", "drumdecel"]},
+      {"name": "Drum filter", "parameters": ["filtdtype", "filtdfreq", "filtdq", "filtdgain"]},
+      {"name": "Brakes", "parameters": ["hornbrakepos", "drumbrake", "hornleak"]},
+      {"name": "Cabinet", "parameters": ["hornradius", "drumradius", "hornxoff", "hornzoff"]},
+      {"name": "Microphones", "parameters": ["micdist", "micangle", "hornwidth", "drumwidth"]}
+    ]},
+    {"match": "gareus.org/oss/lv2/fil4#", "parameters": [{"symbol": "peakreset", "hidden": true}], "groups": [
+      {"name": "Band 1", "parameters": ["sec1", "freq1", "q1", "gain1"]},
+      {"name": "Band 2", "parameters": ["sec2", "freq2", "q2", "gain2"]},
+      {"name": "Band 3", "parameters": ["sec3", "freq3", "q3", "gain3"]},
+      {"name": "Band 4", "parameters": ["sec4", "freq4", "q4", "gain4"]},
+      {"name": "Low shelf", "parameters": ["LSsec", "LSfreq", "LSq", "LSgain"]},
+      {"name": "High shelf", "parameters": ["HSsec", "HSfreq", "HSq", "HSgain"]},
+      {"name": "High-pass", "parameters": ["HighPass", "HPfreq", "HPQ"]},
+      {"name": "Low-pass", "parameters": ["LowPass", "LPfreq", "LPQ"]}
+    ]},
+    {"uri": "http://calf.sourceforge.net/plugins/Vinyl", "parameters": [
+      {"symbol": "level_in", "logarithmic": true}, {"symbol": "level_out", "logarithmic": true}
+    ], "groups": [
+      {"name": "Record", "parameters": ["speed", "aging", "freq", "drone"]},
+      {"name": "Sound 1", "parameters": ["active0", "gain0", "pitch0"]},
+      {"name": "Sound 2", "parameters": ["active1", "gain1", "pitch1"]},
+      {"name": "Sound 3", "parameters": ["active2", "gain2", "pitch2"]},
+      {"name": "Sound 4", "parameters": ["active3", "gain3", "pitch3"]},
+      {"name": "Sound 5", "parameters": ["active4", "gain4", "pitch4"]},
+      {"name": "Sound 6", "parameters": ["active5", "gain5", "pitch5"]},
+      {"name": "Sound 7", "parameters": ["active6", "gain6", "pitch6"]},
+      {"name": "Levels", "parameters": ["level_in", "level_out", "bypass"]}
+    ]},
+    {"uri": "http://drobilla.net/plugins/mda/MultiBand", "groups": [
+      {"name": "Split", "parameters": ["l_m", "m_h", "listen"]},
+      {"name": "Compression", "parameters": ["l_comp", "m_comp", "h_comp"]},
+      {"name": "Band levels", "parameters": ["l_out", "m_out", "h_out"]},
+      {"name": "Timing", "parameters": ["attack", "release", "stereo", "process"]}
+    ]},
+    {"uri": "http://polyeffects.com/lv2/chorus", "tempo": "BPM_1"},
+    {"uri": "http://polyeffects.com/lv2/flanger", "tempo": "BPM_1"},
+    {"uri": "http://polyeffects.com/lv2/harm_trem", "tempo": "BPM_0"},
+    {"uri": "http://polyeffects.com/lv2/vibrato", "tempo": "BPM_9"},
+    {"uri": "http://polyeffects.com/lv2/note_sequencer_bpm", "tempo": "bpm"},
+    {"uri": "http://polyeffects.com/lv2/step_sequencer_bpm", "tempo": "bpm"},
+    {"uri": "http://polyeffects.com/lv2/polygrids", "tempo": "tempo"},
+    {"uri": "http://polyeffects.com/lv2/basic_modular#trigger_to_gate", "tempo": "tempo"},
+    {"uri": "http://polyeffects.com/lv2/basic_modular#tempo_ratio", "tempo": "input_tempo"},
+    {"match": "avwlv2.sourceforge.net/plugins/avw/beatrepeater_", "tempo": "tempo"},
+    {"match": "avwlv2.sourceforge.net/plugins/avw/beatslicer_", "tempo": "tempo"},
+    {"uri": "http://avwlv2.sourceforge.net/plugins/avw/lfo_tempo", "tempo": "tempo"},
+    {"uri": "http://polyeffects.com/lv2/polymarbles", "groups": [
+      {"name": "T clock", "parameters": ["t_rate_param", "t_mode_param", "t_range_param", "t_bias_param"]},
+      {"name": "T randomness", "parameters": ["t_jitter_param", "t_deja_vu_param", "deja_vu_param", "deja_vu_length_param"]},
+      {"name": "X voltages", "parameters": ["x_spread_param", "x_bias_param", "x_steps_param", "x_scale"]},
+      {"name": "X modes", "parameters": ["x_mode_param", "x_range_param", "x_deja_vu_param", "x_clock_source_internal"]},
+      {"name": "Y voltages", "parameters": ["y_spread_param", "y_bias_param", "y_steps_param", "y_divider"]}
+    ]}
   ]
 }

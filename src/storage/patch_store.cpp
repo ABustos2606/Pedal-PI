@@ -39,6 +39,19 @@ std::optional<std::string> slurp(const fs::path& path) {
     text << in.rdbuf();
     return text.str();
 }
+// A file IRI's path, with its escapes undone: state names a saved model
+// `<A1%20standard.nam>`. A malformed escape is kept as it is.
+std::string unescaped(const std::string& iri) {
+    std::string out;
+    for (std::size_t i = 0; i < iri.size(); ++i) {
+        auto hex = [](char c) { return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 : c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1; };
+        if (iri[i] == '%' && i + 2 < iri.size() && hex(iri[i + 1]) >= 0 && hex(iri[i + 2]) >= 0) {
+            out += static_cast<char>(hex(iri[i + 1]) * 16 + hex(iri[i + 2]));
+            i += 2;
+        } else out += iri[i];
+    }
+    return out;
+}
 // Pull the power right after a save and the card may not have it yet: a
 // rename is atomic, but only what was flushed survives. Flush each file, then
 // the directory that names it. Windows (the simulator) is left to itself.
@@ -180,10 +193,11 @@ std::vector<std::string> PatchStore::missing_files(const fs::path& revision, con
             fs::path file;
             if (reference.starts_with("file://")) {
                 if (!shared) continue;
-                const auto path = reference.substr(7);
+                const auto path = unescaped(reference.substr(7));
                 file = fs::path(std::u8string(path.begin(), path.end()));
             } else if (!reference.empty() && reference.find(':') == std::string::npos) {
-                file = state.parent_path() / fs::path(std::u8string(reference.begin(), reference.end()));
+                const auto path = unescaped(reference);
+                file = state.parent_path() / fs::path(std::u8string(path.begin(), path.end()));
             } else continue;
             std::error_code error;
             if (!fs::exists(file, error)) missing.push_back(label + ": " + reference);
@@ -292,12 +306,12 @@ std::map<std::string, std::string> PatchStore::global_controls() const {
     if (!text) return out;
     std::istringstream lines(*text);
     for (std::string control, action; lines >> control >> action;)
-        if (valid_control_id(control) && (action == "next-patch" || action == "previous-patch")) out[control] = action;
+        if (valid_control_id(control) && (action == "next-patch" || action == "previous-patch" || action == "tap-tempo")) out[control] = action;
     return out;
 }
 std::string PatchStore::set_global_control(const std::string& control, const std::string& action) {
     if (!usable_) return "Patch storage is not available";
-    if (!valid_control_id(control) || (!action.empty() && action != "next-patch" && action != "previous-patch")) return "Invalid control action";
+    if (!valid_control_id(control) || (!action.empty() && action != "next-patch" && action != "previous-patch" && action != "tap-tempo")) return "Invalid control action";
     auto all = global_controls();
     if (action.empty()) all.erase(control); else all[control] = action;
     const auto temporary = root_ / ".controls.tmp";

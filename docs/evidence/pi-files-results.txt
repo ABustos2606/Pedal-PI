@@ -1,0 +1,126 @@
+# Files through the adapter on the Pi: tools/pi/check-engine.sh files, 16 October 2026
+# A second engine beside the running instrument (dummy JACK, not real time). Model: Casette's EVH 5150 Stealth (A1 WaveNet);
+# IR: Casette's 'Mesa 4x12 sm57.wav' (mono, 24-bit, 48 kHz). Both used only for this local check, not distributed.
+# The x42 IR Convolver is left out: on the same engine its worker failed ('Error calling /m3 work method').
+
+INSTRUMENT peepo-jack=85049 peepo-engine=85064 peepo-ui=174782 
+SYSTEM aarch64 Debian GNU/Linux 12 (bookworm) jack 1.9.21 throttled=0x50000
+MODEL a1.nam: WaveNet 0.5.4, 48000 Hz, sha256 7b781974d180d5bf
+MODEL a2.nam: SlimmableContainer 0.7.0, 48000 Hz, sha256 9c1976410fbda885
+==== NAM: http://github.com/mikeoliphant/neural-amp-modeler-lv2
+PASS  connect to the engine
+PASS  the catalogue offers http://github.com/mikeoliphant/neural-amp-modeler-lv2 with a file to choose
+PASS  load an empty graph
+PASS  add NAM
+PASS  the new module has no file yet
+PASS  the module has an audio input and output
+PASS  IN left -> NAM
+PASS  NAM -> OUT left
+PASS  connect to the engine
+PASS  the module is there
+PASS  give it /tmp/peepo-check/files/nam/A1 standard.nam
+PASS  the engine reports the file back
+PASS  a second client sees the file
+PASS  a relative path is refused -- Invalid file path
+PASS  NAM: the file changes the sound -- 7.2 dB apart, spectrum 0.76 apart
+PASS  connect to the engine
+PASS  open a scratch patch store
+PASS  the module has a file
+PASS  stage a patch
+PASS  save the patch with plugin state -- Saved File check.
+PASS  publish the saved patch
+PASS  the saved patch reads back
+PASS  the saved state names no missing file
+PASS  the bundle names the file
+PASS  load the saved patch back -- Loaded File check.
+PASS  after loading, the module names the same file
+PASS  NAM: the reloaded patch sounds the same -- 0.0 dB apart, spectrum 0.00 apart
+PASS  connect to the engine
+PASS  the module has a file
+PASS  duplicate it
+PASS  remove the original
+PASS  the duplicate names the same file
+PASS  the module has an audio input and output
+PASS  IN left -> NAM
+PASS  NAM -> OUT left
+PASS  NAM: the duplicate sounds the same -- 0.0 dB apart, spectrum 0.00 apart
+PASS  NAM: the check engine is still running
+==== convoLV2: http://gareus.org/oss/lv2/convoLV2#Mono
+PASS  connect to the engine
+PASS  the catalogue offers http://gareus.org/oss/lv2/convoLV2#Mono with a file to choose
+PASS  load an empty graph
+PASS  add LV2 Convolution Mono
+PASS  the new module has no file yet
+PASS  the module has an audio input and output
+PASS  IN left -> LV2 Convolution Mono
+grep: (standard input): binary file matches
+PASS  connect to the engine
+PASS  the module is there
+PASS  give it /tmp/peepo-check/files/ir/Cab 4x12.wav
+PASS  the engine reports the file back
+PASS  a second client sees the file
+PASS  a relative path is refused -- Invalid file path
+PASS  convoLV2: the file changes the sound -- 156.1 dB apart, spectrum 1.00 apart
+PASS  connect to the engine
+PASS  open a scratch patch store
+PASS  the module has a file
+PASS  stage a patch
+PASS  save the patch with plugin state -- Saved File check.
+PASS  publish the saved patch
+PASS  the saved patch reads back
+PASS  the saved state names no missing file
+PASS  the bundle names the file
+PASS  load the saved patch back -- Loaded File check.
+PASS  after loading, the module names the same file
+PASS  convoLV2: the reloaded patch sounds the same -- 0.0 dB apart, spectrum 0.00 apart
+PASS  connect to the engine
+PASS  the module has a file
+PASS  duplicate it
+PASS  remove the original
+PASS  the duplicate names the same file
+PASS  the module has an audio input and output
+PASS  IN left -> LV2 Convolution Mono
+grep: (standard input): binary file matches
+PASS  convoLV2: the duplicate sounds the same -- 0.0 dB apart, spectrum 0.00 apart
+PASS  convoLV2: the check engine is still running
+==== polyconvo: http://polyeffects.com/lv2/polyconvo#CabMono
+PASS  connect to the engine
+PASS  the catalogue offers http://polyeffects.com/lv2/polyconvo#CabMono with a file to choose
+PASS  load an empty graph
+PASS  add Cab Mono
+PASS  the new module has no file yet
+PASS  the module has an audio input and output
+PASS  IN left -> Cab Mono
+PASS  Cab Mono -> OUT left
+PASS  connect to the engine
+PASS  the module is there
+PASS  give it /tmp/peepo-check/files/ir/Cab 4x12.wav
+PASS  the engine reports the file back
+PASS  a second client sees the file
+PASS  a relative path is refused -- Invalid file path
+PASS  polyconvo: the file changes the sound -- 131.7 dB apart, spectrum 1.00 apart
+PASS  connect to the engine
+PASS  open a scratch patch store
+PASS  the module has a file
+PASS  stage a patch
+PASS  save the patch with plugin state -- Saved File check.
+PASS  publish the saved patch
+PASS  the saved patch reads back
+PASS  the saved state names no missing file
+PASS  the bundle names the file
+PASS  load the saved patch back -- Loaded File check.
+PASS  after loading, the module names the same file
+PASS  polyconvo: the reloaded patch sounds the same -- 0.0 dB apart, spectrum 0.00 apart
+PASS  connect to the engine
+PASS  the module has a file
+PASS  duplicate it
+PASS  remove the original
+PASS  the duplicate names the same file
+PASS  the module has an audio input and output
+PASS  IN left -> Cab Mono
+PASS  Cab Mono -> OUT left
+PASS  polyconvo: the duplicate sounds the same -- 0.0 dB apart, spectrum 0.00 apart
+PASS  polyconvo: the check engine is still running
+PASS  the instrument's JACK, engine and interface kept their processes (peepo-jack=85049 peepo-engine=85064 peepo-ui=174782 )
+NOTE  the instrument's JACK logged 7 xrun lines while this ran
+exit=0

@@ -22,11 +22,15 @@ struct BundleBlock {
     std::map<std::string, double> values;
     // Relative path of its saved plugin state, when it has one.
     std::string state;
+    // The file given to its file parameter (peepo:file), when it has one.
+    std::string file;
 };
 struct Bundle {
     std::string id, name;
     int schema = 0;
     bool modified = false;
+    // The patch tempo; bundles saved before it existed have none.
+    std::optional<double> tempo;
     std::vector<BundleBlock> blocks;
     // Tail and head, relative to the graph: `in_l`, `m3/out`.
     std::vector<std::pair<std::string, std::string>> arcs;

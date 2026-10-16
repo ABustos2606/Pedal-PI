@@ -129,6 +129,14 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
                 MessageBoxW(nullptr, std::wstring(issue.begin(), issue.end()).c_str(), L"Peepo - patches", MB_OK | MB_ICONWARNING);
         }
     }
+    // Models and impulse responses beside the patches; the engine in WSL sees
+    // them through /mnt/<drive> as well.
+    std::unique_ptr<peepo::FileStore> files;
+    if (store) {
+        const auto root = store->root().parent_path() / L"files";
+        files = std::make_unique<peepo::FileStore>(root, address.empty() ? std::string() : peepo::wsl_path(root));
+        files->open();
+    }
     lv_lock();
     bool display_alive = true;
     unsigned completed_flushes = 0;
@@ -139,6 +147,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
         ++*static_cast<unsigned*>(lv_event_get_user_data(e));
     }, LV_EVENT_FLUSH_FINISH, &completed_flushes);
     peepo::Application app(engine, store.get());
+    app.set_files(files.get());
     lv_unlock();
     const auto window = lv_windows_get_display_window_handle(display);
     original_procedure = reinterpret_cast<WNDPROC>(SetWindowLongPtrW(window, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(control_keys)));

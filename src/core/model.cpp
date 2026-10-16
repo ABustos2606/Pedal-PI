@@ -100,6 +100,10 @@ Graph demo_graph() {
     for (std::size_t i = 0; i < 4; ++i) g.connections.push_back({g.connections[i].from, g.connections[i].to, "out_r", "in_r"});
     return g;
 }
+double tempo_value(const Parameter& p, double tempo) {
+    const auto value = std::clamp(tempo, p.minimum, p.maximum);
+    return p.kind == ParameterKind::Continuous ? value : std::round(value);
+}
 Graph empty_graph(std::string name) {
     auto g = demo_graph(); g.name = std::move(name); g.modules.resize(2); g.connections = {{1, 2}, {1, 2, "out_r", "in_r"}}; g.dirty = true;
     return g;

@@ -127,6 +127,48 @@ void overlay() {
         check(!apply_catalogue_overlay(rule(bad), controls).empty(), "invalid parameter rule accepted");
         check(find(controls)->parameters.size() == find(kept)->parameters.size() && find(controls)->parameters[0].symbol == find(kept)->parameters[0].symbol, "refused parameter rule was half applied");
     }
+
+    // Names for a whole-number control's values, and a logarithmic scale.
+    auto named = document.modules;
+    const auto labelled = apply_catalogue_overlay(rule(R"({"symbol": "pitch_param", "kind": "integer", "default": 0}, {"symbol": "position_param", "logarithmic": false})"), named);
+    check(labelled.empty(), labelled.c_str());
+    for (const char* bad : {R"({"symbol": "pitch_param", "kind": "integer", "default": 0, "choices": ["Down", "Up"]})",
+                            R"({"symbol": "position_param", "choices": ["A", "B"]})",
+                            R"({"symbol": "position_param", "logarithmic": true})"}) {
+        auto refused = document.modules;
+        check(!apply_catalogue_overlay(rule(bad), refused).empty(), "impossible choices or a logarithmic scale through 0 accepted");
+    }
+    // A two-value control from 0: the Clouds freeze switch, as integer, with names.
+    auto modes = document.modules;
+    const auto chosen = apply_catalogue_overlay(rule(R"({"symbol": "freeze_param", "kind": "integer", "choices": ["Live", "Held"]})"), modes);
+    check(chosen.empty(), chosen.c_str());
+    const auto& freeze = find(modes)->parameters[0];
+    check(freeze.kind == ParameterKind::Enumeration && freeze.choices == std::vector<std::string>{"Live", "Held"} && format_value([&] { auto p = freeze; p.value = 1; return p; }()) == "Held",
+          "named values not shown as choices");
+
+    // Named groups: up to four shown controls each, none twice; the general
+    // Output can be grouped; a rule matching several modules skips what one lacks.
+    const auto groups = [&](const std::string& selector, const std::string& list) { return header + "{" + selector + R"(, "groups": [)" + list + "]}]}"; };
+    const auto uri = R"("uri": ")" + granular + R"(")";
+    auto grouped = document.modules;
+    const auto made = apply_catalogue_overlay(groups(uri, R"({"name": "Grains", "parameters": ["position_param", "size_param"]}, {"name": "Level", "parameters": ["peepo_output"]})"), grouped);
+    check(made.empty(), made.c_str());
+    const auto& g = find(grouped)->groups;
+    check(g.size() == 2 && g[0].name == "Grains" && g[0].symbols == std::vector<std::string>{"position_param", "size_param"} && g[1].symbols[0] == general_output_symbol, "groups not kept");
+    auto matched = document.modules;
+    check(apply_catalogue_overlay(groups(R"("match": "polyclouds#")", R"({"name": "Grains", "parameters": ["position_param", "not_in_every_mode"]})"), matched).empty() &&
+          find(matched)->groups.size() == 1 && find(matched)->groups[0].symbols.size() == 1, "a matching rule did not skip a missing control");
+    for (const char* bad : {R"({"name": "Five", "parameters": ["position_param", "size_param", "density_param", "texture_param", "pitch_param"]})",
+                            R"({"name": "Twice", "parameters": ["position_param"]}, {"name": "Again", "parameters": ["position_param"]})",
+                            R"({"name": "Gone", "parameters": ["no_such_control"]})",
+                            R"({"name": "", "parameters": ["position_param"]})",
+                            R"({"name": "Bad", "parameters": [3]})"}) {
+        auto refused = document.modules;
+        check(!apply_catalogue_overlay(groups(uri, bad), refused).empty(), "an impossible group accepted");
+    }
+    auto hidden_group = document.modules;
+    check(!apply_catalogue_overlay(header + "{" + uri + R"(, "parameters": [{"symbol": "in_gain_param", "hidden": true}], "groups": [{"name": "Hidden", "parameters": ["in_gain_param"]}]}]})", hidden_group).empty(),
+          "a group naming a hidden control accepted");
 }
 void fixture(const std::string& folder) {
     std::vector<ModuleDefinition> offered;
@@ -169,6 +211,20 @@ void fixture(const std::string& folder) {
         if (p.symbol == "pitch_param") check(p.kind == ParameterKind::Integer && p.unit == "st" && p.value == 0 && p.minimum == -48 && p.maximum == 48, "Clouds pitch not whole semitones from 0 in the plugin's range");
     }
     check(shown->project_defaults == std::vector<std::string>{"pitch_param", "freeze_param", "reverse_param"}, "Clouds defaults not marked for the adapter to set");
+    check(shown->groups.size() == 3 && shown->groups[0].name == "Main" && shown->groups[1].symbols[2] == "output_param", "Clouds pages not grouped");
+    // The largest modules come in named pages, and their gains and filter
+    // frequencies move on a logarithmic scale.
+    for (const auto& d : offered) {
+        const auto has = [&](const std::string& symbol) { return std::find_if(d.parameters.begin(), d.parameters.end(), [&](const Parameter& p) { return p.symbol == symbol; }); };
+        if (d.uri == "http://gareus.org/oss/lv2/b_whirl#extended") check(d.groups.size() == 9 && has("filtafreq")->logarithmic, "the rotary speaker is not grouped");
+        if (d.uri.starts_with("http://gareus.org/oss/lv2/fil4#")) check(d.groups.size() == 8 && has("peakreset") == d.parameters.end(), "the EQ is not grouped");
+        if (d.uri == "http://calf.sourceforge.net/plugins/Vinyl") check(d.groups.size() == 9 && has("level_in")->logarithmic && has("level_out")->logarithmic, "Vinyl is not grouped");
+        // Cabinets come from ir/cab, reverbs from ir/reverb, models from nam.
+        if (d.uri.starts_with("http://polyeffects.com/lv2/polyconvo#Cab")) check(d.file.folder == "ir/cab" && d.file.label == "Cabinet", "a cabinet does not list ir/cab");
+        else if (d.uri.starts_with("http://polyeffects.com/lv2/polyconvo#") || d.uri.starts_with("http://gareus.org/oss/lv2/convoLV2#"))
+            check(d.file.folder == "ir/reverb", "a convolution reverb does not list ir/reverb");
+        if (d.uri == "http://github.com/mikeoliphant/neural-amp-modeler-lv2") check(d.file.folder == "nam" && d.availability == Availability::Available, "NAM does not list nam");
+    }
     for (const auto& d : offered)
         if (d.uri.find("polyclouds#") != std::string::npos)
             check(d.parameters.size() == 12 && std::none_of(d.parameters.begin(), d.parameters.end(), [](const Parameter& p) { return p.kind == ParameterKind::Continuous && (p.symbol == "freeze_param" || p.symbol == "pitch_param"); }),

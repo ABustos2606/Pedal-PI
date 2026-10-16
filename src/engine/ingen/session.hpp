@@ -38,7 +38,10 @@ public:
     std::vector<EngineEvent> advance(unsigned milliseconds);
     EngineState state() const { return state_; }
     const Graph& snapshot() const { return graph_; }
-    EngineTelemetry telemetry() const { return {std::nullopt, state_ == EngineState::Ready ? cpu_ : std::nullopt}; }
+    EngineTelemetry telemetry() const {
+        const bool ready = state_ == EngineState::Ready;
+        return {ready ? std::optional<double>{graph_.tempo} : std::nullopt, ready ? cpu_ : std::nullopt};
+    }
     void watch_tuner(std::optional<InstanceId>);
     std::optional<double> tuner_frequency(InstanceId) const;
 private:
@@ -89,6 +92,8 @@ private:
     void refresh(std::string path, bool replace);
     void rebuild();
     std::string plan(const Command&, Transaction&);
+    void give_file(Transaction&, const std::string& path, const ModuleDefinition&, const std::string& file);
+    void set_tempo(Transaction&, double bpm);
     void name_patch(Transaction&, const std::string& name);
     void identify(Transaction&, const std::string& id);
     void mark(Transaction&, bool modified);

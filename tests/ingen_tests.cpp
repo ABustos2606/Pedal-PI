@@ -19,6 +19,8 @@ void check(bool result, const char* why) { if (!result) throw std::runtime_error
 const std::string amp = "http://lv2plug.in/plugins/eg-amp";
 // Like Poly's Clouds: silent until its own `enabled` control is set.
 const std::string switched = "urn:test:switched";
+// Reads a file and follows the tempo: it has an atom input for patch messages.
+const std::string filed = "urn:test:filed";
 const std::string rdf_type(uri::rdf_type);
 std::string full(std::string_view space, std::string_view local) { return std::string(space) + std::string(local); }
 Value iri_value(std::string text) { return {Value::Kind::Uri, 0, false, std::move(text)}; }
@@ -42,7 +44,7 @@ struct FakeTransport final : Transport {
 struct FakeEngine {
     std::map<std::string, Properties> objects{{"ingen:/main", {}}};
     std::vector<std::pair<std::string, std::string>> arcs;
-    std::set<std::string> plugins{amp, switched};
+    std::set<std::string> plugins{amp, switched, filed};
     std::vector<FakeTransport*> clients;
     bool reachable = true, fail_saves = false;
     // Write paths relative to <ingen:/>, as the engine does when built with serd 0.30 (Debian 12).
@@ -108,6 +110,10 @@ struct FakeEngine {
         gain->insert(gain->begin(), {full(uri::ingen, "value"), number_value(0)});
         port("in", 1, "AudioPort", "InputPort");
         port("out", 2, "AudioPort", "OutputPort");
+        if (const auto* prototype = find(objects[path], full(uri::lv2, "prototype")); prototype && prototype->text == filed) {
+            auto* control = port("control", 3, "InputPort", "InputPort");
+            control->push_back({rdf_type, iri_value(full(uri::atom, "AtomPort"))});
+        }
         if (const auto* prototype = find(objects[path], full(uri::lv2, "prototype")); prototype && prototype->text == switched) {
             auto* enabled = port("enabled", 3, "ControlPort", "InputPort");
             enabled->insert(enabled->begin(), {full(uri::ingen, "value"), number_value(0)});
@@ -487,6 +493,38 @@ void adapter() {
         check(rig.result(RemoveModule{id}).accepted, "switched module could not be removed");
     }
 
+    // A file and the tempo. The file reaches the plugin as a patch:Set on its
+    // atom input and is named on the block for every client; the tempo is a
+    // graph property, given to the module that follows it, inside its range.
+    {
+        ModuleDefinition own{filed, "Filed", "Amp", "", 0x93a4b5, {{"in", Direction::Input}, {"out", Direction::Output}, {"control", Direction::Input, 1, PortType::Midi}},
+                             {{"gain", "Rate", "BPM", ParameterKind::Continuous, 40, 240, 100}}};
+        own.file = {"urn:test:filed#model", "Model", "nam", {"nam"}};
+        own.tempo_symbol = "gain";
+        register_definitions({own});
+        check(rig.result(SetTempo{96}).accepted && rig.graph().tempo == 96 && engine.telemetry().tempo_bpm == 96 &&
+              property(fake, "ingen:/main", full(uri::peepo, "tempo"))->number == 96, "tempo not stored on the graph");
+        const auto sent = fake.requests;
+        check(!rig.result(SetTempo{500}).accepted && !rig.result(SetTempo{std::nan("")}).accepted && rig.graph().tempo == 96 && fake.requests == sent,
+              "a tempo outside the range reached the engine");
+        check(rig.result(AddModule{filed, 600, 24}).accepted, "file-reading module refused");
+        const auto id = rig.graph().modules.back().id;
+        const auto block = "ingen:/main/m" + std::to_string(id);
+        check(property(fake, block + "/gain", full(uri::ingen, "value"))->number == 96, "an added module did not take the patch tempo");
+        check(rig.result(SetTempo{20 + 270}).accepted && property(fake, block + "/gain", full(uri::ingen, "value"))->number == 240 &&
+              find_module(rig.graph(), id)->parameters[0].value == 240, "a following module was not set, inside its range");
+        check(rig.result(SetFile{id, "/files/nam/My amp.nam"}).accepted && find_module(rig.graph(), id)->file == "/files/nam/My amp.nam" &&
+              property(fake, block, full(uri::peepo, "file"))->text == "/files/nam/My amp.nam", "file not named on the block");
+        check(!rig.result(SetFile{id, "relative.nam"}).accepted && !rig.result(SetFile{id, "/a/../b.nam"}).accepted && !rig.result(SetFile{3, "/files/x.nam"}).accepted,
+              "an unsafe path, or a module without a file, was accepted");
+        Rig second(fake);
+        second.engine->connect(); second.settle();
+        check(find_module(second.graph(), id)->file == "/files/nam/My amp.nam" && second.graph().tempo == 290, "a second client did not see the file and tempo");
+        second.engine->disconnect(); rig.settle();
+        check(rig.result(DuplicateModule{id, 600, 144}).accepted && rig.graph().modules.back().file == "/files/nam/My amp.nam", "the duplicate lost the file");
+        check(rig.result(RemoveModule{rig.graph().modules.back().id}).accepted && rig.result(RemoveModule{id}).accepted && rig.result(SetTempo{120}).accepted, "cleanup failed");
+    }
+
     // Session snapshot: kept by the interface, restored through the engine.
     events.clear();
     const auto saving = engine.submit(SaveGraph{});
@@ -624,7 +662,8 @@ void adapter() {
     check(std::count_if(fake.objects.begin(), fake.objects.end(), [](const auto& o) { return has(o.second, rdf_type, full(uri::ingen, "Block")); }) == 3, "reconnect duplicated or lost blocks");
 
     // Load arrives unasked, outside any reply, and is unknown again when the engine is away.
-    check(!engine.telemetry().cpu_percent && !engine.telemetry().tempo_bpm, "a reading was invented");
+    // The tempo is the patch's own setting; a load figure arrives only from the engine.
+    check(!engine.telemetry().cpu_percent && engine.telemetry().tempo_bpm == rig.graph().tempo, "a reading was invented, or the tempo missing");
     rig.transport->deliver(fake.put(1, "ingen:/engine", {{full(uri::ingen, "meanRunLoad"), number_value(0.07)}}));
     check(rig.settle().empty() && engine.telemetry().cpu_percent && std::abs(*engine.telemetry().cpu_percent - 7) < 1e-4, "engine load misread or reported as a graph change");
 
@@ -638,7 +677,8 @@ void adapter() {
     // An interface restart: a new adapter finds the same modules under the same identities.
     const auto running = rig.graph();
     engine.disconnect();
-    check(engine.state() == EngineState::Disconnected && !rig.result(RenamePatch{"Offline"}).accepted && !engine.telemetry().cpu_percent, "explicit disconnect not honoured");
+    check(engine.state() == EngineState::Disconnected && !rig.result(RenamePatch{"Offline"}).accepted && !engine.telemetry().cpu_percent && !engine.telemetry().tempo_bpm,
+          "explicit disconnect not honoured");
     check(engine.advance(5000).empty() && engine.state() == EngineState::Disconnected, "disconnected adapter reconnected by itself");
     Rig restarted(fake);
     restarted.engine->connect(); restarted.settle();
