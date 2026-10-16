@@ -32,7 +32,7 @@ public:
 private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
-                        NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserGroup, MissingFixture,
+                        NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserGroup, BrowserPick, MissingFixture,
                         ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage,
                         SavePatch, LoadStored, DeleteStored, StartupStored, PatchPage, ConfirmAction, CancelAction,
                         AssignControl, EditControl, ClearControl, PickModule, PickTarget, PickerPage, InvertControl, SwitchModeChoice, RangeEnd, PowerOff };
@@ -52,9 +52,11 @@ private:
     void navigate(Page);
     void rebuild();
     void patch_view(lv_obj_t*);
-    void browser(lv_obj_t*);
+    void browser(lv_obj_t* header, lv_obj_t* content, lv_obj_t* foot);
+    void browser_pick(const std::string& uri, bool reveal);
+    void add_module(const std::string& uri);
     void parameters(lv_obj_t*);
-    void parameter_tile(lv_obj_t*, const Module&, const Parameter&, int x, int y, int height = 120, std::uint32_t ink = 0x8edbc2);
+    void parameter_tile(lv_obj_t*, const Module&, const Parameter&, int x, int y, int height = 120, std::uint32_t ink = 0);
     void clouds_parameters(lv_obj_t*, const Module&);
     void delay_parameters(lv_obj_t*, const Module&);
     void tuner_parameters(lv_obj_t*, const Module&);
@@ -134,11 +136,14 @@ private:
     InstanceId picking_module_ = 0;
     std::size_t picker_page_ = 0;
     std::size_t parameter_page_ = 0;
-    // The module browser: the one open category, and where the list was scrolled.
-    std::string browser_group_;
+    // The module browser: the group filter (empty for all), the picked module,
+    // and where the cards were scrolled.
+    std::string browser_group_, browser_pick_;
     int browser_scroll_ = 0;
-    bool browser_reveal_ = false;
-    lv_obj_t* browser_list_ = nullptr;
+    lv_obj_t *browser_list_ = nullptr, *browser_add_ = nullptr;
+    std::map<std::string, lv_obj_t*> browser_cards_;
+    // What the encoders step through: groups shown, and usable modules in card order.
+    std::vector<std::string> browser_groups_, browser_order_;
     bool generic_parameters_ = false;
     bool renaming_ = false;
     std::string draft_name_;

@@ -26,6 +26,13 @@ The Windows UI uses LVGL v9.5.0 at commit `85aa60d18b3d5e5588d7b247abf90198f07c8
 
 Built-in Montserrat font tables at sizes 14, 18, 20, 24 and 28 are supplied by this LVGL revision; their generated headers also identify Font Awesome 5 glyphs. The upstream [Montserrat OFL notice](licenses/Montserrat-OFL.txt) and [Font Awesome Free notice](licenses/Font-Awesome-Free.txt) are retained. Their notice sources are [Montserrat](https://github.com/JulietaUla/Montserrat/blob/master/OFL.txt) and [Font Awesome 5.15.4](https://github.com/FortAwesome/Font-Awesome/blob/5.15.4/LICENSE.txt); LVGL does not record the precise original font revision in those generated table headers. No original Beebo assets are used.
 
+The interface also compiles its own font tables, generated with [lv_font_conv](https://github.com/lvgl/lv_font_conv) 1.5.3 into `src/ui/fonts/` (printable ASCII, 4 bits per pixel):
+
+- **Montserrat Bold**, sizes 14, 18, 20, 24 and 48, from [JulietaUla/Montserrat](https://github.com/JulietaUla/Montserrat) `fonts/ttf/Montserrat-Bold.ttf`. Covered by the same [Montserrat OFL notice](licenses/Montserrat-OFL.txt).
+- **JetBrains Mono Regular**, size 14, from [JetBrains/JetBrainsMono](https://github.com/JetBrains/JetBrainsMono) `fonts/ttf/JetBrainsMono-Regular.ttf`. Its [OFL notice](licenses/JetBrains-Mono-OFL.txt) is retained.
+
+Both fonts were downloaded on 15 October 2026. The OFL allows bundling the fonts with software. The generated tables keep the original font names, and the fonts are not sold on their own.
+
 Apply the same provenance/notice process to each selected LV2 plugin. Images, presets, NAM models and cabinet impulse responses need their own provenance and applicable terms.
 
 ## Implementation and release requirements

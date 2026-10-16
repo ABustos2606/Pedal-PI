@@ -184,8 +184,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR command_line, int) {
                     const auto* row = reinterpret_cast<const std::uint32_t*>(buffer->data + y * buffer->header.stride);
                     for (unsigned x = 0; x < buffer->header.w; ++x) {
                         const auto pixel = row[x] & 0xffffff;
-                        if (pixel == 0x10171f) ++dark;
-                        if (pixel == 0x1a2530) ++cards;
+                        if (pixel == 0x000000) ++dark;
+                        if (pixel == 0x0f0f0f) ++cards;
                     }
                 }
             }

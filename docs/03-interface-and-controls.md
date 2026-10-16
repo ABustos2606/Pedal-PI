@@ -124,9 +124,42 @@ Model and IR paths are not ordinary numeric sliders. The engine client must send
 
 Expose DSP load/xrun status and a settings view for CPU, memory, and temperature using verified engine/system measurements. Do not label a process CPU estimate as total system load or spare audio capacity. Automatic quality changes are not agreed; any later policy must make the change visible and preserve user intent.
 
+## Visual style
+
+Every page uses one look, taken from a design sketch the user chose (15 October 2026):
+
+- **Black background.** Colour appears only where it means something: a module's group, a state, the one main action on a page.
+- **Header.** On the left, a dot (green when the engine answers, orange when it does not), a `PEEPO // SECTION` line in JetBrains Mono, and the page title in bold capitals. On the right, the page's buttons as pills.
+- **Footer.** A thin line, then `< BACK` on the left (every page except the patch canvas), the latest message in mono, and the BPM and CPU readings.
+- **Buttons.** Dark with a grey outline, bold capital labels. The main action on a page is white with black text (Add, Save, Create, Replace, Done, the confirming button).
+- **Fonts.** Montserrat Bold for titles, labels and buttons, Montserrat Medium for body text, JetBrains Mono for status lines (see [notices](../THIRD_PARTY_NOTICES.md)).
+- **Module colours.** A module takes the colour of its group, the same on the browser pill and tag, the square on the canvas, and the sliders on its parameter page. Audio cables are light grey; control cables and sockets are the CV group yellow; orange marks a fault or a selection.
+
 ## Module browser
 
-A full-screen categorized list: drive/distortion, delay, reverb, modulation, filter/EQ, granular/texture, dynamics, utilities, and sound sources. Guitar effects come first. Only plugins that are installed and passed compatibility checks appear as available; others are hidden or marked unavailable.
+A full-screen page with three bands:
+
+- **Header:** the group pills on the right, each as wide as its name: ALL, GAIN, MOD, TIME, TEXTURE, CV + UTIL. The open group is white. A group with no modules in the catalogue gets no pill.
+- **Middle:** a scrolling grid of large module cards, two per row. Each card shows the module name, a tag for its finer category in the group colour, and a two-line description, with black space below.
+- **Footer:** Back, a `GROUP // N MODULES` line, and **Add module**.
+
+The groups merge the catalogue's categories the way the Beebo firmware does:
+
+| Group | Categories |
+|---|---|
+| GAIN | Drive, Amp, Cabinet, Dynamics |
+| MOD | Modulation, Filter |
+| TIME | Delay, Reverb |
+| TEXTURE | Texture, Resonator, Pitch, Sound source |
+| CV + UTIL | Control, Utility, and any category not listed |
+
+Adding a module:
+
+- The first tap on a card picks it (white border). Tapping it again, or pressing Add module, adds it.
+- With no pin on them, encoder 1 steps through the groups and the other encoders step through the cards. Pushing an encoder adds the picked card.
+- The chosen group is remembered between visits, but the page always opens scrolled to the top with nothing picked.
+
+Only plugins that are installed and passed compatibility checks can be added. The others are dimmed, and their description is replaced by the reason they cannot be added.
 
 ## Patch manager
 

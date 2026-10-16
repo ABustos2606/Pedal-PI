@@ -1,0 +1,1 @@
+resolution=800x480 buffer=1 flushes=1 background_pixels=0 card_pixels=0

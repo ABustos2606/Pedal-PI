@@ -2,19 +2,49 @@
 // Copyright (C) 2026 Peepo contributors
 #include "ui/application.hpp"
 #include "core/tuning.hpp"
+#include "ui/fonts/fonts.h"
 // v9.5.0 exposes the hit-test payload through this header. Keep this usage
 // isolated and recheck it when upgrading the pinned LVGL dependency.
 #include "src/core/lv_obj_event_private.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <iomanip>
 #include <sstream>
 
 namespace peepo {
 namespace {
-constexpr std::uint32_t background = 0x10171f, surface = 0x1a2530, border = 0x2b3b4a;
-constexpr std::uint32_t text = 0xe9eef2, muted = 0x94a7b8, accent = 0x8edbc2;
+// Black, with colour only where it means something: a module's group, a
+// state, the one action that matters on a page.
+constexpr std::uint32_t background = 0x000000, surface = 0x0f0f0f, border = 0x262626, rim = 0x3f3f3f, pressed_fill = 0x1c1c1c;
+constexpr std::uint32_t text = 0xffffff, muted = 0x9ca3af, faint = 0x737373, accent = 0x4ade80, warning = 0xfb923c, cable_ink = 0xd4d4d4;
 lv_color_t color(std::uint32_t c) { return lv_color_hex(c); }
+std::string upper(std::string value) {
+    for (auto& c : value) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    return value;
+}
+// Modules come in a few groups, merged from the catalogue's categories the
+// way the Beebo firmware merges them. The group gives a module its colour
+// everywhere: browser pill and tag, square on the canvas, parameter tiles. A
+// category no group names falls into the last.
+struct ModuleGroup { const char* name; std::uint32_t fill, bright; std::vector<std::string> categories; };
+const std::vector<ModuleGroup>& module_groups() {
+    static const std::vector<ModuleGroup> groups = {
+        {"GAIN", 0xa8452f, 0xff8a65, {"Drive", "Amp", "Cabinet", "Dynamics"}},
+        {"MOD", 0x9b3f86, 0xf472d0, {"Modulation", "Filter"}},
+        {"TIME", 0x5b3fa8, 0xa78bfa, {"Delay", "Reverb"}},
+        {"TEXTURE", 0x1f6f8f, 0x38bdf8, {"Texture", "Resonator", "Pitch", "Sound source"}},
+        {"CV + UTIL", 0x6b6a24, 0xe8d44d, {"Control", "Utility"}}};
+    return groups;
+}
+std::size_t module_group(const std::string& category) {
+    const auto& groups = module_groups();
+    for (std::size_t i = 0; i < groups.size(); ++i)
+        if (std::find(groups[i].categories.begin(), groups[i].categories.end(), category) != groups[i].categories.end()) return i;
+    return groups.size() - 1;
+}
+// Control cables and sockets share the CV group's yellow.
+const std::uint32_t control_ink = module_groups().back().bright;
 lv_obj_t* panel(lv_obj_t* parent, int x, int y, int w, int h, std::uint32_t fill = surface) {
     auto* o = lv_obj_create(parent);
     lv_obj_remove_style_all(o);
@@ -23,6 +53,12 @@ lv_obj_t* panel(lv_obj_t* parent, int x, int y, int w, int h, std::uint32_t fill
     lv_obj_set_style_radius(o, 12, 0);
     lv_obj_set_style_border_width(o, 1, 0); lv_obj_set_style_border_color(o, color(border), 0);
     lv_obj_remove_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+    return o;
+}
+// A bare full-width band: header, content or footer.
+lv_obj_t* band(lv_obj_t* parent, int y, int h) {
+    auto* o = panel(parent, 0, y, 800, h, background);
+    lv_obj_set_style_radius(o, 0, 0); lv_obj_set_style_border_width(o, 0, 0);
     return o;
 }
 lv_obj_t* label(lv_obj_t* parent, const std::string& value, int x, int y, int w = 0,
@@ -61,7 +97,6 @@ ModuleLayout module_layout(const Module& m) {
 // channel has its own connector, so a stereo port shows two (left above
 // right). A single connector stays centred; several share the edge in equal
 // touch bands.
-constexpr std::uint32_t control_ink = 0xe8c56a;
 std::vector<const Port*> cv_ports(const Module& m, Direction direction) {
     std::vector<const Port*> found;
     for (const auto& p : module_ports(m)) if (p.type == PortType::Cv && p.direction == direction) found.push_back(&p);
@@ -77,6 +112,12 @@ std::optional<Jack> jack(const Module& m, const std::string& symbol, Direction d
     }
     if (index < 0) return {};
     return Jack{(2 * index + 1) * module_size / (2 * count), std::min(44, module_size / count)};
+}
+// A module's colour: its group's, or the warning colour when it is missing.
+std::uint32_t module_ink(const Module& m) {
+    const auto* d = definition(m.uri);
+    if (!module_available(m) || !d) return warning;
+    return m.fixed ? muted : module_groups()[module_group(d->category)].bright;
 }
 const Parameter& parameter(const Module& m, const std::string& symbol) {
     return *std::find_if(m.parameters.begin(), m.parameters.end(), [&](const Parameter& p) { return p.symbol == symbol; });
@@ -117,8 +158,9 @@ void Application::message(std::string value) {
     if (footer_) lv_label_set_text(footer_, message_.c_str());
 }
 void Application::navigate(Page page) {
-    // Entering the browser always starts from the closed list of categories.
-    if (page == Page::Browser && page_ != Page::Browser) { browser_group_.clear(); browser_scroll_ = 0; browser_reveal_ = false; }
+    // The browser keeps its filter between visits, so a chain of one kind is
+    // quick to build, but always opens at the top with nothing picked.
+    if (page == Page::Browser && page_ != Page::Browser) { browser_pick_.clear(); browser_scroll_ = 0; }
     // Another program, or a damaged disk, may have changed what is stored.
     if (page == Page::Patches && page_ != Page::Patches) refresh_stored();
     page_ = page; rebuild_ = true;
@@ -228,7 +270,7 @@ void Application::update_metrics() {
     if (tempo != lv_label_get_text(tempo_value_)) lv_label_set_text(tempo_value_, tempo.c_str());
     if (cpu != lv_label_get_text(cpu_value_)) lv_label_set_text(cpu_value_, cpu.c_str());
     const auto tempo_ink = color(tempo == "--" ? muted : accent);
-    const auto cpu_ink = color(cpu == "--" ? muted : *readings.cpu_percent >= 85 ? 0xf0aa72 : text);
+    const auto cpu_ink = color(cpu == "--" ? muted : *readings.cpu_percent >= 85 ? warning : text);
     if (!lv_color_eq(lv_obj_get_style_text_color(tempo_value_, LV_PART_MAIN), tempo_ink))
         lv_obj_set_style_text_color(tempo_value_, tempo_ink, 0);
     if (!lv_color_eq(lv_obj_get_style_text_color(cpu_value_, LV_PART_MAIN), cpu_ink))
@@ -243,15 +285,44 @@ lv_obj_t* Application::button(lv_obj_t* parent, const std::string& title, int x,
     auto* b = lv_button_create(parent); lv_obj_remove_style_all(b);
     lv_obj_set_pos(b, x, y); lv_obj_set_size(b, w, 48);
     lv_obj_set_style_bg_color(b, color(surface), 0); lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(b, color(border), LV_STATE_PRESSED);
+    lv_obj_set_style_bg_color(b, color(pressed_fill), LV_STATE_PRESSED);
     // Unavailable actions stay visible but read as such.
-    lv_obj_set_style_text_opa(b, LV_OPA_40, LV_STATE_DISABLED);
-    lv_obj_set_style_border_width(b, 1, 0); lv_obj_set_style_border_color(b, color(border), 0);
-    lv_obj_set_style_radius(b, 10, 0);
-    auto* l = label(b, title, 0, 0); lv_obj_center(l);
+    lv_obj_set_style_opa(b, LV_OPA_40, LV_STATE_DISABLED);
+    lv_obj_set_style_border_width(b, 1, 0); lv_obj_set_style_border_color(b, color(rim), 0);
+    lv_obj_set_style_border_color(b, color(text), LV_STATE_FOCUS_KEY);
+    lv_obj_set_style_radius(b, 8, 0);
+    auto* l = label(b, upper(title), 0, 0, 0, text, &peepo_bold_14);
+    lv_obj_set_style_text_letter_space(l, 1, 0); lv_obj_center(l);
     bind(b, action, id, std::move(symbol), number);
     if (auto* group = lv_group_get_default()) lv_group_add_obj(group, b);
     return b;
+}
+namespace {
+// The one action a page is about: white, with black text.
+lv_obj_t* primary(lv_obj_t* b) {
+    lv_obj_set_style_bg_color(b, color(text), 0); lv_obj_set_style_bg_color(b, color(0xd4d4d4), LV_STATE_PRESSED);
+    lv_obj_set_style_border_width(b, 0, 0);
+    lv_obj_set_style_outline_color(b, color(text), LV_STATE_FOCUS_KEY); lv_obj_set_style_outline_width(b, 2, LV_STATE_FOCUS_KEY);
+    lv_obj_set_style_outline_pad(b, 2, LV_STATE_FOCUS_KEY);
+    lv_obj_set_style_text_color(lv_obj_get_child(b, 0), color(background), 0);
+    return b;
+}
+// Header buttons: rounded pills, a little shorter than the band they sit in.
+lv_obj_t* pill(lv_obj_t* b) {
+    lv_obj_set_y(b, 16); lv_obj_set_height(b, 40);
+    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    return b;
+}
+// Footer buttons: shorter still.
+lv_obj_t* slim(lv_obj_t* b) {
+    lv_obj_set_y(b, 6); lv_obj_set_height(b, 36);
+    return b;
+}
+// The emphasis a chosen option gets: its border and text in the given colour.
+void mark(lv_obj_t* b, std::uint32_t ink) {
+    lv_obj_set_style_border_color(b, color(ink), 0); lv_obj_set_style_border_width(b, 2, 0);
+    lv_obj_set_style_text_color(lv_obj_get_child(b, 0), color(ink), 0);
+}
 }
 void Application::event(lv_event_t* e) {
     auto* b = static_cast<Binding*>(lv_event_get_user_data(e));
@@ -433,20 +504,14 @@ void Application::handle(Binding& b, lv_event_t* e) {
     if (code != LV_EVENT_CLICKED) return;
     switch (b.action) {
     case Action::Navigate: navigate(static_cast<Page>(b.number)); break;
-    case Action::Add:
-    case Action::Duplicate: {
+    case Action::Add: add_module(b.symbol); break;
+    case Action::Duplicate:
         if (const auto slot = vacant_slot()) {
             const auto [x, y] = *slot;
-            if (b.action == Action::Add) {
-                if (const auto request = submit(AddModule{b.symbol, x, y})) {
-                    const auto* d = definition(b.symbol);
-                    pending_[request] = PendingKind::Add; adding_[request] = d ? d->name : b.symbol;
-                }
-            } else submit(DuplicateModule{b.id, x, y});
+            submit(DuplicateModule{b.id, x, y});
             reveal(x, y); navigate(Page::Patch);
         } else message("No free module slot remains on this canvas.");
         break;
-    }
     case Action::SelectCable:
         if (b.number >= 0 && static_cast<std::size_t>(b.number) < cables_.size()) {
             selected_cable_ = cables_[b.number].connection; rebuild_ = true;
@@ -573,9 +638,13 @@ void Application::handle(Binding& b, lv_event_t* e) {
     case Action::CancelReplace: replacement_.reset(); navigate(confirm_origin_); break;
     case Action::ParameterPage: parameter_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
     case Action::BrowserGroup:
-        // One category open at a time; tapping the open one closes it.
-        browser_group_ = browser_group_ == b.symbol ? std::string() : b.symbol;
-        browser_reveal_ = !browser_group_.empty(); rebuild_ = true; break;
+        if (browser_group_ != b.symbol) { browser_group_ = b.symbol; browser_pick_.clear(); browser_scroll_ = 0; rebuild_ = true; }
+        break;
+    case Action::BrowserPick:
+        // The first tap picks a card; tapping it again, or Add, adds it.
+        if (b.symbol.empty() || b.symbol == browser_pick_) { if (!browser_pick_.empty()) add_module(browser_pick_); }
+        else browser_pick(b.symbol, false);
+        break;
     case Action::CvPage: cv_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
     case Action::CvChoice:
         if (cv_output_.empty()) { cv_output_ = b.symbol; cv_page_ = 0; rebuild_ = true; }
@@ -583,6 +652,16 @@ void Application::handle(Binding& b, lv_event_t* e) {
         break;
     default: break;
     }
+}
+void Application::add_module(const std::string& uri) {
+    const auto slot = vacant_slot();
+    if (!slot) { message("No free module slot remains on this canvas."); return; }
+    const auto [x, y] = *slot;
+    if (const auto request = submit(AddModule{uri, x, y})) {
+        const auto* d = definition(uri);
+        pending_[request] = PendingKind::Add; adding_[request] = d ? d->name : uri;
+    }
+    reveal(x, y); navigate(Page::Patch);
 }
 void Application::commit_name() {
     if (pending()) { message("Wait for pending edits before naming a patch."); return; }
@@ -678,56 +757,74 @@ void Application::rebuild() {
         if (browser_list_) browser_scroll_ = lv_obj_get_scroll_y(browser_list_);
         lv_obj_clean(screen_);
     }
-    browser_list_ = nullptr;
+    browser_list_ = browser_add_ = nullptr; browser_cards_.clear();
     visible_.clear();
     bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); cv_inputs_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
     tempo_value_ = cpu_value_ = nullptr;
     tuner_note_ = tuner_detail_ = tuner_status_ = tuner_needle_ = nullptr;
-    auto* header = panel(screen_, 0, 0, 800, 72, background);
-    lv_obj_set_style_radius(header, 0, 0);
-    const bool patch = page_ == Page::Patch;
-    if (patch) {
-        label(header, "Peepo", 24, 10, 0, accent, &lv_font_montserrat_14);
-        auto* title = label(header, graph_.name + (graph_.dirty ? " *" : ""), 24, 32, 200, text, &lv_font_montserrat_24);
-        lv_label_set_long_mode(title, LV_LABEL_LONG_DOT);
-        lv_obj_set_height(title, 28);
-        button(header, "Home", 244, 12, 64, Action::Home);
-        label(header, status_text(), 318, 28, 0, engine_.state() == EngineState::Ready ? accent : 0xf0aa72, &lv_font_montserrat_14);
-        auto* add = button(header, "+ Add", 448, 12, 96, Action::Navigate, 0, {}, static_cast<int>(Page::Browser));
-        // Nothing can be added until the engine answers again.
-        if (engine_.state() != EngineState::Ready) lv_obj_add_state(add, LV_STATE_DISABLED);
-        button(header, "Patches", 556, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Patches));
-        button(header, "Settings", 672, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Settings));
-    } else {
-        // Back returns to where the page was opened from.
-        const auto back = page_ == Page::NamePatch ? Page::Patches : page_ == Page::Controls ? Page::Settings :
-            page_ == Page::AssignPicker || page_ == Page::AssignmentDetail ? Page::Controls : Page::Patch;
-        button(header, "< Back", 16, 12, 104, Action::Navigate, 0, {}, static_cast<int>(back));
-        std::string title = page_ == Page::Browser ? "Add a module" : page_ == Page::Patches ? (store_ ? "Patches" : "Session patches") :
-            page_ == Page::Settings ? (engine_.capabilities().simulation ? "Simulator settings" : "Engine settings") : "Parameters";
-        if (page_ == Page::NamePatch) title = saving_as_ ? "Save as a new patch" : renaming_ ? "Rename patch" : "New patch";
-        if (page_ == Page::ConfirmAction) title = confirmation_.title;
-        if (page_ == Page::Controls) title = "Controls";
-        if (page_ == Page::AssignPicker && picking_module_) if (const auto* m = find_module(graph_, picking_module_)) title = control_label(editing_control_) + ": " + m->name;
-        if (page_ == Page::AssignPicker && !picking_module_) title = "Assign " + control_label(editing_control_);
-        if (page_ == Page::AssignmentDetail) title = control_label(editing_control_);
-        if (page_ == Page::ConfirmReplace) title = "Replace current patch?";
-        if (page_ == Page::CvConnect) title = "Control cable";
-        if (page_ == Page::Parameters || page_ == Page::ModuleActions)
-            if (const auto* m = find_module(graph_, selected_)) title = m->name + (page_ == Page::ModuleActions ? " actions" : "");
-        auto* heading = label(header, title, 144, 23, 480, text, &lv_font_montserrat_24);
-        lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT);
-        lv_obj_set_height(heading, 30);
-        if (page_ == Page::NamePatch) button(header, saving_as_ ? "Save" : renaming_ ? "Rename" : "Create", 640, 12, 136, Action::CommitName);
-        else label(header, engine_.capabilities().simulation ? "SIMULATED" : "ENGINE", 660, 28, 0, accent, &lv_font_montserrat_14);
+    const bool patch = page_ == Page::Patch, ready = engine_.state() == EngineState::Ready;
+    // Every page: a header naming where you are, the page, and a footer with
+    // the way back, what is happening, and the readings.
+    auto* header = band(screen_, 0, 72);
+    auto* content = band(screen_, 72, 360);
+    auto* foot = band(screen_, 432, 48);
+    lv_obj_set_style_border_side(foot, LV_BORDER_SIDE_TOP, 0);
+    lv_obj_set_style_border_width(foot, 1, 0); lv_obj_set_style_border_color(foot, color(0x1f1f1f), 0);
+    std::string section = "PATCH", title = graph_.name + (graph_.dirty ? " *" : "");
+    switch (page_) {
+    case Page::Patch: break;
+    case Page::Browser: section = "BROWSER"; title.clear(); break;
+    case Page::Parameters: case Page::ModuleActions: {
+        section = page_ == Page::Parameters ? "PARAMETERS" : "ACTIONS";
+        const auto* m = find_module(graph_, selected_);
+        title = m ? m->name : "Module";
+        break;
     }
-    // The browser is a list to scroll; it has no use for the status bar.
-    const bool status_bar = page_ != Page::Browser;
-    auto* content = panel(screen_, 0, 72, 800, status_bar ? 360 : 408, background);
-    lv_obj_set_style_border_width(content, 0, 0); lv_obj_set_style_radius(content, 0, 0);
+    case Page::Patches: section = "PATCHES"; title = store_ ? "Patches" : "Session patches"; break;
+    case Page::Settings: section = "SETTINGS"; title = engine_.capabilities().simulation ? "Simulator settings" : "Engine settings"; break;
+    case Page::NamePatch: section = "PATCHES"; title = saving_as_ ? "Save as a new patch" : renaming_ ? "Rename patch" : "New patch"; break;
+    case Page::ConfirmReplace: section = "PATCHES"; title = "Replace current patch?"; break;
+    case Page::ConfirmAction: section = "CONFIRM"; title = confirmation_.title; break;
+    case Page::CvConnect: section = "CABLE"; title = "Control cable"; break;
+    case Page::Controls: section = "CONTROLS"; title = "Controls"; break;
+    case Page::AssignPicker:
+        section = "CONTROLS"; title = "Assign " + control_label(editing_control_);
+        if (picking_module_) if (const auto* m = find_module(graph_, picking_module_)) title = control_label(editing_control_) + ": " + m->name;
+        break;
+    case Page::AssignmentDetail: section = "CONTROLS"; title = control_label(editing_control_); break;
+    }
+    // The dot is the engine: green when it answers.
+    auto* dot = panel(header, 24, title.empty() ? 32 : 17, 8, 8, ready ? accent : warning);
+    lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0); lv_obj_set_style_border_width(dot, 0, 0);
+    lv_obj_remove_flag(dot, LV_OBJ_FLAG_CLICKABLE);
+    auto* crumb = label(header, "PEEPO // " + section, 40, title.empty() ? 27 : 12, 0, faint, &peepo_mono_14);
+    lv_obj_set_style_text_letter_space(crumb, 2, 0);
+    if (!title.empty()) {
+        auto* heading = label(header, upper(title), 24, 32, patch ? 412 : 600, text, &peepo_bold_24);
+        lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT); lv_obj_set_height(heading, 30);
+        if (patch) {
+            // Tapping the patch name brings the canvas back to its start.
+            lv_obj_add_flag(heading, LV_OBJ_FLAG_CLICKABLE); lv_obj_set_ext_click_area(heading, 12);
+            bind(heading, Action::Home);
+            if (auto* group = lv_group_get_default()) lv_group_add_obj(group, heading);
+        }
+    }
+    if (page_ == Page::Browser) { browser(header, content, foot); lv_obj_update_layout(screen_); return; }
+    if (patch) {
+        auto* add = primary(pill(button(header, "+ Add", 448, 12, 96, Action::Navigate, 0, {}, static_cast<int>(Page::Browser))));
+        // Nothing can be added until the engine answers again.
+        if (!ready) lv_obj_add_state(add, LV_STATE_DISABLED);
+        pill(button(header, "Patches", 556, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Patches)));
+        pill(button(header, "Settings", 672, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Settings)));
+    } else if (page_ == Page::NamePatch) {
+        primary(pill(button(header, saving_as_ ? "Save" : renaming_ ? "Rename" : "Create", 640, 12, 136, Action::CommitName)));
+    } else {
+        auto* mode = label(header, engine_.capabilities().simulation ? "SIMULATED" : "ENGINE", 640, 28, 136, faint, &peepo_mono_14);
+        lv_obj_set_style_text_align(mode, LV_TEXT_ALIGN_RIGHT, 0); lv_obj_set_style_text_letter_space(mode, 2, 0);
+    }
     switch (page_) {
     case Page::Patch: patch_view(content); break;
-    case Page::Browser: browser(content); break;
+    case Page::Browser: break;
     case Page::Parameters: parameters(content); break;
     case Page::Patches: patches(content); break;
     case Page::Settings: settings(content); break;
@@ -740,31 +837,39 @@ void Application::rebuild() {
     case Page::AssignPicker: assign_picker(content); break;
     case Page::AssignmentDetail: assignment_detail(content); break;
     }
-    if (patch && engine_.state() != EngineState::Ready) {
+    if (patch && !ready) {
         // Over the canvas, but never in the way: touches pass through to the patch below.
-        auto* banner = panel(content, 24, 8, 752, 40, 0x2e241c);
-        lv_obj_set_style_border_color(banner, color(0xf0aa72), 0);
+        auto* banner = panel(content, 24, 8, 752, 40, 0x1f130a);
+        lv_obj_set_style_border_color(banner, color(warning), 0);
         lv_obj_remove_flag(banner, LV_OBJ_FLAG_CLICKABLE);
-        auto* note = label(banner, engine_banner(), 14, 10, 724, 0xf0aa72, &lv_font_montserrat_14);
+        auto* note = label(banner, engine_banner(), 14, 10, 724, warning, &lv_font_montserrat_14);
         lv_label_set_long_mode(note, LV_LABEL_LONG_DOT); lv_obj_set_height(note, 18);
     }
-    if (!status_bar) { lv_obj_update_layout(screen_); return; }
-    auto* foot = panel(screen_, 0, 432, 800, 48, background); lv_obj_set_style_radius(foot, 0, 0);
-    footer_ = label(foot, message_, 24, 7, patch && selected_cable_ ? 240 : 568, muted, &lv_font_montserrat_14);
+    if (!patch) {
+        // Back returns to where the page was opened from.
+        const auto back = page_ == Page::NamePatch ? Page::Patches : page_ == Page::Controls ? Page::Settings :
+            page_ == Page::AssignPicker || page_ == Page::AssignmentDetail ? Page::Controls : Page::Patch;
+        slim(button(foot, "< Back", 14, 0, 112, Action::Navigate, 0, {}, static_cast<int>(back)));
+    }
+    const int message_x = patch ? 24 : 142;
+    footer_ = label(foot, message_, message_x, 7, patch && selected_cable_ ? 240 : 592 - message_x, faint, &peepo_mono_14);
     lv_obj_set_height(footer_, 34); lv_label_set_long_mode(footer_, LV_LABEL_LONG_DOT);
     if (patch && selected_cable_) {
-        button(foot, "Deselect", 280, 0, 128, Action::ClearCable);
-        button(foot, "Delete cable", 424, 0, 168, Action::DeleteCable);
+        slim(button(foot, "Deselect", 280, 0, 128, Action::ClearCable));
+        slim(button(foot, "Delete cable", 424, 0, 168, Action::DeleteCable));
     }
-    auto* metrics = panel(foot, 608, 4, 168, 40);
+    auto* metrics = panel(foot, 608, 4, 178, 40, background);
+    lv_obj_set_style_border_width(metrics, 0, 0);
     lv_obj_remove_flag(metrics, LV_OBJ_FLAG_CLICKABLE);
-    tempo_value_ = label(metrics, "--", 12, 0, 68, accent, &lv_font_montserrat_20);
-    cpu_value_ = label(metrics, "--", 88, 0, 72, text, &lv_font_montserrat_20);
+    tempo_value_ = label(metrics, "--", 8, 0, 76, accent, &peepo_bold_18);
+    cpu_value_ = label(metrics, "--", 92, 0, 80, text, &peepo_bold_18);
     for (auto* value : {tempo_value_, cpu_value_}) {
-        lv_obj_set_height(value, 23); lv_label_set_long_mode(value, LV_LABEL_LONG_DOT);
+        lv_obj_set_height(value, 22); lv_label_set_long_mode(value, LV_LABEL_LONG_DOT);
+        lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_RIGHT, 0);
     }
-    label(metrics, "BPM", 12, 23, 68, muted, &lv_font_montserrat_14);
-    label(metrics, engine_.capabilities().simulation ? "CPU SIM" : "CPU", 88, 23, 72, muted, &lv_font_montserrat_14);
+    for (auto* caption : {label(metrics, "BPM", 8, 22, 76, faint, &peepo_mono_14),
+                          label(metrics, engine_.capabilities().simulation ? "CPU SIM" : "CPU", 92, 22, 80, faint, &peepo_mono_14)})
+        lv_obj_set_style_text_align(caption, LV_TEXT_ALIGN_RIGHT, 0);
     update_metrics();
     lv_obj_update_layout(screen_);
 }
@@ -773,7 +878,7 @@ void Application::patch_view(lv_obj_t* parent) {
     lv_obj_add_flag(parent, LV_OBJ_FLAG_PRESS_LOCK);
     bind(parent, Action::Pan);
     for (int y = 12; y < 350; y += 24) for (int x = 24; x < 790; x += 24) {
-        auto* dot = panel(parent, x, y, 2, 2, border); lv_obj_set_style_border_width(dot, 0, 0);
+        auto* dot = panel(parent, x, y, 2, 2, 0x1f1f1f); lv_obj_set_style_border_width(dot, 0, 0);
         lv_obj_remove_flag(dot, LV_OBJ_FLAG_CLICKABLE);
         dots_.push_back(dot);
     }
@@ -789,7 +894,7 @@ void Application::patch_view(lv_obj_t* parent) {
             if (p.symbol == edge.input && p.direction == Direction::Input) in_channels = p.channels;
         for (unsigned channel = 0; channel < std::max(out_channels, in_channels); ++channel) {
         auto* line = lv_line_create(parent);
-        lv_obj_set_style_line_color(line, color(selected || !routing.error.empty() ? 0xf0aa72 : cv ? control_ink : accent), 0);
+        lv_obj_set_style_line_color(line, color(selected || !routing.error.empty() ? warning : cv ? control_ink : cable_ink), 0);
         lv_obj_set_style_line_width(line, cv ? (selected ? 5 : 3) : (selected ? 6 : 4), 0);
         lv_obj_set_style_line_rounded(line, true, 0);
         lv_obj_add_flag(line, LV_OBJ_FLAG_CLICKABLE);
@@ -801,18 +906,25 @@ void Application::patch_view(lv_obj_t* parent) {
     }
     for (const auto& m : graph_.modules) {
         const auto* d = definition(m.uri);
-        const auto ink = module_available(m) && d ? d->color : 0xf0aa72;
+        const auto ink = module_ink(m);
+        // A browser card in miniature: dark, outlined in the group colour, a white name.
         auto* card = panel(parent, m.x - pan_x_, m.y - pan_y_, 96, 96);
         lv_obj_set_style_border_color(card, color(ink), 0); lv_obj_set_style_border_width(card, 2, 0);
+        lv_obj_set_style_border_opa(card, static_cast<lv_opa_t>(m.bypassed ? LV_OPA_40 : LV_OPA_COVER), 0);
         lv_obj_set_style_bg_color(card, color(m.bypassed ? background : surface), 0);
+        lv_obj_set_style_radius(card, 10, 0);
+        // Unseen on black, but it widens where touches reach the jacks that
+        // stick out past the edge: LVGL looks that far beyond the square.
         lv_obj_set_style_shadow_width(card, 14, 0); lv_obj_set_style_shadow_opa(card, LV_OPA_20, 0);
-        lv_obj_set_style_shadow_color(card, color(0x000000), 0);
-        const bool long_name = m.name.size() > 10;
-        auto* name = label(card, m.name, 8, long_name ? 16 : 30, 80, ink, long_name ? &lv_font_montserrat_18 : &lv_font_montserrat_20);
-        lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, long_name ? 48 : 28);
+        lv_obj_set_style_shadow_color(card, color(background), 0);
+        const bool long_name = m.name.size() > 8;
+        auto* name = label(card, upper(m.name), 6, long_name ? 18 : 30, 84, m.bypassed ? faint : text, long_name ? &peepo_bold_14 : &peepo_bold_18);
+        lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, long_name ? 52 : 24);
         lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
         const auto& ports = module_ports(m);
-        auto* sub = label(card, !module_available(m) ? "MISSING" : m.fixed ? "AUDIO" : m.bypassed ? "BYPASS" : "", 0, 72, 96, muted, &lv_font_montserrat_14);
+        const auto group = d && !m.fixed ? module_groups()[module_group(d->category)].name : "";
+        auto* sub = label(card, !module_available(m) ? "MISSING" : m.fixed ? "AUDIO" : m.bypassed ? "BYPASS" : group, 0, 72, 96,
+                          m.bypassed ? faint : ink, &peepo_mono_14);
         lv_obj_set_style_text_align(sub, LV_TEXT_ALIGN_CENTER, 0);
         lv_obj_add_flag(card, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
         lv_obj_add_flag(card, LV_OBJ_FLAG_PRESS_LOCK);
@@ -873,9 +985,8 @@ void Application::indicate_targets(bool active) {
     for (const auto& [key, jack] : input_jacks_) {
         const auto& [id, symbol] = key;
         const auto* m = find_module(graph_, id); if (!m) continue;
-        const auto* d = definition(m->uri);
         const bool valid = active && !cable_cv_ && validate_connection(graph_, {cable_source_, id, cable_port_, symbol}).empty();
-        lv_obj_set_style_border_color(jack, color(active ? (valid ? accent : border) : module_available(*m) && d ? d->color : 0xf0aa72), 0);
+        lv_obj_set_style_border_color(jack, color(active ? (valid ? accent : border) : module_ink(*m)), 0);
         lv_obj_set_style_outline_color(jack, color(accent), 0);
         lv_obj_set_style_outline_width(jack, valid ? 4 : 0, 0);
         lv_obj_set_style_outline_opa(jack, LV_OPA_COVER, 0);
@@ -927,101 +1038,124 @@ void Application::update_cables() {
         lv_line_set_points(c.line, c.points, 4);
     }
 }
-void Application::browser(lv_obj_t* parent) {
-    // Categories in signal-chain order; any the catalogue invents follow alphabetically.
-    static const std::vector<std::string> order = {"Drive", "Amp", "Cabinet", "Dynamics", "Filter", "Modulation", "Pitch",
-        "Delay", "Reverb", "Texture", "Resonator", "Sound source", "Control", "Utility"};
-    const auto rank = [](const std::string& category) {
-        return static_cast<std::size_t>(std::find(order.begin(), order.end(), category) - order.begin());
-    };
-    std::map<std::string, std::vector<const ModuleDefinition*>> groups;
-    for (const auto& d : catalogue()) if (d.category != "Endpoint" && !d.hidden) groups[d.category].push_back(&d);
-    std::vector<std::string> categories;
-    for (const auto& [category, _] : groups) categories.push_back(category);
-    std::stable_sort(categories.begin(), categories.end(), [&](const auto& a, const auto& b) { return rank(a) < rank(b); });
-
-    browser_list_ = parent;
-    lv_obj_add_flag(parent, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_scroll_dir(parent, LV_DIR_VER);
-    lv_obj_set_scrollbar_mode(parent, LV_SCROLLBAR_MODE_ACTIVE);
-    lv_obj_set_style_pad_bottom(parent, 16, 0);
-    auto* group = lv_group_get_default();
-    lv_obj_t* open = nullptr;
-    int y = 12;
-    for (const auto& category : categories) {
-        auto& entries = groups[category];
-        // Usable modules first, each part alphabetical.
+void Application::browser(lv_obj_t* header, lv_obj_t* content, lv_obj_t* foot) {
+    const auto& groups = module_groups();
+    std::vector<std::vector<const ModuleDefinition*>> members(groups.size());
+    for (const auto& d : catalogue()) if (d.category != "Endpoint" && !d.hidden) members[module_group(d.category)].push_back(&d);
+    // Usable modules first, each part alphabetical.
+    for (auto& entries : members)
         std::stable_sort(entries.begin(), entries.end(), [](const ModuleDefinition* a, const ModuleDefinition* b) {
             const bool ua = a->availability == Availability::Available, ub = b->availability == Availability::Available;
             return ua != ub ? ua : a->name < b->name;
         });
-        const bool expanded = category == browser_group_;
-        auto* header = lv_button_create(parent); lv_obj_remove_style_all(header);
-        lv_obj_set_pos(header, 16, y); lv_obj_set_size(header, 768, 56);
-        lv_obj_set_style_bg_color(header, color(expanded ? border : surface), 0); lv_obj_set_style_bg_opa(header, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(header, color(border), LV_STATE_PRESSED);
-        lv_obj_set_style_border_width(header, 1, 0); lv_obj_set_style_border_color(header, color(border), 0);
-        lv_obj_set_style_radius(header, 10, 0);
-        const auto ink = entries.front()->color;
-        auto* chevron = label(header, expanded ? LV_SYMBOL_DOWN : LV_SYMBOL_RIGHT, 18, 0, 0, muted, &lv_font_montserrat_18);
-        lv_obj_align(chevron, LV_ALIGN_LEFT_MID, 18, 0);
-        auto* name = label(header, category, 0, 0, 560, ink, &lv_font_montserrat_20);
-        lv_obj_align(name, LV_ALIGN_LEFT_MID, 52, 0);
-        const auto available = std::count_if(entries.begin(), entries.end(), [](const auto* d) { return d->availability == Availability::Available; });
-        auto* count = label(header, std::to_string(available) + " ready / " + std::to_string(entries.size()), 0, 0, 160, muted, &lv_font_montserrat_14);
-        lv_obj_set_style_text_align(count, LV_TEXT_ALIGN_RIGHT, 0);
-        lv_obj_align(count, LV_ALIGN_RIGHT_MID, -20, 0);
-        bind(header, Action::BrowserGroup, 0, category);
-        if (group) lv_group_add_obj(group, header);
-        if (expanded) open = header;
-        y += 64;
-        if (!expanded) continue;
-        y -= 4;
-        // A row is just the name and what it does; tapping it adds the module.
-        for (const auto* d : entries) {
+    // A group the catalogue leaves empty has no pill; a filter on one shows all.
+    browser_groups_ = {std::string()};
+    for (std::size_t i = 0; i < groups.size(); ++i) if (!members[i].empty()) browser_groups_.push_back(groups[i].name);
+    if (std::find(browser_groups_.begin(), browser_groups_.end(), browser_group_) == browser_groups_.end()) browser_group_.clear();
+    auto* group = lv_group_get_default();
+
+    // Header: the group pills, as wide as their names, to the right.
+    auto* pills = lv_obj_create(header); lv_obj_remove_style_all(pills);
+    lv_obj_set_size(pills, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(pills, LV_FLEX_FLOW_ROW); lv_obj_set_style_pad_column(pills, 8, 0);
+    lv_obj_remove_flag(pills, LV_OBJ_FLAG_CLICKABLE);
+    for (const auto& name : browser_groups_) {
+        const auto* g = name.empty() ? nullptr : &*std::find_if(groups.begin(), groups.end(), [&](const ModuleGroup& x) { return name == x.name; });
+        const bool open = name == browser_group_;
+        auto* pill = lv_button_create(pills); lv_obj_remove_style_all(pill);
+        lv_obj_set_size(pill, LV_SIZE_CONTENT, 36); lv_obj_set_style_pad_hor(pill, 16, 0);
+        lv_obj_set_style_radius(pill, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_bg_color(pill, color(open ? text : g ? g->fill : border), 0); lv_obj_set_style_bg_opa(pill, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_opa(pill, LV_OPA_80, LV_STATE_PRESSED);
+        lv_obj_set_style_outline_color(pill, color(text), LV_STATE_FOCUS_KEY); lv_obj_set_style_outline_width(pill, 2, LV_STATE_FOCUS_KEY);
+        lv_obj_set_style_outline_pad(pill, 2, LV_STATE_FOCUS_KEY);
+        auto* l = label(pill, name.empty() ? "ALL" : name, 0, 0, 0, open ? (g ? g->fill : 0x2563eb) : text, &peepo_bold_14);
+        lv_obj_set_style_text_letter_space(l, 1, 0); lv_obj_center(l);
+        bind(pill, Action::BrowserGroup, 0, name);
+        if (group) lv_group_add_obj(group, pill);
+    }
+    lv_obj_align(pills, LV_ALIGN_RIGHT_MID, -14, 0);
+
+    // Content: two columns of roomy cards to scroll.
+    lv_obj_add_flag(content, LV_OBJ_FLAG_SCROLLABLE); lv_obj_set_scroll_dir(content, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(content, LV_SCROLLBAR_MODE_ACTIVE);
+    lv_obj_set_style_pad_bottom(content, 12, 0);
+    browser_list_ = content;
+    browser_order_.clear();
+    int shown = 0;
+    for (std::size_t gi = 0; gi < groups.size(); ++gi) {
+        if (!browser_group_.empty() && browser_group_ != groups[gi].name) continue;
+        const auto& g = groups[gi];
+        for (const auto* d : members[gi]) {
             const bool usable = d->availability == Availability::Available;
-            auto* row = lv_button_create(parent); lv_obj_remove_style_all(row);
-            lv_obj_set_pos(row, 16, y); lv_obj_set_size(row, 768, 60);
-            lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
-            lv_obj_set_style_bg_color(row, color(surface), LV_STATE_PRESSED); lv_obj_set_style_bg_opa(row, LV_OPA_COVER, LV_STATE_PRESSED);
-            lv_obj_set_style_radius(row, 8, 0);
-            lv_obj_set_style_border_side(row, LV_BORDER_SIDE_BOTTOM, 0);
-            lv_obj_set_style_border_width(row, 1, 0); lv_obj_set_style_border_color(row, color(border), 0);
-            auto* title = label(row, d->name, 0, 0, 220, d->color, &lv_font_montserrat_18);
-            lv_label_set_long_mode(title, LV_LABEL_LONG_DOT); lv_obj_set_height(title, 22);
-            lv_obj_align(title, LV_ALIGN_LEFT_MID, 36, 0);
+            auto* card = lv_button_create(content); lv_obj_remove_style_all(card);
+            lv_obj_set_pos(card, shown % 2 ? 406 : 14, 8 + shown / 2 * 172); lv_obj_set_size(card, 380, 160);
+            lv_obj_set_style_bg_color(card, color(surface), 0); lv_obj_set_style_bg_opa(card, LV_OPA_COVER, 0);
+            lv_obj_set_style_bg_color(card, color(pressed_fill), LV_STATE_PRESSED);
+            lv_obj_set_style_radius(card, 12, 0);
+            lv_obj_set_style_border_width(card, 1, 0); lv_obj_set_style_border_color(card, color(border), 0);
+            lv_obj_set_style_border_color(card, color(faint), LV_STATE_FOCUS_KEY);
+            lv_obj_set_style_border_width(card, 2, LV_STATE_CHECKED); lv_obj_set_style_border_color(card, color(text), LV_STATE_CHECKED);
+            lv_obj_set_style_border_width(card, 2, LV_STATE_CHECKED | LV_STATE_FOCUS_KEY);
+            lv_obj_set_style_border_color(card, color(text), LV_STATE_CHECKED | LV_STATE_FOCUS_KEY);
+            ++shown;
+            // The finer category, as a tag in the group's colour.
+            auto* tag = lv_obj_create(card); lv_obj_remove_style_all(tag);
+            lv_obj_set_size(tag, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_obj_set_style_bg_color(tag, color(g.bright), 0); lv_obj_set_style_bg_opa(tag, LV_OPA_COVER, 0);
+            lv_obj_set_style_radius(tag, LV_RADIUS_CIRCLE, 0);
+            lv_obj_set_style_pad_hor(tag, 10, 0); lv_obj_set_style_pad_ver(tag, 3, 0);
+            lv_obj_remove_flag(tag, LV_OBJ_FLAG_CLICKABLE);
+            auto* category = label(tag, upper(d->category), 0, 0, 0, background, &peepo_bold_14);
+            lv_obj_set_style_text_letter_space(category, 1, 0);
+            lv_obj_align(tag, LV_ALIGN_TOP_RIGHT, -16, 18);
+            lv_obj_update_layout(tag);
+            auto* title = label(card, upper(d->name), 18, 18, 380 - 18 - 16 - lv_obj_get_width(tag) - 12, text, &peepo_bold_20);
+            lv_label_set_long_mode(title, LV_LABEL_LONG_DOT); lv_obj_set_height(title, 26);
             // An entry that cannot be added says why instead of what it does.
             const auto about = usable ? d->description : "Needs setup: " + (d->availability_reason.empty() ? d->description : d->availability_reason);
-            auto* description = label(row, about, 0, 0, 488, muted, &lv_font_montserrat_14);
-            // At most two lines, centred against the name.
-            lv_label_set_long_mode(description, LV_LABEL_LONG_DOT);
-            lv_obj_set_height(description, LV_SIZE_CONTENT); lv_obj_set_style_max_height(description, 36, 0);
-            lv_obj_align(description, LV_ALIGN_LEFT_MID, 268, 0);
+            auto* description = label(card, about, 18, 58, 344, muted, &lv_font_montserrat_18);
+            lv_label_set_long_mode(description, LV_LABEL_LONG_DOT); lv_obj_set_height(description, 46);
             if (usable) {
-                bind(row, Action::Add, 0, d->uri);
-                if (group) lv_group_add_obj(group, row);
+                bind(card, Action::BrowserPick, 0, d->uri);
+                if (group) lv_group_add_obj(group, card);
+                browser_cards_[d->uri] = card;
+                browser_order_.push_back(d->uri);
             } else {
                 // Not clickable, so a drag starting here still scrolls the list.
-                lv_obj_remove_flag(row, LV_OBJ_FLAG_CLICKABLE);
-                lv_obj_set_style_opa(row, LV_OPA_40, 0);
+                lv_obj_remove_flag(card, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_set_style_opa(card, LV_OPA_40, 0);
             }
-            y += 60;
         }
-        y += 12;
     }
-    lv_obj_update_layout(parent);
-    if (browser_reveal_ && open) {
-        // Bring the opened category to the top so its modules are in view.
-        lv_obj_scroll_to_y(parent, lv_obj_get_y(open) - 12, LV_ANIM_OFF);
-        browser_reveal_ = false;
-    } else lv_obj_scroll_to_y(parent, browser_scroll_, LV_ANIM_OFF);
+
+    // Footer: back, what is in view, and add.
+    slim(button(foot, "< Back", 14, 0, 112, Action::Navigate, 0, {}, static_cast<int>(Page::Patch)));
+    auto* count = label(foot, (browser_group_.empty() ? std::string("ALL") : browser_group_) + " // " + std::to_string(shown) + (shown == 1 ? " MODULE" : " MODULES"),
+                        142, 15, 460, faint, &peepo_mono_14);
+    lv_obj_set_style_text_letter_space(count, 2, 0); lv_obj_set_style_text_align(count, LV_TEXT_ALIGN_CENTER, 0);
+    browser_add_ = primary(slim(button(foot, "Add module +", 618, 0, 168, Action::BrowserPick)));
+
+    lv_obj_update_layout(content);
+    lv_obj_scroll_to_y(content, browser_scroll_, LV_ANIM_OFF);
+    // A pick the filter no longer shows is dropped.
+    browser_pick(browser_cards_.count(browser_pick_) ? browser_pick_ : std::string(), false);
+}
+void Application::browser_pick(const std::string& uri, bool reveal) {
+    if (const auto old = browser_cards_.find(browser_pick_); old != browser_cards_.end()) lv_obj_remove_state(old->second, LV_STATE_CHECKED);
+    browser_pick_ = uri;
+    if (const auto card = browser_cards_.find(uri); card != browser_cards_.end()) {
+        lv_obj_add_state(card->second, LV_STATE_CHECKED);
+        if (reveal) lv_obj_scroll_to_view(card->second, LV_ANIM_ON);
+    }
+    if (browser_add_) lv_obj_set_state(browser_add_, LV_STATE_DISABLED, browser_pick_.empty());
 }
 void Application::parameters(lv_obj_t* parent) {
     const auto* m = find_module(graph_, selected_);
     if (!m) { label(parent, "Module no longer exists", 24, 24); return; }
     if (!module_available(*m)) {
         button(parent, "Delete module", 24, 12, 200, Action::Remove, m->id);
-        label(parent, "Module unavailable", 24, 92, 0, 0xf0aa72, &lv_font_montserrat_24);
+        label(parent, "Module unavailable", 24, 92, 0, warning, &peepo_bold_24);
         label(parent, "Saved values and cables are retained for repair.\nParameters, bypass and new connections are disabled.\nYou can move or delete the placeholder.", 24, 136, 752, muted);
         auto* uri = label(parent, m->uri, 24, 244, 752, muted, &lv_font_montserrat_14);
         lv_label_set_long_mode(uri, LV_LABEL_LONG_DOT); return;
@@ -1055,14 +1189,14 @@ void Application::parameters(lv_obj_t* parent) {
 }
 void Application::tuner_parameters(lv_obj_t* parent, const Module& m) {
     auto* meter = panel(parent, 24, 12, 752, 242);
-    tuner_note_ = label(meter, "--", 0, 8, 752, text, &lv_font_montserrat_48);
+    tuner_note_ = label(meter, "--", 0, 8, 752, text, &peepo_bold_48);
     lv_obj_set_style_text_align(tuner_note_, LV_TEXT_ALIGN_CENTER, 0);
     tuner_detail_ = label(meter, "-- Hz", 0, 64, 752, muted);
     lv_obj_set_style_text_align(tuner_detail_, LV_TEXT_ALIGN_CENTER, 0);
     tuner_status_ = label(meter, "Play one string", 0, 98, 752, muted);
     lv_obj_set_style_text_align(tuner_status_, LV_TEXT_ALIGN_CENTER, 0);
     // +/- 5 cents is the green target; the scale spans a whole semitone.
-    auto* target = panel(meter, 346, 142, 60, 58, 0x264b43);
+    auto* target = panel(meter, 346, 142, 60, 58, 0x14331f);
     lv_obj_set_style_border_width(target, 0, 0);
     for (int i = 0; i <= 10; ++i) {
         auto* mark = panel(meter, 76 + i * 60 - 1, i == 5 ? 146 : 158, 2, i == 5 ? 48 : 24, i == 5 ? accent : muted);
@@ -1098,7 +1232,7 @@ void Application::update_tuner() {
         lv_obj_set_x(tuner_needle_, 372 + static_cast<int>(std::round(std::clamp(reading->cents, -50.0, 50.0) * 6)));
         lv_obj_remove_flag(tuner_needle_, LV_OBJ_FLAG_HIDDEN);
     } else lv_obj_add_flag(tuner_needle_, LV_OBJ_FLAG_HIDDEN);
-    const auto ink = reading ? (std::abs(reading->cents) <= 5 ? accent : 0xf0aa72) : muted;
+    const auto ink = reading ? (std::abs(reading->cents) <= 5 ? accent : warning) : muted;
     lv_obj_set_style_text_color(tuner_note_, color(ink), 0);
     lv_obj_set_style_text_color(tuner_status_, color(ink), 0);
     lv_obj_set_style_bg_color(tuner_needle_, color(ink), 0);
@@ -1108,8 +1242,11 @@ void Application::update_tuner() {
     if (status != lv_label_get_text(tuner_status_)) lv_label_set_text(tuner_status_, status.c_str());
 }
 void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parameter& p, int x, int y, int height, std::uint32_t ink) {
+    if (!ink) ink = module_ink(m);
     auto* tile = panel(parent, x, y, 368, height);
-    label(tile, p.name, 20, 12, 150);
+    auto* name = label(tile, upper(p.name), 20, 16, 160, muted, &peepo_bold_14);
+    lv_obj_set_style_text_letter_space(name, 1, 0);
+    lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, 18);
     // Unpinned encoders follow the tiles in the order they are drawn; pinned
     // controls are named on their target wherever it appears.
     const auto follower = "enc" + std::to_string(visible_.size() + 1);
@@ -1122,10 +1259,10 @@ void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parame
     else if (visible_.size() <= layout_.encoders && !pinned(follower)) badges = "E" + follower.substr(3);
     // Compact tiles have no room beside their slider.
     if (!badges.empty() && height >= 100) {
-        auto* badge = label(tile, badges, 236, height - 24, 116, badges.ends_with("pinned") ? accent : muted, &lv_font_montserrat_14);
+        auto* badge = label(tile, badges, 196, height - 24, 156, badges.ends_with("pinned") ? accent : faint, &peepo_mono_14);
         lv_obj_set_style_text_align(badge, LV_TEXT_ALIGN_RIGHT, 0);
     }
-    auto* value = label(tile, format_value(p), 180, 12, 168, ink, &lv_font_montserrat_20);
+    auto* value = label(tile, format_value(p), 180, 10, 168, text, &peepo_bold_24);
     lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_t* control = nullptr;
     if (p.kind == ParameterKind::Toggle) {
@@ -1147,9 +1284,17 @@ void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parame
         std::string options; for (const auto& choice : p.choices) { if (!options.empty()) options += '\n'; options += choice; }
         lv_dropdown_set_options(control, options.c_str()); lv_dropdown_set_selected(control, static_cast<unsigned>(p.value));
         lv_obj_set_style_text_font(control, &lv_font_montserrat_18, 0);
-        lv_obj_set_style_text_color(control, color(text), 0); lv_obj_set_style_bg_color(control, color(border), 0);
+        lv_obj_set_style_text_color(control, color(text), 0); lv_obj_set_style_bg_color(control, color(pressed_fill), 0);
         lv_obj_set_style_bg_opa(control, LV_OPA_COVER, 0); lv_obj_set_style_pad_all(control, 12, 0);
-        auto* list = lv_dropdown_get_list(control); lv_obj_set_style_bg_color(list, color(surface), 0); lv_obj_set_style_text_color(list, color(text), 0);
+        lv_obj_set_style_radius(control, 8, 0); lv_obj_set_style_border_width(control, 1, 0); lv_obj_set_style_border_color(control, color(rim), 0);
+        auto* list = lv_dropdown_get_list(control);
+        lv_obj_set_style_bg_color(list, color(surface), 0); lv_obj_set_style_text_color(list, color(text), 0);
+        lv_obj_set_style_text_font(list, &lv_font_montserrat_18, 0); lv_obj_set_style_text_line_space(list, 18, 0);
+        lv_obj_set_style_radius(list, 8, 0); lv_obj_set_style_border_width(list, 1, 0); lv_obj_set_style_border_color(list, color(rim), 0);
+        lv_obj_set_style_pad_all(list, 12, 0);
+        const auto chosen = static_cast<lv_style_selector_t>(LV_PART_SELECTED) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED);
+        lv_obj_set_style_bg_color(list, color(ink), chosen); lv_obj_set_style_text_color(list, color(background), chosen);
+        lv_obj_set_style_bg_color(list, color(pressed_fill), static_cast<lv_style_selector_t>(LV_PART_SELECTED) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
     } else {
         control = lv_slider_create(tile); lv_obj_set_pos(control, 30, height < 110 ? 48 : 70); lv_obj_set_size(control, 308, 12);
         lv_slider_set_range(control, 0, 1000); lv_slider_set_value(control, static_cast<int>(normalized_value(p) * 1000), LV_ANIM_OFF);
@@ -1163,7 +1308,7 @@ void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parame
     bind(control, Action::Parameter, m.id, p.symbol, 0, value);
 }
 void Application::clouds_parameters(lv_obj_t* parent, const Module& m) {
-    constexpr std::uint32_t ink = 0xbfa1ed;
+    const auto ink = module_ink(m);
     parameter_page_ = std::min<std::size_t>(parameter_page_, 1);
     button(parent, m.bypassed ? "Enable" : "Bypass", 24, 12, 104, Action::Bypass, m.id);
     button(parent, "Delete", 140, 12, 104, Action::Remove, m.id);
@@ -1178,14 +1323,14 @@ void Application::clouds_parameters(lv_obj_t* parent, const Module& m) {
         for (int i = 0; i < 4; ++i)
             parameter_tile(parent, m, parameter(m, symbols[i]), 24 + (i % 2) * 384, 76 + (i / 2) * 136, 120, ink);
     } else {
-        label(parent, "Blend the texture. Hold it with Freeze.", 24, 80, 752, ink, &lv_font_montserrat_20);
+        label(parent, "Blend the texture. Hold it with Freeze.", 24, 80, 752, ink, &peepo_bold_20);
         parameter_tile(parent, m, parameter(m, "mix"), 24, 120, 120, ink);
         parameter_tile(parent, m, parameter(m, "freeze"), 408, 120, 120, ink);
         label(parent, "Freeze is a toggle; Mix keeps its own value.\nThese are simulator controls, with no audio processing yet.", 24, 268, 752, muted);
     }
 }
 void Application::delay_parameters(lv_obj_t* parent, const Module& m) {
-    constexpr std::uint32_t ink = 0x7bbaed;
+    const auto ink = module_ink(m);
     button(parent, m.bypassed ? "Enable" : "Bypass", 24, 12, 104, Action::Bypass, m.id);
     button(parent, "Delete", 140, 12, 104, Action::Remove, m.id);
     label(parent, "Echo timing and character", 264, 27, 276, muted, &lv_font_montserrat_14);
@@ -1206,15 +1351,15 @@ void Application::delay_parameters(lv_obj_t* parent, const Module& m) {
     parameter_tile(parent, m, parameter(m, "mix"), 408, 260, 72, ink);
 }
 void Application::confirm_action(lv_obj_t* parent) {
-    auto* heading = label(parent, confirmation_.heading, 24, 44, 752, accent, &lv_font_montserrat_24);
+    auto* heading = label(parent, confirmation_.heading, 24, 44, 752, accent, &peepo_bold_24);
     lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT); lv_obj_set_height(heading, 32);
     label(parent, confirmation_.body, 24, 104, 752, muted);
     button(parent, "Cancel", 24, 268, 200, Action::CancelAction);
-    button(parent, confirmation_.button, 552, 268, 224, Action::ConfirmAction);
+    primary(button(parent, confirmation_.button, 552, 268, 224, Action::ConfirmAction));
 }
 void Application::stored_patches(lv_obj_t* parent) {
     constexpr std::size_t rows = 3;
-    label(parent, "Saved patches", 24, 16, 0, text, &lv_font_montserrat_24);
+    label(parent, "Saved patches", 24, 16, 0, text, &peepo_bold_24);
     const auto pages = std::max<std::size_t>(1, (stored_.size() + rows - 1) / rows);
     patch_page_ = std::min(patch_page_, pages - 1);
     if (pages > 1) {
@@ -1237,7 +1382,7 @@ void Application::stored_patches(lv_obj_t* parent) {
         if (playing) detail += graph_.dirty ? " / playing, unsaved edits" : " / playing";
         if (!patch.missing_files.empty()) detail += " / " + std::to_string(patch.missing_files.size()) + " missing files";
         if (!patch.issue.empty()) detail += " / " + patch.issue;
-        auto* info = label(row, detail, 16, 30, 424, patch.issue.empty() && patch.missing_files.empty() ? muted : 0xf0aa72, &lv_font_montserrat_14);
+        auto* info = label(row, detail, 16, 30, 424, patch.issue.empty() && patch.missing_files.empty() ? muted : warning, &lv_font_montserrat_14);
         lv_label_set_long_mode(info, LV_LABEL_LONG_DOT); lv_obj_set_height(info, 18);
         auto* load = button(row, "Load", 448, 3, 96, Action::LoadStored, 0, patch.id);
         if (!patch.revision) lv_obj_add_state(load, LV_STATE_DISABLED);
@@ -1248,7 +1393,7 @@ void Application::stored_patches(lv_obj_t* parent) {
     const std::string playing = graph_.patch_id.empty() ? "never saved" : graph_.dirty ? "unsaved edits since its last save" : "saved";
     auto* now = label(parent, "Playing: " + graph_.name + " / " + playing, 24, 252, 752, muted, &lv_font_montserrat_14);
     lv_label_set_long_mode(now, LV_LABEL_LONG_DOT); lv_obj_set_height(now, 18);
-    button(parent, "Save", 24, 280, 140, Action::SavePatch, 0, {}, 0);
+    primary(button(parent, "Save", 24, 280, 140, Action::SavePatch, 0, {}, 0));
     button(parent, "Save as", 176, 280, 140, Action::SavePatch, 0, {}, 1);
     button(parent, "New patch", 328, 280, 140, Action::NameEntry, 0, {}, 0);
     button(parent, "Rename", 480, 280, 140, Action::NameEntry, 0, {}, 1);
@@ -1256,10 +1401,10 @@ void Application::stored_patches(lv_obj_t* parent) {
 }
 void Application::patches(lv_obj_t* parent) {
     if (store_) { stored_patches(parent); return; }
-    label(parent, "Keep a snapshot while exploring", 24, 24, 0, text, &lv_font_montserrat_24);
+    label(parent, "Keep a snapshot while exploring", 24, 24, 0, text, &peepo_bold_24);
     label(parent, "Session storage is in memory. Closing the app clears it.\nDisk persistence and plugin state arrive in Phase 5.", 24, 68, 710, muted);
     auto* row = panel(parent, 24, 140, 752, 100);
-    auto* name = label(row, has_saved_ ? saved_.name : "No session snapshot yet", 20, 20, 560, text, &lv_font_montserrat_24);
+    auto* name = label(row, has_saved_ ? saved_.name : "No session snapshot yet", 20, 20, 560, text, &peepo_bold_24);
     lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
     lv_obj_set_height(name, 30);
     label(row, has_saved_ ? std::to_string(saved_.modules.size()) + " modules / session only" : "Save the current graph to try restoring it", 20, 60, 440, muted, &lv_font_montserrat_14);
@@ -1275,9 +1420,10 @@ void Application::name_patch(lv_obj_t* parent) {
     // Preserve a backend name longer than the limit for newly typed text.
     lv_textarea_set_text(input, draft_name_.c_str()); lv_textarea_set_max_length(input, 48);
     lv_textarea_set_placeholder_text(input, "Patch name");
-    lv_obj_set_style_text_font(input, &lv_font_montserrat_24, 0); lv_obj_set_style_text_color(input, color(text), 0);
+    lv_obj_set_style_text_font(input, &peepo_bold_24, 0); lv_obj_set_style_text_color(input, color(text), 0);
     lv_obj_set_style_bg_color(input, color(surface), 0); lv_obj_set_style_bg_opa(input, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(input, color(border), 0); lv_obj_set_style_border_width(input, 1, 0);
+    lv_obj_set_style_border_color(input, color(rim), 0); lv_obj_set_style_border_width(input, 1, 0);
+    lv_obj_set_style_radius(input, 8, 0);
     lv_obj_set_style_pad_all(input, 12, 0);
     bind(input, Action::NameInput);
     if (auto* group = lv_group_get_default()) lv_group_add_obj(group, input);
@@ -1288,12 +1434,16 @@ void Application::name_patch(lv_obj_t* parent) {
     lv_obj_set_pos(keyboard, 0, 112); lv_obj_set_size(keyboard, 800, 248);
     lv_keyboard_set_textarea(keyboard, input); lv_keyboard_set_popovers(keyboard, false);
     lv_obj_set_style_bg_color(keyboard, color(background), 0); lv_obj_set_style_bg_opa(keyboard, LV_OPA_COVER, 0);
+    lv_obj_set_style_pad_all(keyboard, 6, 0); lv_obj_set_style_pad_gap(keyboard, 6, 0);
     lv_obj_set_style_text_font(keyboard, &lv_font_montserrat_18, LV_PART_ITEMS);
     lv_obj_set_style_bg_color(keyboard, color(surface), LV_PART_ITEMS); lv_obj_set_style_bg_opa(keyboard, LV_OPA_COVER, LV_PART_ITEMS);
+    lv_obj_set_style_radius(keyboard, 8, LV_PART_ITEMS);
+    lv_obj_set_style_border_width(keyboard, 1, LV_PART_ITEMS); lv_obj_set_style_border_color(keyboard, color(border), LV_PART_ITEMS);
     lv_obj_set_style_text_color(keyboard, color(text), LV_PART_ITEMS);
-    lv_obj_set_style_bg_color(keyboard, color(border), static_cast<lv_style_selector_t>(LV_PART_ITEMS) | LV_STATE_CHECKED);
-    lv_obj_set_style_text_color(keyboard, color(text), static_cast<lv_style_selector_t>(LV_PART_ITEMS) | LV_STATE_CHECKED);
-    lv_obj_set_style_bg_color(keyboard, color(border), static_cast<lv_style_selector_t>(LV_PART_ITEMS) | LV_STATE_PRESSED);
+    // Shift, symbols, delete and the like: a step darker, in grey.
+    lv_obj_set_style_bg_color(keyboard, color(background), static_cast<lv_style_selector_t>(LV_PART_ITEMS) | LV_STATE_CHECKED);
+    lv_obj_set_style_text_color(keyboard, color(muted), static_cast<lv_style_selector_t>(LV_PART_ITEMS) | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(keyboard, color(pressed_fill), static_cast<lv_style_selector_t>(LV_PART_ITEMS) | LV_STATE_PRESSED);
     bind(keyboard, Action::Keyboard);
     lv_obj_add_state(input, LV_STATE_FOCUSED);
     if (auto* group = lv_obj_get_group(input)) { lv_group_focus_obj(input); lv_group_set_editing(group, true); }
@@ -1304,7 +1454,7 @@ void Application::cv_connect(lv_obj_t* parent) {
     const bool choosing_output = cv_output_.empty();
     const auto ports = cv_ports(choosing_output ? *from : *to, choosing_output ? Direction::Output : Direction::Input);
     auto* prompt = label(parent, choosing_output ? "Which output of " + from->name + "?"
-                                                 : from->name + " / " + cv_output_ + "  >  which input of " + to->name + "?", 24, 14, 560, text, &lv_font_montserrat_20);
+                                                 : from->name + " / " + cv_output_ + "  >  which input of " + to->name + "?", 24, 14, 560, text, &peepo_bold_20);
     lv_label_set_long_mode(prompt, LV_LABEL_LONG_DOT); lv_obj_set_height(prompt, 26);
     const auto count = std::max<std::size_t>(1, (ports.size() + 7) / 8);
     cv_page_ = std::min(cv_page_, count - 1);
@@ -1322,17 +1472,17 @@ void Application::cv_connect(lv_obj_t* parent) {
     }
 }
 void Application::confirm_replace(lv_obj_t* parent) {
-    label(parent, "Current edits have not been saved", 24, 44, 752, text, &lv_font_montserrat_24);
-    auto* name = label(parent, graph_.name, 24, 104, 752, accent, &lv_font_montserrat_24); lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
+    label(parent, "Current edits have not been saved", 24, 44, 752, text, &peepo_bold_24);
+    auto* name = label(parent, graph_.name, 24, 104, 752, accent, &peepo_bold_24); lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
     lv_obj_set_height(name, 32);
     label(parent, std::string("Replace this patch and discard its current unsaved edits?\nCancel to return and save ") + (store_ ? "it first." : "a session snapshot first."), 24, 168, 752, muted);
     button(parent, "Cancel", 24, 268, 200, Action::CancelReplace);
-    button(parent, "Replace patch", 552, 268, 224, Action::Confirm);
+    primary(button(parent, "Replace patch", 552, 268, 224, Action::Confirm));
 }
 void Application::module_actions(lv_obj_t* parent) {
     const auto* m = find_module(graph_, selected_);
     if (!m || m->fixed) { label(parent, "Module actions unavailable", 24, 24); return; }
-    label(parent, "Choose an action for this module", 24, 24, 0, text, &lv_font_montserrat_24);
+    label(parent, "Choose an action for this module", 24, 24, 0, text, &peepo_bold_24);
     button(parent, "Parameters", 24, 84, 352, Action::Edit, m->id);
     auto* bypass = button(parent, m->bypassed ? "Enable module" : "Software bypass", 408, 84, 368, Action::Bypass, m->id);
     auto* duplicate = button(parent, "Duplicate", 24, 156, 352, Action::Duplicate, m->id);
@@ -1342,8 +1492,8 @@ void Application::module_actions(lv_obj_t* parent) {
 }
 void Application::settings(lv_obj_t* parent) {
     if (!engine_.capabilities().simulation) {
-        label(parent, "Engine connection", 24, 20, 0, text, &lv_font_montserrat_24);
-        auto* state = label(parent, status_text() + (engine_note_.empty() ? std::string() : ": " + engine_note_), 24, 65, 752, engine_.state() == EngineState::Ready ? accent : 0xf0aa72);
+        label(parent, "Engine connection", 24, 20, 0, text, &peepo_bold_24);
+        auto* state = label(parent, status_text() + (engine_note_.empty() ? std::string() : ": " + engine_note_), 24, 65, 752, engine_.state() == EngineState::Ready ? accent : warning);
         lv_label_set_long_mode(state, LV_LABEL_LONG_DOT); lv_obj_set_height(state, 24);
         label(parent, "Disconnecting stops only this interface; the engine keeps playing.\nA lost engine is retried every second.", 24, 96, 752, muted, &lv_font_montserrat_14);
         button(parent, "Connect", 24, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Ready));
@@ -1354,7 +1504,7 @@ void Application::settings(lv_obj_t* parent) {
         label(parent, "CPU is the engine's mean run load. Xruns, memory and temperature: not measured", 24, 300, 752, muted, &lv_font_montserrat_14);
         return;
     }
-    label(parent, "Windows simulator / 800 x 480", 24, 20, 0, text, &lv_font_montserrat_24);
+    label(parent, "Windows simulator / 800 x 480", 24, 20, 0, text, &peepo_bold_24);
     label(parent, "No audio processing. No hardware connection required.\nUse these states to exercise the interface.", 24, 65, 710, muted);
     button(parent, "Ready", 24, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Ready));
     button(parent, "Disconnect", 200, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Disconnected));
@@ -1393,6 +1543,23 @@ void Application::encoder(const Gesture& g) {
     // A pinned encoder controls its target on every page; an unpinned one
     // follows the parameter page in view, tile by tile.
     const auto* pin = pinned(g.control);
+    // On the browser an unpinned encoder 1 picks the group, the others step
+    // through its cards; a push adds the picked one.
+    if (!pin && page_ == Page::Browser && (g.kind == Gesture::Kind::Turn || g.kind == Gesture::Kind::Tap)) {
+        if (g.kind == Gesture::Kind::Tap) { if (!browser_pick_.empty()) add_module(browser_pick_); return; }
+        if (g.control == "enc1") {
+            const auto count = static_cast<int>(browser_groups_.size());
+            const auto at = static_cast<int>(std::find(browser_groups_.begin(), browser_groups_.end(), browser_group_) - browser_groups_.begin());
+            browser_group_ = browser_groups_[static_cast<std::size_t>(((at + g.steps) % count + count) % count)];
+            browser_pick_.clear(); browser_scroll_ = 0; rebuild_ = true;
+        } else if (!browser_order_.empty()) {
+            const auto last = static_cast<int>(browser_order_.size()) - 1;
+            const auto it = std::find(browser_order_.begin(), browser_order_.end(), browser_pick_);
+            const int at = it == browser_order_.end() ? (g.steps > 0 ? -1 : last + 1) : static_cast<int>(it - browser_order_.begin());
+            browser_pick(browser_order_[static_cast<std::size_t>(std::clamp(at + g.steps, 0, last))], true);
+        }
+        return;
+    }
     InstanceId id = 0;
     std::string symbol;
     if (pin && assignment_parameter(graph_, *pin)) { id = pin->module; symbol = pin->parameter; }
@@ -1509,7 +1676,7 @@ void Application::controls(lv_obj_t* parent) {
         label(row, control_label(id), 14, 13, 120, id == active_control_ ? accent : text);
         const auto* pin = pinned(id);
         const bool orphan = pin && !assignment_target(graph_, *pin);
-        auto* what = label(row, assignment_text(id), 140, 14, 396, orphan ? 0xf0aa72 : pin ? text : muted, &lv_font_montserrat_14);
+        auto* what = label(row, assignment_text(id), 140, 14, 396, orphan ? warning : pin ? text : muted, &lv_font_montserrat_14);
         lv_label_set_long_mode(what, LV_LABEL_LONG_DOT); lv_obj_set_height(what, 18);
         button(row, "Assign", 544, 0, 100, Action::AssignControl, 0, id);
         auto* edit = button(row, "Edit", 652, 0, 100, Action::EditControl, 0, id);
@@ -1531,7 +1698,7 @@ void Application::assign_picker(lv_obj_t* parent) {
         if (stomp) choices.push_back({"Bypass", Action::PickTarget, 0, "@bypass"});
         for (const auto& p : m->parameters) choices.push_back({p.name, Action::PickTarget, 0, p.symbol});
     }
-    auto* prompt = label(parent, picking_module_ ? "Which control?" : stomp ? "A module, or a patch change for every patch" : "Which module?", 24, 18, 560, text, &lv_font_montserrat_20);
+    auto* prompt = label(parent, picking_module_ ? "Which control?" : stomp ? "A module, or a patch change for every patch" : "Which module?", 24, 18, 560, text, &peepo_bold_20);
     lv_label_set_long_mode(prompt, LV_LABEL_LONG_DOT); lv_obj_set_height(prompt, 26);
     if (choices.empty()) { label(parent, "Nothing in this patch can be controlled yet.", 24, 72, 752, muted); return; }
     const auto pages = std::max<std::size_t>(1, (choices.size() + 7) / 8);
@@ -1552,10 +1719,10 @@ void Application::assign_picker(lv_obj_t* parent) {
 }
 void Application::assignment_detail(lv_obj_t* parent) {
     const auto& id = editing_control_;
-    auto* heading = label(parent, assignment_text(id), 24, 16, 752, accent, &lv_font_montserrat_20);
+    auto* heading = label(parent, assignment_text(id), 24, 16, 752, accent, &peepo_bold_20);
     lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT); lv_obj_set_height(heading, 26);
     button(parent, "Clear", 24, 280, 160, Action::ClearControl, 0, id);
-    button(parent, "Done", 616, 280, 160, Action::Navigate, 0, {}, static_cast<int>(Page::Controls));
+    primary(button(parent, "Done", 616, 280, 160, Action::Navigate, 0, {}, static_cast<int>(Page::Controls)));
     const auto* a = pinned(id);
     if (!a) { label(parent, "This control acts the same in every patch.", 24, 64, 752, muted); return; }
     const auto* p = assignment_parameter(graph_, *a);

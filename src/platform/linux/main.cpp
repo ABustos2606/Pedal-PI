@@ -292,7 +292,7 @@ int main(int argc, char** argv) {
         if (buffer && buffer->data && lv_color_format_get_size(static_cast<lv_color_format_t>(buffer->header.cf)) == 4)
             for (unsigned y = 0; y < buffer->header.h; ++y) {
                 const auto* row = reinterpret_cast<const std::uint32_t*>(buffer->data + y * buffer->header.stride);
-                for (unsigned x = 0; x < buffer->header.w; ++x) { dark += (row[x] & 0xffffff) == 0x10171f; cards += (row[x] & 0xffffff) == 0x1a2530; }
+                for (unsigned x = 0; x < buffer->header.w; ++x) { dark += (row[x] & 0xffffff) == 0x000000; cards += (row[x] & 0xffffff) == 0x0f0f0f; }
             }
         std::cout << "display=" << display_name << " resolution=" << lv_display_get_horizontal_resolution(display) << "x" << lv_display_get_vertical_resolution(display)
                   << " background_pixels=" << dark << " card_pixels=" << cards << "\n";
