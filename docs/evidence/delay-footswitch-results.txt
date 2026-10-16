@@ -1,0 +1,20 @@
+# Beebo's Delay and Peepo's Foot switch in the engine (PC, WSL2 Debian, JACK dummy 48 kHz / 128)
+# tools/ingen-spike/19-delay-footswitch.sh, 2026-10-16T20:09Z
+PASS  the measurement itself -- a direct cable returns the impulse after 128 samples
+PASS  the engine loads Beebo's Delay (status 0)
+PASS  1/8 at 120 BPM: echoes after [12000, 24001] samples (expected [12000, 24000], no dry signal)
+PASS  1/8 at 60 BPM, as a tempo change sets it: echoes after [24000, 48001] samples (expected [24000, 48000], no dry signal)
+PASS  the engine loads the Foot switch (status 0)
+PASS  the Foot switch gives 0.20 released and 0.80 pressed (Off value 0.2, On value 0.8)
+exit 0
+
+# The same on the Pi 5, package peepo-arm64-20261016-cdc4ebe-dirty installed with install.sh --start,
+# in a second engine beside the instrument (JACK dummy 48 kHz / 128), 2026-10-16T20:47Z
+INSTRUMENT before: peepo-jack=232864 peepo-engine=232879 peepo-ui=232908
+PASS  the measurement itself -- a direct cable returns the impulse after 128 samples
+PASS  the engine loads Beebo's Delay (status 0)
+PASS  1/8 at 120 BPM: echoes after [12000, 24001] samples (expected [12000, 24000], no dry signal)
+PASS  1/8 at 60 BPM, as a tempo change sets it: echoes after [24000, 48001] samples (expected [24000, 48000], no dry signal)
+PASS  the engine loads the Foot switch (status 0)
+PASS  the Foot switch gives 0.20 released and 0.80 pressed (Off value 0.2, On value 0.8)
+INSTRUMENT after:  peepo-jack=232864 peepo-engine=232879 peepo-ui=232908

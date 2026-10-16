@@ -4022,6 +4022,32 @@
       ]
     },
     {
+      "uri": "http://polyeffects.com/lv2/digit_delay",
+      "name": "digit_delay",
+      "category": "Utility",
+      "description": "",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Plugin; bundle file:///opt/peepo/lib/lv2/digit_delay.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "in0", "direction": "input", "type": "audio"},
+        {"symbol": "out0", "direction": "output", "type": "audio"},
+        {"symbol": "midiin", "direction": "input", "type": "midi"}
+      ],
+      "parameters": [
+        {"symbol": "BPM_0", "name": "BPM", "unit": "", "kind": "continuous", "minimum": 30, "maximum": 300, "default": 120, "logarithmic": false, "choices": []},
+        {"symbol": "Delay_1", "name": "Delay", "unit": "", "kind": "continuous", "minimum": 0.001, "maximum": 16, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "Warp_2", "name": "Warp", "unit": "", "kind": "continuous", "minimum": -1, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "DelayT60_3", "name": "DelayT60", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 100, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "Feedback_4", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
+        {"symbol": "Amp_5", "name": "Amp", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "FeedbackSm_6", "name": "FeedbackSm", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "EnableEcho_7", "name": "EnableEcho", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
       "uri": "http://polyeffects.com/lv2/euclidean",
       "name": "Poly Euclidean Sequencer",
       "category": "Utility",
@@ -5537,6 +5563,27 @@
         {"symbol": "chorus_2_enable", "name": "Chorus 2 On/Off", "unit": "", "kind": "toggle", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
         {"symbol": "chorus_1_lfo_rate", "name": "Chorus 1 LFO Rate", "unit": "", "kind": "continuous", "minimum": 0.10000000149, "maximum": 10, "default": 5, "logarithmic": false, "choices": []},
         {"symbol": "chorus_2_lfo_rate", "name": "Chorus 2 LFO Rate", "unit": "", "kind": "continuous", "minimum": 0.10000000149, "maximum": 10, "default": 8.30000019073, "logarithmic": false, "choices": []}
+      ]
+    },
+    {
+      "uri": "urn:peepo:lv2:footswitch",
+      "name": "Footswitch",
+      "category": "Utility",
+      "description": "Utility",
+      "color": "#93a4b5",
+      "availability": "available",
+      "reason": "",
+      "origin": "class Utility; bundle file:///opt/peepo/lib/lv2/peepo-footswitch.lv2/",
+      "enable": "",
+      "ports": [
+        {"symbol": "out", "direction": "output", "type": "cv"}
+      ],
+      "parameters": [
+        {"symbol": "pressed", "name": "Pressed", "unit": "", "kind": "toggle", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "stomp", "name": "Stomp", "unit": "", "kind": "integer", "minimum": 0, "maximum": 2, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "latching", "name": "Latching", "unit": "", "kind": "toggle", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "on_value", "name": "On value", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 1, "logarithmic": false, "choices": []},
+        {"symbol": "off_value", "name": "Off value", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
       ]
     }
   ]

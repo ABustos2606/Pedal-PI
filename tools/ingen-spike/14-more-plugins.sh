@@ -110,6 +110,26 @@ poly cv_to_cc.lv2 23152a8bf6dcdf2496df0d696dfd4c1a61f67e54
 step cv_to_cc.lv2 "$SRC/cv_to_cc.lv2" make -j"$JOBS" OPTIMIZATIONS="$OPT" PREFIX="$PREFIX" LV2DIR="$LV2DIR" install \
     && record cv_to_cc.lv2 built make || record cv_to_cc.lv2 FAILED "$(grep -m1 -E 'error' "$SRC/cv_to_cc.lv2.log" | cut -c1-120)"
 
+# --- Poly: Beebo's Delay, from the archived Digit application. Its Faust
+# output is committed, so only the plugin directory is built.
+poly digit_carla 75609d7dd365628fca044f64a7141686853e7945
+step digit_carla "$SRC/digit_carla/LV2/digit_delay" make OPTIMIZATIONS="$OPT" PREFIX="$PREFIX" LV2DIR="$LV2DIR" install \
+    && record digit_carla/digit_delay built make || record digit_carla/digit_delay FAILED "$(grep -m1 -E 'error' "$SRC/digit_carla.log" | cut -c1-120)"
+
+# --- Peepo's own plugins, from plugins/ of this repository
+peepo_plugins() {
+    for bundle in "$HERE"/../../plugins/*.lv2; do
+        local name; name=$(basename "$bundle" .lv2)
+        mkdir -p "$LV2DIR/peepo-$name.lv2" &&
+        gcc -shared -fPIC $OPT -std=c99 -Wall "$bundle/$name.c" -o "$LV2DIR/peepo-$name.lv2/$name.so" -lm &&
+        cp "$bundle"/*.ttl "$LV2DIR/peepo-$name.lv2/" || return 1
+    done
+}
+export -f peepo_plugins
+export HERE OPT
+rm -f "$SRC/peepo.log"
+step peepo "$SRC" bash -c peepo_plugins && record peepo built "gcc" || record peepo FAILED "$(grep -m1 -E 'error' "$SRC/peepo.log" | cut -c1-120)"
+
 # --- Poly: MIDI clock in. Its waf wants a waflib the repository points at
 # without mapping (reference/README.md records it as autowaf c87cc53c), and
 # that waflib imports Python's removed `imp`. The plugin is one C file, so it

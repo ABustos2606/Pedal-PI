@@ -130,6 +130,16 @@ struct Graph {
 // The value a module's tempo control takes for a tempo: the tempo, inside the
 // control's own range.
 double tempo_value(const Parameter&, double tempo);
+// A control measured in beats of its module's tempo (a quarter note is one
+// beat), such as a delay's time, has this unit. It is shown as the note it
+// lasts, and steps from one note value to the next.
+inline constexpr const char* beats_unit = "beats";
+struct NoteValue { const char* name; double beats; };
+const std::vector<NoteValue>& note_values();
+// The note a time in beats is, or empty when it is between notes.
+std::string note_name(double beats);
+// `steps` note values up (positive) or down from `beats`, inside the range.
+double step_note(double beats, int steps, double minimum, double maximum);
 struct PhysicalConnection {
     InstanceId from, to;
     std::string output, input;
@@ -169,6 +179,15 @@ const Parameter* assignment_parameter(const Graph&, const Assignment&);
 std::string encode_assignment(const Assignment&, const std::string& block);
 // Back again; the module is left 0 and the block symbol returned through `block`.
 bool decode_assignment(const std::string& control, const std::string& text, Assignment&, std::string& block);
+// A stomp can switch the bypass of several modules at once. Its property then
+// holds one encoded assignment per module, separated by spaces (no field can
+// hold one); these are the parts of such a value.
+std::vector<std::string> assignment_parts(const std::string& text);
+// What a control holds after assigning `a`: `a` alone or, when `add` is set
+// on a bypass, beside the other modules whose bypass the control switches.
+std::vector<Assignment> assignments_after(const Graph&, const Assignment& a, bool add);
+// The modules whose bypass a control switches, in assignment order.
+std::vector<const Assignment*> bypass_assignments(const Graph&, const std::string& control);
 std::string validate_parameter(const Parameter&);
 std::string validate_graph(const Graph&);
 std::string validate_connection(const Graph&, const Connection&, bool retain_unavailable = false);

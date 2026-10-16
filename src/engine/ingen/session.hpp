@@ -98,6 +98,8 @@ private:
     void identify(Transaction&, const std::string& id);
     void mark(Transaction&, bool modified);
     void control_property(Transaction&, const std::string& control, const std::string& text);
+    // A control's assignments as its property value; those whose block is gone are left out.
+    std::string control_text(const std::vector<Assignment>&) const;
     void proceed(Transaction&);
     // What a load restored; `failed` when it restored nothing it should have.
     std::string verified(const Transaction&, bool& failed);

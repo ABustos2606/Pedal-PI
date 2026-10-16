@@ -972,6 +972,99 @@ int main(int argc, char** argv) {
             check(app.page() == peepo::Page::Parameters && text_label(app.screen(), "OUTPUT") && text_label(app.screen(), "0 dB"), "general Output missing from the module page");
             capture(app, output / "44-general-output.bmp");
         }
+        // Stomps on the patch, as on Beebo: hold a module and press a stomp, and
+        // the stomp switches that module's bypass beside any others; a numbered
+        // dot marks it on the canvas. Two set opposite ways swap places. A
+        // Footswitch module hears its stomp and turns it into a control signal.
+        {
+            using Type = peepo::ControlEvent::Type;
+            const std::string footswitch = "urn:peepo:lv2:footswitch";
+            peepo::register_definitions({{footswitch, "Foot switch", "Control", "Test footswitch", 0xe3c770,
+                {{"out", peepo::Direction::Output, 1, peepo::PortType::Cv}},
+                {{"stomp", "Stomp", "", peepo::ParameterKind::Enumeration, 0, 2, 1, false, {"1", "2", "3"}},
+                 {"latching", "Latching", "", peepo::ParameterKind::Toggle, 0, 1, 0},
+                 {"on_value", "On value", "", peepo::ParameterKind::Continuous, 0, 1, 1},
+                 {"off_value", "Off value", "", peepo::ParameterKind::Continuous, 0, 1, 0},
+                 {"pressed", "Pressed", "", peepo::ParameterKind::Toggle, 0, 1, 0}}}});
+            peepo::SimulatedEngine sim;
+            peepo::Application app(sim); step(app);
+            auto press = [&](const char* control) { app.control({Type::Press, control}); step(app, 64); };
+            auto release = [&](const char* control) { app.control({Type::Release, control}); step(app, 256); };
+            auto bypassed = [&](peepo::InstanceId id) { return peepo::find_module(app.graph(), id)->bypassed; };
+            hold(app, 236, 244); check(app.page() == peepo::Page::ModuleActions, "holding Drive did not open its actions");
+            press("stomp1"); release("stomp1");
+            check(app.graph().assignments.size() == 1 && app.graph().assignments[0].module == 3 && app.graph().assignments[0].action == peepo::ControlAction::Bypass &&
+                  app.page() == peepo::Page::ModuleActions && !bypassed(3), "a stomp pressed on Drive's actions did not assign its bypass, or played");
+            check(text_label(app.screen(), "Stomp 1 switches it") != nullptr, "the actions page does not say which stomp switches the module");
+            capture(app, output / "55-stomp-quick-assign.bmp");
+            click(app, 70, 456); hold(app, 396, 244);
+            press("stomp1"); release("stomp1");
+            check(app.graph().assignments.size() == 2 && app.graph().assignments[1].module == 4, "a second module did not join the stomp");
+            click(app, 70, 456);
+            check(app.page() == peepo::Page::Patch && exact_label(app.screen(), "1") != nullptr, "the patch does not number the stomp on its modules");
+            // Clouds starts bypassed, so each press swaps which of the two plays.
+            sim.submit(peepo::SetBypass{4, true}); step(app, 256);
+            capture(app, output / "56-stomp-badges.bmp");
+            press("stomp1");
+            check(app.message().find("Drive bypassed, Clouds on") != std::string::npos, "the stomp did not say what it switched");
+            release("stomp1");
+            check(bypassed(3) && !bypassed(4), "the stomp did not swap Drive and Clouds");
+            press("stomp1"); release("stomp1");
+            check(!bypassed(3) && bypassed(4), "the stomp did not swap them back");
+            // Settings > Controls names both, and Edit explains the swap.
+            click(app, 707, 36); tap(app, "CONTROLS");
+            check(text_label(app.screen(), "Drive, Clouds / bypass") != nullptr, "Controls does not list both modules of the stomp");
+            click(app, 70, 456); click(app, 70, 456);
+            // Pressing it again on a module's actions takes that module off.
+            hold(app, 236, 244); press("stomp1"); release("stomp1");
+            check(app.graph().assignments.size() == 1 && app.graph().assignments[0].module == 4, "pressing again did not take Drive off the stomp");
+            click(app, 70, 456);
+            // A Footswitch module set to stomp 2 is pressed and released with it.
+            sim.submit(peepo::AddModule{footswitch, 600, 264}); step(app, 256);
+            const auto id = app.graph().modules.back().id;
+            const auto value = [&](const char* symbol) {
+                const auto* m = peepo::find_module(app.graph(), id);
+                return std::find_if(m->parameters.begin(), m->parameters.end(), [&](const peepo::Parameter& p) { return p.symbol == symbol; })->value;
+            };
+            check(exact_label(app.screen(), "2") != nullptr, "the Footswitch module does not show its stomp");
+            press("stomp2");
+            check(app.message().find("Foot switch on") != std::string::npos, "the stomp did not say it pressed the Footswitch module");
+            step(app, 192);
+            check(value("pressed") == 1, "the Footswitch module did not hear its stomp go down");
+            release("stomp2");
+            check(value("pressed") == 0, "the Footswitch module did not hear its stomp come up");
+            press("stomp3"); release("stomp3");
+            check(value("pressed") == 0, "the Footswitch module heard another stomp");
+            sim.submit(peepo::SetParameter{id, "latching", 1}); step(app, 256);
+            press("stomp2"); release("stomp2");
+            check(value("pressed") == 1, "a latching Footswitch did not stay on after a press");
+            press("stomp2"); release("stomp2");
+            check(value("pressed") == 0, "a latching Footswitch did not go off on the next press");
+            capture(app, output / "57-footswitch.bmp");
+        }
+        // A time in beats: shown as its note and in milliseconds, stepped by note value.
+        {
+            const std::string uri = "urn:peepo:test:beat-delay";
+            auto delay = peepo::ModuleDefinition{uri, "Delay", "Delay", "Test delay timed in beats", 0x7bbaed,
+                {{"in", peepo::Direction::Input}, {"out", peepo::Direction::Output}},
+                {{"time", "Time", peepo::beats_unit, peepo::ParameterKind::Continuous, 0.001, 16, 0.5},
+                 {"bpm", "BPM", "", peepo::ParameterKind::Continuous, 30, 300, 120}}};
+            delay.tempo_symbol = "bpm";
+            peepo::register_definitions({delay});
+            peepo::SimulatedEngine sim;
+            sim.submit(peepo::LoadGraph{peepo::empty_graph("Beats")}); sim.advance(100);
+            sim.submit(peepo::AddModule{uri, 184, 132}); sim.advance(100);
+            peepo::Application app(sim); step(app);
+            const auto id = app.graph().modules.back().id;
+            const auto time = [&] { return peepo::find_module(app.graph(), id)->parameters[0].value; };
+            click(app, 184 + 48, 132 + 72 + 48);
+            check(app.page() == peepo::Page::Parameters && exact_label(app.screen(), "1/8") && text_label(app.screen(), "250 ms at 120 BPM"),
+                  "a time in beats is not shown as its note and in milliseconds");
+            tap(app, "+"); check(std::abs(time() - 2.0 / 3) < 1e-9 && exact_label(app.screen(), "1/4 trip"), "+ did not step to the next note value");
+            app.control({peepo::ControlEvent::Type::Turn, "enc1", 2}); step(app, 256);
+            check(std::abs(time() - 1) < 1e-9 && exact_label(app.screen(), "1/4") && text_label(app.screen(), "500 ms"), "encoder 1 did not turn by note values");
+            capture(app, output / "58-beat-time.bmp");
+        }
         // Release the headless devices before the global runtime.
         lv_indev_delete(indev);
         lv_indev_delete(keypad);

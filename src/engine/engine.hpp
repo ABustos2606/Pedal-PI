@@ -60,9 +60,11 @@ struct LoadPatch {
     // lacks it (a bundle stripped of its project properties).
     std::string patch_id;
 };
-// Pin a physical control, replacing whatever it had in this patch; saved with it.
-struct Assign { Assignment assignment; };
-struct Unassign { std::string control; };
+// Pin a physical control, replacing whatever it had in this patch; saved with
+// it. With `add`, a bypass joins the modules the control already switches.
+struct Assign { Assignment assignment; bool add = false; };
+// Clear a control; with a module, only that module's bypass on it.
+struct Unassign { std::string control; InstanceId module = 0; };
 using Command = std::variant<AddModule, RemoveModule, MoveModule, DuplicateModule, SetParameter, SetBypass, SetFile, SetTempo, Connect, Disconnect,
                              LoadGraph, NewPatch, RenamePatch, SaveGraph, LoadSession, LoadPatch, Assign, Unassign>;
 struct EngineEvent {

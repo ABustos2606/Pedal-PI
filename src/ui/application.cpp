@@ -151,6 +151,26 @@ std::vector<ParameterPage> parameter_pages_of(const Module& m) {
     if (pages.empty()) pages.push_back({{}, {}, file});
     return pages;
 }
+// Peepo's Footswitch module: a stomp as a control signal. Its Stomp control
+// (0 for the first) says which stomp it hears; the interface sets Pressed.
+constexpr const char* footswitch_uri = "urn:peepo:lv2:footswitch";
+std::string joined_names(const std::vector<std::string>& names) {
+    std::string out;
+    for (std::size_t i = 0; i < names.size(); ++i) out += (i ? ", " : "") + names[i];
+    return out;
+}
+// The stomps that act on a module, by number: assigned to its bypass or a
+// parameter, or heard by it when it is a Footswitch module.
+std::vector<int> stomps_on(const Graph& g, const Module& m) {
+    std::vector<int> numbers;
+    const auto add = [&](int n) { if (std::find(numbers.begin(), numbers.end(), n) == numbers.end()) numbers.push_back(n); };
+    for (const auto& a : g.assignments)
+        if (a.module == m.id && is_stomp(a.control) && assignment_target(g, a)) add(std::stoi(a.control.substr(5)));
+    if (m.uri == footswitch_uri)
+        for (const auto& p : m.parameters) if (p.symbol == "stomp") add(static_cast<int>(p.value) + 1);
+    std::sort(numbers.begin(), numbers.end());
+    return numbers;
+}
 std::size_t page_of(const Module& m, const std::string& symbol) {
     const auto pages = parameter_pages_of(m);
     for (std::size_t i = 0; i < pages.size(); ++i)
@@ -622,12 +642,15 @@ void Application::handle(Binding& b, lv_event_t* e) {
         navigate(Page::Parameters);
         break;
     case Action::ParameterStep: {
-        // One whole step of an integer control, from a value still on its way if there is one.
+        // One whole step of an integer control, or one note value of a time
+        // in beats, from a value still on its way if there is one.
         const auto* m = find_module(graph_, b.id); if (!m) break;
         const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == b.symbol; });
         if (it == m->parameters.end()) break;
         const bool streaming = stream_ && stream_->id == b.id && stream_->symbol == b.symbol;
-        const auto next = std::clamp(std::round(streaming ? stream_->latest : it->value) + b.number, it->minimum, it->maximum);
+        const auto current = streaming ? stream_->latest : it->value;
+        const auto next = it->unit == beats_unit ? step_note(current, b.number, it->minimum, it->maximum)
+                                                 : std::clamp(std::round(current) + b.number, it->minimum, it->maximum);
         if (next != it->value || streaming) stream_parameter(b.id, b.symbol, next);
         break;
     }
@@ -702,7 +725,8 @@ void Application::handle(Binding& b, lv_event_t* e) {
             if (it == m->parameters.end()) break;
             a.parameter = it->symbol; a.minimum = it->minimum; a.maximum = it->maximum;
         }
-        submit(Assign{a});
+        // A bypass joins the modules the stomp already switches; Clear empties it.
+        submit(Assign{a, a.action == ControlAction::Bypass});
         navigate(Page::Controls); break;
     }
     case Action::InvertControl:
@@ -1082,6 +1106,18 @@ void Application::patch_view(lv_obj_t* parent) {
         auto* sub = label(card, !module_available(m) ? "MISSING" : m.fixed ? "AUDIO" : m.bypassed ? "BYPASS" : group, 0, 72, 96,
                           m.bypassed ? faint : ink, &peepo_mono_14);
         lv_obj_set_style_text_align(sub, LV_TEXT_ALIGN_CENTER, 0);
+        // The stomps that act on it, numbered in a white dot on its top right
+        // corner, clear of the name and of the connectors.
+        if (const auto stomps = stomps_on(graph_, m); !stomps.empty() && !m.fixed) {
+            std::string digits;
+            for (const auto n : stomps) digits += (digits.empty() ? "" : " ") + std::to_string(n);
+            const int width = 20 + 14 * (static_cast<int>(stomps.size()) - 1);
+            auto* badge = panel(card, 102 - width, -12, width, 20, m.bypassed ? faint : text);
+            lv_obj_set_style_radius(badge, 10, 0); lv_obj_set_style_border_width(badge, 0, 0);
+            lv_obj_remove_flag(badge, LV_OBJ_FLAG_CLICKABLE);
+            auto* number = label(badge, digits, 0, 1, width, background, &peepo_mono_14);
+            lv_obj_set_style_text_align(number, LV_TEXT_ALIGN_CENTER, 0);
+        }
         lv_obj_add_flag(card, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
         lv_obj_add_flag(card, LV_OBJ_FLAG_PRESS_LOCK);
         bind(card, Action::Module, m.id);
@@ -1511,16 +1547,28 @@ void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parame
         lv_obj_set_style_bg_color(list, color(ink), chosen); lv_obj_set_style_text_color(list, color(background), chosen);
         lv_obj_set_style_bg_color(list, color(pressed_fill), static_cast<lv_style_selector_t>(LV_PART_SELECTED) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
     } else {
-        // Whole numbers also step one at a time, which a slider alone makes fiddly.
-        const bool steps = p.kind == ParameterKind::Integer && height >= 100;
+        // Whole numbers also step one at a time, which a slider alone makes
+        // fiddly; a time in beats steps from one note value to the next.
+        const bool beats = p.unit == beats_unit;
+        const bool steps = (p.kind == ParameterKind::Integer || beats) && height >= 100;
         control = lv_slider_create(tile); lv_obj_set_pos(control, steps ? 96 : 30, height < 110 ? 48 : 70); lv_obj_set_size(control, steps ? 176 : 308, 12);
         if (steps) {
             for (const int direction : {-1, 1}) {
                 auto* step = button(tile, direction < 0 ? "-" : "+", direction < 0 ? 20 : 300, 52, 48, Action::ParameterStep, m.id, p.symbol, direction);
                 lv_obj_set_height(step, 44);
-                if ((direction < 0 && p.value <= p.minimum) || (direction > 0 && p.value >= p.maximum)) lv_obj_add_state(step, LV_STATE_DISABLED);
+                const bool end = beats ? step_note(p.value, direction, p.minimum, p.maximum) == p.value
+                                       : (direction < 0 && p.value <= p.minimum) || (direction > 0 && p.value >= p.maximum);
+                if (end) lv_obj_add_state(step, LV_STATE_DISABLED);
             }
         }
+        // The same time in milliseconds, at the module's own tempo.
+        if (const auto* d = definition(m.uri); beats && height >= 100 && d && !d->tempo_symbol.empty())
+            for (const auto& t : m.parameters)
+                if (t.symbol == d->tempo_symbol && t.value > 0) {
+                    std::ostringstream ms;
+                    ms << std::fixed << std::setprecision(0) << 60000 / t.value * p.value << " ms at " << t.value << " BPM";
+                    label(tile, ms.str(), 20, height - 22, 176, faint, &peepo_mono_14);
+                }
         lv_slider_set_range(control, 0, 1000); lv_slider_set_value(control, static_cast<int>(normalized_value(p) * 1000), LV_ANIM_OFF);
         lv_obj_set_style_bg_color(control, color(border), LV_PART_MAIN); lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_MAIN);
         lv_obj_set_style_bg_color(control, color(ink), LV_PART_INDICATOR); lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_INDICATOR);
@@ -1814,7 +1862,15 @@ void Application::module_actions(lv_obj_t* parent) {
         lv_obj_set_height(note, 96); lv_label_set_long_mode(note, LV_LABEL_LONG_DOT);
         return;
     }
-    label(parent, "Duplicate keeps parameter values and software bypass.\nCables and control assignments stay with the original.\nPhysical controls are assigned in Settings > Controls.", 24, 240, 752, muted);
+    // While this page is open a stomp press assigns rather than plays (quick_assign).
+    std::vector<std::string> switching;
+    for (const auto& id : layout_.ids())
+        for (const auto* a : bypass_assignments(graph_, id)) if (a->module == m->id) switching.push_back(control_label(id));
+    label(parent, "Press a stomp to switch this module with it", 24, 228, 752, accent, &peepo_bold_20);
+    label(parent, (switching.empty() ? std::string("No stomp switches it yet.") : joined_names(switching) + " switches it; press it again to stop.") +
+                  " A stomp can switch several modules. Each one flips, so one on and one bypassed swap places.", 24, 262, 752, muted, &lv_font_montserrat_14);
+    label(parent, "Duplicate keeps parameter values and software bypass; cables and control assignments stay with the original. "
+                  "Settings > Controls assigns parameters too.", 24, 316, 752, faint, &lv_font_montserrat_14);
 }
 void Application::settings(lv_obj_t* parent) {
     if (!engine_.capabilities().simulation) {
@@ -1993,7 +2049,10 @@ void Application::encoder(const Gesture& g) {
         // Continue from a value still on its way to the engine, not the last acknowledged one.
         const bool streaming = stream_ && stream_->id == id && stream_->symbol == symbol;
         const auto current = streaming ? stream_->latest : p->value;
-        const auto next = turned_value(*p, current, g.steps, g.fine, g.interval_ms, pin);
+        // A time in beats turns from one note value to the next; fine turning is free.
+        const auto next = p->unit == beats_unit && !g.fine
+            ? step_note(current, pin && pin->inverted ? -g.steps : g.steps, pin ? pin->minimum : p->minimum, pin ? pin->maximum : p->maximum)
+            : turned_value(*p, current, g.steps, g.fine, g.interval_ms, pin);
         auto shown = *p; shown.value = next;
         message(name + (g.fine ? " (fine): " : ": ") + m->name + " / " + p->name + " " + format_value(shown) + (next == current ? " (limit)" : ""));
         if (next == current) return;
@@ -2028,22 +2087,37 @@ void Application::encoder(const Gesture& g) {
 void Application::stomp(const Gesture& g) {
     const auto name = control_label(g.control);
     const bool pressed = g.kind == Gesture::Kind::Press;
+    // A module's actions are open, as after holding it on the patch: the stomp is being assigned.
+    if (page_ == Page::ModuleActions) { if (pressed) quick_assign(g.control); return; }
+    // Footswitch modules hear the stomp as well as whatever it is assigned.
+    std::vector<std::string> said;
+    const bool listened = drive_footswitches(g.control, pressed, said);
+    if (const auto bypasses = bypass_assignments(graph_, g.control); !bypasses.empty()) {
+        // Each module flips, so two set opposite ways swap places.
+        if (pressed)
+            for (const auto* a : bypasses)
+                if (const auto* m = assignment_target(graph_, *a)) { submit(SetBypass{m->id, !m->bypassed}); said.push_back(m->name + (m->bypassed ? " on" : " bypassed")); }
+        if (!said.empty()) message(name + ": " + joined_names(said));
+        else if (pressed) message(name + " switches modules that are gone. Settings > Controls repairs it.");
+        return;
+    }
     if (const auto* pin = pinned(g.control)) {
         const auto* m = assignment_target(graph_, *pin);
         if (!m) { if (pressed) message(name + " is pinned to a module that is gone. Settings > Controls repairs it."); return; }
         // Switch actions go straight to the engine: never coalesced with turns.
-        if (pin->action == ControlAction::Bypass) {
-            if (pressed) { submit(SetBypass{m->id, !m->bypassed}); message(name + ": " + m->name + (m->bypassed ? " on" : " bypassed")); }
-            return;
-        }
         const auto* p = assignment_parameter(graph_, *pin);
         const auto value = switched_value(*p, p->value, *pin, pressed);
-        if (!value || *value == p->value) return;
-        auto shown = *p; shown.value = *value;
-        submit(SetParameter{m->id, p->symbol, *value});
-        message(name + ": " + m->name + " / " + p->name + " " + format_value(shown));
+        if (value && *value != p->value) {
+            auto shown = *p; shown.value = *value;
+            submit(SetParameter{m->id, p->symbol, *value});
+            said.insert(said.begin(), m->name + " / " + p->name + " " + format_value(shown));
+        }
+        if (!said.empty()) message(name + ": " + joined_names(said));
         return;
     }
+    // A Footswitch module listening makes the stomp this patch's: it does not
+    // also take its every-patch action.
+    if (listened) { if (!said.empty()) message(name + ": " + joined_names(said)); return; }
     if (!pressed) return;
     const auto global = store_ ? store_->global_controls() : std::map<std::string, std::string>{};
     if (const auto it = global.find(g.control); it != global.end()) {
@@ -2052,6 +2126,52 @@ void Application::stomp(const Gesture& g) {
         return;
     }
     message(name + " is not assigned. Settings > Controls.");
+}
+void Application::quick_assign(const std::string& control) {
+    const auto name = control_label(control);
+    const auto* m = find_module(graph_, selected_);
+    if (!m || m->fixed || !module_available(*m)) { message(name + " can switch only a module that is installed."); return; }
+    const auto held = bypass_assignments(graph_, control);
+    if (std::any_of(held.begin(), held.end(), [&](const Assignment* a) { return a->module == m->id; })) {
+        submit(Unassign{control, m->id});
+        message(name + " no longer switches " + m->name + ".");
+        return;
+    }
+    std::vector<std::string> others;
+    for (const auto* a : held) if (const auto* other = assignment_target(graph_, *a)) others.push_back(other->name);
+    const bool replaces = held.empty() && pinned(control);
+    Assignment a;
+    a.control = control; a.module = m->id; a.action = ControlAction::Bypass;
+    submit(Assign{a, true});
+    message(name + " now switches " + m->name + (others.empty() ? "" : " with " + joined_names(others)) +
+            (replaces ? ", instead of what it controlled" : "") + ". Press it again here to undo.");
+}
+bool Application::drive_footswitches(const std::string& control, bool pressed, std::vector<std::string>& said) {
+    bool listened = false;
+    for (const auto& m : graph_.modules) {
+        if (m.uri != footswitch_uri || !module_available(m)) continue;
+        const Parameter *which = nullptr, *down = nullptr, *latching = nullptr;
+        for (const auto& p : m.parameters) {
+            if (p.symbol == "stomp") which = &p;
+            else if (p.symbol == "pressed") down = &p;
+            else if (p.symbol == "latching") latching = &p;
+        }
+        if (!which || !down || control != "stomp" + std::to_string(static_cast<int>(which->value) + 1)) continue;
+        listened = true;
+        double value = pressed ? 1 : 0;
+        // Latching flips on each press; momentary follows the switch. Every
+        // momentary change is sent, so a quick tap is never lost behind an echo.
+        if (latching && latching->value >= 0.5) { if (!pressed) continue; value = down->value >= 0.5 ? 0 : 1; }
+        submit(SetParameter{m.id, down->symbol, value});
+        said.push_back(m.name + (value >= 0.5 ? " on" : " off"));
+    }
+    return listened;
+}
+bool Application::orphaned(const std::string& control) const {
+    bool any = false;
+    for (const auto& a : graph_.assignments)
+        if (a.control == control) { any = true; if (assignment_target(graph_, a)) return false; }
+    return any;
 }
 void Application::step_patch(int direction) {
     refresh_stored();
@@ -2066,10 +2186,15 @@ void Application::step_patch(int direction) {
     load_stored(loadable[next]->id, false, true);
 }
 std::string Application::assignment_text(const std::string& control) const {
+    if (const auto held = bypass_assignments(graph_, control); !held.empty()) {
+        std::vector<std::string> names;
+        for (const auto* a : held) if (const auto* m = assignment_target(graph_, *a)) names.push_back(m->name);
+        if (names.empty()) return "Orphaned: its modules are gone or changed. Edit to clear it.";
+        return joined_names(names) + " / bypass" + (names.size() < held.size() ? " (one is gone)" : "");
+    }
     if (const auto* a = pinned(control)) {
         const auto* m = assignment_target(graph_, *a);
         if (!m) return "Orphaned: its module is gone or changed. Edit to clear it.";
-        if (a->action == ControlAction::Bypass) return m->name + " / bypass";
         const auto* p = assignment_parameter(graph_, *a);
         auto low = *p, high = *p; low.value = a->minimum; high.value = a->maximum;
         std::string summary = m->name + " / " + p->name;
@@ -2091,7 +2216,7 @@ void Application::controls(lv_obj_t* parent) {
         if (id == active_control_) lv_obj_set_style_border_color(row, color(accent), 0);
         label(row, control_label(id), 14, 13, 120, id == active_control_ ? accent : text);
         const auto* pin = pinned(id);
-        const bool orphan = pin && !assignment_target(graph_, *pin);
+        const bool orphan = orphaned(id);
         auto* what = label(row, assignment_text(id), 140, 14, 396, orphan ? warning : pin ? text : muted, &lv_font_montserrat_14);
         lv_label_set_long_mode(what, LV_LABEL_LONG_DOT); lv_obj_set_height(what, 18);
         button(row, "Assign", 544, 0, 100, Action::AssignControl, 0, id);
@@ -2143,11 +2268,15 @@ void Application::assignment_detail(lv_obj_t* parent) {
     const auto* a = pinned(id);
     if (!a) { label(parent, "This control acts the same in every patch.", 24, 64, 752, muted); return; }
     const auto* p = assignment_parameter(graph_, *a);
-    if (!assignment_target(graph_, *a)) {
+    if (orphaned(id)) {
         label(parent, "Its module was removed, or now holds a different plugin, so it is never applied.\nClear it, then assign the control again.", 24, 64, 752, muted);
         return;
     }
-    if (!p) { label(parent, "Each press switches the module's software bypass.", 24, 64, 752, muted); return; }
+    if (!p) {
+        label(parent, "Each press switches the software bypass of each module: one that plays is\nbypassed, one bypassed plays, so two set opposite ways swap places.\n"
+                      "To add or remove a module, hold it on the patch and press this stomp.", 24, 64, 752, muted);
+        return;
+    }
     auto* invert = button(parent, a->inverted ? "Inverted" : "Invert", 24, 60, 160, Action::InvertControl);
     if (a->inverted) lv_obj_set_style_border_color(invert, color(accent), 0);
     if (is_stomp(id)) {

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <map>
+#include <set>
 #include <type_traits>
 
 namespace peepo::ingen {
@@ -484,12 +486,15 @@ void Session::rebuild() {
     }
     if (const auto root = objects_.find(main_path); root != objects_.end())
         for (const auto& [key, value] : root->second) {
-            Assignment a;
-            std::string block;
-            if (!key.starts_with(control_prefix) || value.kind != Value::Kind::String || !decode_assignment(key.substr(control_prefix.size()), value.text, a, block)) continue;
-            // A block that is gone leaves the assignment orphaned: shown, never applied.
-            if (const auto id = ids_.find(child(main_path, block)); id != ids_.end()) a.module = id->second;
-            graph.assignments.push_back(std::move(a));
+            if (!key.starts_with(control_prefix) || value.kind != Value::Kind::String) continue;
+            for (const auto& part : assignment_parts(value.text)) {
+                Assignment a;
+                std::string block;
+                if (!decode_assignment(key.substr(control_prefix.size()), part, a, block)) continue;
+                // A block that is gone leaves the assignment orphaned: shown, never applied.
+                if (const auto id = ids_.find(child(main_path, block)); id != ids_.end()) a.module = id->second;
+                graph.assignments.push_back(std::move(a));
+            }
         }
     graph_ = std::move(graph);
 }
@@ -526,6 +531,13 @@ void Session::control_property(Transaction& to, const std::string& control, cons
     const auto number = sequence();
     send(to, set_on_graph(number, main_path, "peepo:control-" + control, string_literal(text)), number);
     to.local.push_back({main_path, control_prefix + control, {Value::Kind::String, 0, false, text}});
+}
+std::string Session::control_text(const std::vector<Assignment>& held) const {
+    std::string text;
+    for (const auto& a : held)
+        if (const auto path = paths_.find(a.module); path != paths_.end())
+            text += (text.empty() ? "" : " ") + encode_assignment(a, symbol_of(path->second));
+    return text;
 }
 void Session::proceed(Transaction& done) {
     // The engine has answered the save or load itself. Its identity steps
@@ -615,7 +627,13 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
     name_patch(to, graph.name);
     identify(to, graph.patch_id);
     set_tempo(to, std::clamp(graph.tempo, minimum_tempo, maximum_tempo));
-    for (const auto& a : graph.assignments) control_property(to, a.control, encode_assignment(a, "m" + std::to_string(a.module)));
+    // One property per control, holding every module a stomp switches.
+    std::map<std::string, std::string> controls;
+    for (const auto& a : graph.assignments) {
+        auto& text = controls[a.control];
+        text += (text.empty() ? "" : " ") + encode_assignment(a, "m" + std::to_string(a.module));
+    }
+    for (const auto& [control, text] : controls) control_property(to, control, text);
     return {};
 }
 void Session::set_tempo(Transaction& to, double bpm) {
@@ -736,11 +754,13 @@ std::string Session::plan(const Command& command, Transaction& to) {
             if (!assignment_target(graph_, a)) return "Control target is unavailable";
             if (const auto* p = assignment_parameter(graph_, a); p && (a.minimum < p->minimum || a.maximum > p->maximum || a.minimum > a.maximum))
                 return "Invalid assignment parameter range";
-            control_property(to, a.control, encode_assignment(a, symbol_of(found->second)));
+            control_property(to, a.control, control_text(assignments_after(graph_, a, c.add)));
         } else if constexpr (std::is_same_v<T, Unassign>) {
-            if (std::none_of(graph_.assignments.begin(), graph_.assignments.end(), [&](const Assignment& a) { return a.control == c.control; }))
-                return "Control is not assigned";
-            control_property(to, c.control, "");
+            const auto cleared = [&](const Assignment& a) { return a.control == c.control && (!c.module || a.module == c.module); };
+            if (std::none_of(graph_.assignments.begin(), graph_.assignments.end(), cleared)) return "Control is not assigned";
+            std::vector<Assignment> kept;
+            for (const auto& a : graph_.assignments) if (a.control == c.control && !cleared(a)) kept.push_back(a);
+            control_property(to, c.control, control_text(kept));
         } else if constexpr (std::is_same_v<T, LoadPatch>) {
             if (!bundle_location(c.location)) return "Invalid patch location";
             std::vector<std::string> absent;
@@ -773,8 +793,15 @@ std::string Session::plan(const Command& command, Transaction& to) {
             if constexpr (std::is_same_v<T, RemoveModule>) {
                 if (m->fixed) return "Endpoints cannot be deleted";
                 send(to, remove, found->second);
-                // Its controls go with it, so nothing later given its identity inherits them.
-                for (const auto& a : graph_.assignments) if (a.module == c.id) control_property(to, a.control, "");
+                // Its controls go with it, so nothing later given its identity
+                // inherits them; a stomp keeps the other modules it switches.
+                std::set<std::string> touched;
+                for (const auto& a : graph_.assignments) if (a.module == c.id) touched.insert(a.control);
+                for (const auto& control : touched) {
+                    std::vector<Assignment> kept;
+                    for (const auto& a : graph_.assignments) if (a.control == control && a.module != c.id) kept.push_back(a);
+                    control_property(to, control, control_text(kept));
+                }
             } else if constexpr (std::is_same_v<T, MoveModule>) {
                 if (m->fixed) return "Endpoints are fixed";
                 const auto number = sequence();

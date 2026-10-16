@@ -104,6 +104,34 @@ double tempo_value(const Parameter& p, double tempo) {
     const auto value = std::clamp(tempo, p.minimum, p.maximum);
     return p.kind == ParameterKind::Continuous ? value : std::round(value);
 }
+const std::vector<NoteValue>& note_values() {
+    static const std::vector<NoteValue> notes = {
+        {"1/32", 0.125}, {"1/16 trip", 1.0 / 6}, {"1/16", 0.25}, {"1/8 trip", 1.0 / 3}, {"1/16 dot", 0.375}, {"1/8", 0.5},
+        {"1/4 trip", 2.0 / 3}, {"1/8 dot", 0.75}, {"1/4", 1}, {"1/2 trip", 4.0 / 3}, {"1/4 dot", 1.5}, {"1/2", 2},
+        {"1/2 dot", 3}, {"1 bar", 4}, {"2 bars", 8}, {"4 bars", 16}};
+    return notes;
+}
+std::string note_name(double beats) {
+    for (const auto& note : note_values()) if (std::abs(beats - note.beats) < 0.0005) return note.name;
+    return {};
+}
+double step_note(double beats, int steps, double minimum, double maximum) {
+    // Between two notes, the first step lands on the nearer one in its direction.
+    std::vector<double> usable;
+    for (const auto& note : note_values()) if (note.beats >= minimum && note.beats <= maximum) usable.push_back(note.beats);
+    if (usable.empty() || !steps) return beats;
+    const int last = static_cast<int>(usable.size()) - 1;
+    int at = 0;
+    if (steps > 0) {
+        while (at <= last && usable[static_cast<std::size_t>(at)] <= beats + 0.0005) ++at;
+        at += steps - 1;
+    } else {
+        at = last;
+        while (at >= 0 && usable[static_cast<std::size_t>(at)] >= beats - 0.0005) --at;
+        at += steps + 1;
+    }
+    return usable[static_cast<std::size_t>(std::clamp(at, 0, last))];
+}
 Graph empty_graph(std::string name) {
     auto g = demo_graph(); g.name = std::move(name); g.modules.resize(2); g.connections = {{1, 2}, {1, 2, "out_r", "in_r"}}; g.dirty = true;
     return g;
@@ -194,6 +222,29 @@ bool decode_assignment(const std::string& control, const std::string& text, Assi
     a.mode = fields[7] == "momentary" ? SwitchMode::Momentary : SwitchMode::Toggle;
     return true;
 }
+std::vector<std::string> assignment_parts(const std::string& text) {
+    std::vector<std::string> parts;
+    for (std::size_t start = 0; start < text.size();) {
+        const auto space = text.find(' ', start);
+        const auto end = space == std::string::npos ? text.size() : space;
+        if (end > start) parts.push_back(text.substr(start, end - start));
+        start = end + 1;
+    }
+    return parts;
+}
+std::vector<Assignment> assignments_after(const Graph& g, const Assignment& a, bool add) {
+    std::vector<Assignment> result;
+    if (add && a.action == ControlAction::Bypass)
+        for (const auto& old : g.assignments)
+            if (old.control == a.control && old.action == ControlAction::Bypass && old.module != a.module) result.push_back(old);
+    result.push_back(a);
+    return result;
+}
+std::vector<const Assignment*> bypass_assignments(const Graph& g, const std::string& control) {
+    std::vector<const Assignment*> found;
+    for (const auto& a : g.assignments) if (a.control == control && a.action == ControlAction::Bypass) found.push_back(&a);
+    return found;
+}
 bool valid_patch_id(const std::string& id) {
     return !id.empty() && id.size() <= 64 && std::all_of(id.begin(), id.end(), [](char c) { return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-'; });
 }
@@ -276,9 +327,14 @@ std::string validate_graph(const Graph& g) {
         if (auto issue = validate_connection(checked, c, true); !issue.empty()) return issue;
         checked.connections.push_back(c);
     }
-    std::unordered_set<std::string> controls;
+    // One assignment per control, except a control switching the bypass of
+    // several modules: each module once, and nothing else on that control.
     for (const auto& a : g.assignments) {
-        if (!valid_control_id(a.control) || !controls.insert(a.control).second || !std::isfinite(a.minimum) || !std::isfinite(a.maximum) || a.minimum > a.maximum)
+        const auto shared = std::count_if(g.assignments.begin(), g.assignments.end(), [&](const Assignment& b) { return b.control == a.control; });
+        const bool bypasses = std::all_of(g.assignments.begin(), g.assignments.end(), [&](const Assignment& b) {
+            return b.control != a.control || (b.action == ControlAction::Bypass && (&b == &a || b.module != a.module));
+        });
+        if (!valid_control_id(a.control) || (shared > 1 && !bypasses) || !std::isfinite(a.minimum) || !std::isfinite(a.maximum) || a.minimum > a.maximum)
             return "Invalid control assignment";
         // An orphan is kept for repair; it is never applied, so its range is not checked.
         if (const auto* p = assignment_parameter(g, a); p && (a.minimum < p->minimum || a.maximum > p->maximum)) return "Invalid assignment parameter range";
@@ -321,9 +377,10 @@ std::string format_value(const Parameter& p) {
     if (p.kind == ParameterKind::Toggle) return p.value >= 0.5 ? "On" : "Off";
     if (p.kind == ParameterKind::Enumeration && p.value >= 0 && p.value < p.choices.size())
         return p.choices[static_cast<std::size_t>(p.value)];
+    if (p.unit == beats_unit) if (auto note = note_name(p.value); !note.empty()) return note;
     std::ostringstream out;
     // Narrow ranges, such as 0-1 plugin controls, need decimals to show movement.
-    const int digits = p.unit == "s" ? 1 : p.kind == ParameterKind::Continuous && p.maximum - p.minimum <= 10 ? 2 : 0;
+    const int digits = p.unit == "s" ? 1 : p.unit == beats_unit || (p.kind == ParameterKind::Continuous && p.maximum - p.minimum <= 10) ? 2 : 0;
     out << std::fixed << std::setprecision(digits) << p.value;
     if (!p.unit.empty()) out << " " << p.unit;
     return out.str();

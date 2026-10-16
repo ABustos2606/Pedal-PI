@@ -36,6 +36,8 @@ The agreed collection is "Poly's Mutable-derived modules and compatible MODEP ef
 | Poly `convoLV2` | `8ddddc69` | 3 | `make` | — |
 | Poly `tuna.lv2` | `cfdfb6ae` | 3 | `make MOD=1`, no OpenGL | — |
 | Poly `cv_to_cc.lv2` | `23152a8b` | 1 | `make` | — |
+| Poly `digit_carla` (16 October 2026) | `75609d7d` | 1: Beebo's Delay | `make` in `LV2/digit_delay` | — (its Faust output is committed) |
+| Peepo `plugins/` (16 October 2026) | this repository | 1: Foot switch | `gcc` | — |
 | Poly `PolyMclkIn.lv2` | `64acb88d` | 1 | `gcc`, as its wscript | its waf needs a `waflib` the repository points at without mapping, and that autowaf revision imports Python's removed `imp`; one C file, compiled directly |
 | Poly `avwlv2` | `bfb2e1f1` | 46 | `g++` per plugin, with its wscript's flags and lists | its bundled waf 1.7.11 cannot run on Python 3.13, and it needs LVTK 1 (not packaged); built against LVTK 1.2.0 (`9cc19eba`), without its GTK 2 interfaces |
 | `moddevices/tap-lv2` | `cab6e0df` | 4 in the inventory | `make` | `NOOPT=true` on the Pi, which drops its SSE flags |
@@ -92,10 +94,12 @@ Every component builds for x86-64. All binaries need only libraries the system p
 
 Each needs its own patch to judge. That is listening or control work, not a host problem.
 
+**Plaits and Marbles, 16 October 2026.** Both were recorded as needs-adaptation ("engine check failed", with no reason given). Measured again, they work, on the PC and on the Pi ([results](evidence/plaits-marbles-results.txt)). Plaits sounds in all 17 models without a trigger. Marbles keeps its own clock (8 ticks in 4 s at 120), gives random gates and changing random voltages. Its T range defaults to the slowest (x0.25), as on Beebo, so it ticks at a quarter of its rate until that is raised. The compatibility files change at the next `15-compat.sh` run.
+
 **Unavailable.**
 
 - 16 entries: Beebo maps a Poly plugin with no public source (foot switches, loopers, MIDI-to-CV, detectors, a 3-band EQ, a bitcrusher, two phaser variants).
-- 2: archived Digit plugins, not built.
+- 2: archived Digit plugins, not built. Since 16 October 2026 one of them, `digit_delay`, is built: it is Beebo's Delay (its module map names it). The other, `polylfo`, is a MIDI curve generator that Beebo does not offer; Beebo's LFO is AMS's tempo LFO, already in the catalogue. The Foot switch module stands in for Beebo's foot switches ([physical controls](18-physical-controls.md)). This record and its evidence files are from 14 October; they change at the next `15-compat.sh` run.
 - 2: omins envelopes, LADSPA only in Debian.
 - 3: x42's MIDI clock, MOD's 4×3 matrix mixer and a MIDI controller plugin, none of them packaged and two of them MIDI.
 

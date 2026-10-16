@@ -628,6 +628,25 @@ void adapter() {
     check(rig.result(LoadPatch{knob_bundle, blocks, "p-knob"}).accepted && rig.graph().assignments.size() == 1 && assignment_target(rig.graph(), rig.graph().assignments[0]),
           "saved assignment not restored");
     check(rig.result(RemoveModule{3}).accepted && rig.graph().assignments.empty() && !rig.result(Unassign{"enc1"}).accepted, "a removed module kept its assignment");
+    // A stomp switching the bypass of two modules: one property, both parts.
+    {
+        std::vector<InstanceId> plain;
+        for (const auto& m : rig.graph().modules) if (!m.fixed) plain.push_back(m.id);
+        check(plain.size() >= 2, "the loaded patch has too few modules for a shared stomp");
+        Assignment first{"stomp1", plain[0]}, second{"stomp1", plain[1]};
+        first.action = second.action = ControlAction::Bypass;
+        const auto stomp_key = full(uri::peepo, "control-stomp1");
+        check(rig.result(Assign{first, true}).accepted && rig.result(Assign{second, true}).accepted && rig.graph().assignments.size() == 2,
+              "a second module did not join the stomp");
+        check(assignment_parts(property(fake, "ingen:/main", stomp_key)->text).size() == 2, "the stomp's property does not hold both modules");
+        other.settle();
+        check(bypass_assignments(other.graph(), "stomp1").size() == 2, "another client did not see both modules on the stomp");
+        check(rig.result(Unassign{"stomp1", plain[0]}).accepted && rig.graph().assignments.size() == 1 && rig.graph().assignments[0].module == plain[1],
+              "unassigning one module cleared the stomp");
+        check(rig.result(Assign{first, true}).accepted && rig.result(RemoveModule{plain[1]}).accepted && rig.graph().assignments.size() == 1 &&
+              rig.graph().assignments[0].module == plain[0], "removing one module took the stomp's other module along");
+        check(rig.result(Unassign{"stomp1"}).accepted && rig.graph().assignments.empty(), "clearing the stomp left a module on it");
+    }
 
     // Back to the session snapshot for what follows.
     check(rig.result(LoadSession{}).accepted && rig.graph().patch_id.empty() && find_module(rig.graph(), 3)->parameters[0].value == 6.5, "session snapshot lost");

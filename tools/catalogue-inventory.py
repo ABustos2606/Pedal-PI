@@ -5,7 +5,8 @@
 The selected inventory (P9.1) is every plugin identity in Beebo's module map
 and in Poly's public plugin sources, as recorded in
 docs/lv2-plugin-comparison-data.json, plus the MDA effects and LV2 examples
-the development engine uses as conventional effects and test plugins. The
+the development engine uses as conventional effects and test plugins, and
+Peepo's own plugins. The
 exporter offers only what this list names (`--only`): installing a package
 does not put its other plugins in front of the player.
     python3 tools/catalogue-inventory.py
@@ -21,6 +22,8 @@ MDA = ["Ambience", "Bandisto", "BeatBox", "Combo", "DX10", "DeEss", "Degrade", "
        "Dynamics", "EPiano", "Image", "JX10", "Leslie", "Limiter", "Loudness", "MultiBand", "Overdrive", "Piano", "RePsycho",
        "RezFilter", "RingMod", "RoundPan", "Shepard", "Splitter", "Stereo", "SubSynth", "TalkBox", "TestTone", "ThruZero",
        "Tracker", "Transient", "VocInput", "Vocoder"]
+# Peepo's own plugins, built from plugins/ of this repository.
+PEEPO = ["urn:peepo:lv2:footswitch"]
 EXAMPLES = ["eg-amp", "eg-fifths", "eg-metro", "eg-midigate", "eg-params", "eg-scope#Mono", "eg-scope#Stereo"]
 
 
@@ -44,6 +47,9 @@ def main():
         for uri in groups[origin]:
             lines.append("%s%s" % (uri, ("  # Beebo: " + ", ".join(keys[uri])) if uri in keys else ""))
         lines.append("")
+    lines.append("# Peepo: plugins/ of this repository")
+    lines += PEEPO
+    lines.append("")
     lines.append("# Development: MDA effects (also packaged for MODEP) and the LV2 examples the tests use")
     lines += ["http://drobilla.net/plugins/mda/" + name for name in MDA if "http://drobilla.net/plugins/mda/" + name not in keys]
     lines += ["http://lv2plug.in/plugins/" + name for name in EXAMPLES]

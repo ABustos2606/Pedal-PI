@@ -199,14 +199,15 @@ Graph bundle_graph(const Bundle& bundle) {
         Connection cable{from->first, to->first, from->second, to->second};
         if (std::find(graph.connections.begin(), graph.connections.end(), cable) == graph.connections.end()) graph.connections.push_back(std::move(cable));
     }
-    for (const auto& [control, text] : bundle.controls) {
-        Assignment a;
-        std::string block;
-        if (!decode_assignment(control, text, a, block)) continue;
-        // A block the bundle lacks leaves the assignment orphaned, for repair.
-        if (const auto id = ids.find(block); id != ids.end()) a.module = id->second;
-        graph.assignments.push_back(std::move(a));
-    }
+    for (const auto& [control, text] : bundle.controls)
+        for (const auto& part : assignment_parts(text)) {
+            Assignment a;
+            std::string block;
+            if (!decode_assignment(control, part, a, block)) continue;
+            // A block the bundle lacks leaves the assignment orphaned, for repair.
+            if (const auto id = ids.find(block); id != ids.end()) a.module = id->second;
+            graph.assignments.push_back(std::move(a));
+        }
     return graph;
 }
 
@@ -243,8 +244,13 @@ std::string write_main_ttl(const Graph& graph) {
     }
     for (const auto& c : graph.connections)
         text += " ;\n\tingen:arc [\n\t\tingen:tail " + iri(address(c.from, c.output, true)) + " ;\n\t\tingen:head " + iri(address(c.to, c.input, false)) + "\n\t]";
-    for (const auto& a : graph.assignments)
-        text += " ;\n\tpeepo:control-" + a.control + " " + ingen::string_literal(encode_assignment(a, "m" + std::to_string(a.module)));
+    // One property per control, holding every module a stomp switches.
+    std::map<std::string, std::string> controls;
+    for (const auto& a : graph.assignments) {
+        auto& value = controls[a.control];
+        value += (value.empty() ? "" : " ") + encode_assignment(a, "m" + std::to_string(a.module));
+    }
+    for (const auto& [control, value] : controls) text += " ;\n\tpeepo:control-" + control + " " + ingen::string_literal(value);
     text += " ;\n\tpeepo:patchName " + ingen::string_literal(graph.name);
     text += " ;\n\tpeepo:tempo " + literal_number(graph.tempo);
     if (!graph.patch_id.empty()) text += " ;\n\tpeepo:patchId " + ingen::string_literal(graph.patch_id);

@@ -1,0 +1,25 @@
+# Plaits (Beebo's Macro Osc) and Marbles (Beebo's Chaos Controller) in the engine
+# tools/ingen-spike/20-plaits-marbles.sh, 16 October 2026
+
+# PC, WSL2 Debian, JACK dummy 48 kHz / 128
+PASS  the engine loads Plaits (status 0)
+PASS  Plaits sounds in every one of its 17 models without a trigger
+PASS  the engine loads Marbles (status 0)
+PASS  Marbles keeps its own clock: T2 rises 8 times in 4 s at 120 (expected 8)
+PASS  Marbles T1 gives random gates: 5 in 4 s
+PASS  Marbles X1 gives changing random voltages: 5 distinct values from 0.00 to 0.37
+
+# Pi 5, package peepo-arm64-20261016-cdc4ebe-dirty, second engine beside the instrument
+INSTRUMENT before: peepo-jack=232864 peepo-engine=232879 peepo-ui=232908
+PASS  the engine loads Plaits (status 0)
+PASS  Plaits sounds in every one of its 17 models without a trigger
+PASS  the engine loads Marbles (status 0)
+PASS  Marbles keeps its own clock: T2 rises 8 times in 4 s at 120 (expected 8)
+PASS  Marbles T1 gives random gates: 5 in 4 s
+PASS  Marbles X1 gives changing random voltages: 5 distinct values from 0.00 to 0.37
+INSTRUMENT after:  peepo-jack=232864 peepo-engine=232879 peepo-ui=232908
+
+# Also: peepo_catalogue_live on the PC loads both, matches their ports and
+# moves every control (Marbles 16 connectors, 21 controls; Plaits 10, 11).
+# Note: Marbles' T range defaults to its slowest (x0.25), as on Beebo, so at
+# T rate 120 its clock ticks at 30 per minute until T range is raised.

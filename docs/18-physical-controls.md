@@ -54,9 +54,24 @@ Every source — the simulator's keys today, the GPIO adapter later — produces
 
 - **Toggle:** each press switches between the ends of the assigned range (off/on for a switch such as Clouds freeze).
 - **Momentary:** the far end while held, the near end on release.
-- **Bypass:** each press switches a module's software bypass.
-- **Next or previous patch:** instrument-wide (below).
+- **Bypass:** each press switches the software bypass of one module or several (16 October 2026). Each module flips: one playing is bypassed, one bypassed plays. So two modules set opposite ways swap places, as Beebo's manual suggests for switching between two delays.
+- **Foot switch modules:** a Foot switch module in the patch listens to one stomp (below) and hears every press and release, beside whatever the stomp is assigned.
+- **Next or previous patch, tap tempo:** instrument-wide (below).
 - A press closer than 25 ms after a release is a bounce and is ignored.
+
+**Assigning a stomp from the patch (16 October 2026).** Beebo's way: hold a module on the patch, and its actions open. A stomp pressed while they are open does not play. It now switches that module's bypass, beside any others it already switches; pressing it again there takes the module off. The page says which stomps switch the module. On the patch, each module a stomp acts on shows the stomp's number in a white dot on its top right corner: through its bypass, through an assigned parameter, or, for a Foot switch module, the stomp it listens to.
+
+![Assigning a stomp from a module's actions](images/ui-stomp-quick-assign.png)
+![Stomp numbers on the patch](images/ui-stomp-badges.png)
+
+**A stomp as a control signal (16 October 2026).** The **Foot switch** module (CV + UTIL) is Peepo's own plugin (`plugins/footswitch.lv2`, `urn:peepo:lv2:footswitch`), standing in for Beebo's Foot Switch A-E modules, whose plugin has no public source. Its control output can be cabled to any control input, for example through a slew limiter to a delay's feedback.
+
+- **Stomp** (1, 2 or 3): the stomp it listens to.
+- **Latching:** off, the output follows the stomp (On value while it is down); on, each press flips it.
+- **On value** and **Off value** (0 to 1): what the output gives in each state.
+- **Pressed:** the state the interface sets from the stomp. It can also be switched on its page.
+
+A stomp a Foot switch module listens to belongs to the patch, like an assigned one: it does not also take its every-patch action. Beebo's Foot Switch modules also have a tap tempo output. Peepo's has none, because control cables connect control (CV) ports only, while a module's BPM is a plain control. A stomp set to **Tap tempo** sets the patch tempo instead, and every module with a BPM control follows that.
 
 Switch actions go to the engine at once; only encoder turns are coalesced (one value in flight, newest wins), so a stomp is never delayed behind a stream of knob movement. Controls are ignored while a name is being typed.
 
@@ -78,7 +93,7 @@ Switch actions go to the engine at once; only encoder turns are coalesced (one v
 
 **Settings → Controls** lists the four encoders and three stomps. Each row shows its assignment, an orphan in orange, or "Follows the parameter page" / "Not assigned". Using a control highlights its row, which is how to find which physical knob is which.
 
-- **Assign** picks a module, then a parameter. Stomps also offer **Bypass**, and **Next patch** / **Previous patch**.
+- **Assign** picks a module, then a parameter. Stomps also offer **Bypass**, and **Next patch** / **Previous patch**. A bypass joins the modules the stomp already switches; a parameter replaces whatever the stomp did. **Clear** empties it.
 - **Edit** sets Invert, Toggle or Momentary, the From and To ends of the range, or clears it.
 
 ![Controls page](images/ui-controls.png)
@@ -87,9 +102,9 @@ Switch actions go to the engine at once; only encoder turns are coalesced (one v
 
 **Storage.**
 
-- **Per-patch assignments** are graph properties, one per control: `peepo:control-enc1 "parameter|m4|<plugin>|mix|0|100|0|toggle"`. They therefore live in the engine and in the saved bundle, like everything else (D13), and survive an interface restart.
+- **Per-patch assignments** are graph properties, one per control: `peepo:control-enc1 "parameter|m4|<plugin>|mix|0|100|0|toggle"`. They therefore live in the engine and in the saved bundle, like everything else (D13), and survive an interface restart. A stomp switching several modules holds one such value per module, separated by spaces (no field can hold one): `peepo:control-stomp1 "bypass|m3|<plugin>|... bypass|m5|<plugin>|..."`. A control holds either one assignment or bypasses only.
 - **The plugin is recorded.** A different module that later holds the same identity is never controlled; the assignment is shown as orphaned and is never applied.
-- **Removing a module** removes its assignments in the same edit. Duplicating one does not copy them.
+- **Removing a module** removes its assignments in the same edit; a stomp keeps the other modules it switches. Duplicating one does not copy them.
 - **Patch changes are instrument-wide.** A footswitch that changes patch must do so in every patch, so those actions are kept beside the patches (`<patches>/controls`), not in one. A patch's own assignment of the same stomp takes precedence while it plays.
 - **Unsaved edits are guarded.** A patch change from the footswitch asks first if the current patch has unsaved edits, exactly as on screen.
 
@@ -113,6 +128,9 @@ The keys work in the Windows build against the simulation or a real engine. They
   - following on Clouds' custom pages, with a tap moving to the next page;
   - the Controls page assigning stomp 1 to Clouds freeze in toggle and then momentary mode, and stomp 2 to Delay's bypass;
   - an unassigned stomp, controls ignored while typing a name, a removed module taking its assignment along, and a next-patch footswitch stepping through stored patches and wrapping.
+  - (16 October 2026) holding Drive and pressing stomp 1 assigns its bypass without playing; Clouds joins the same stomp; the patch numbers both; with Clouds bypassed each press swaps the two; Controls names both; pressing again on Drive's actions takes it off. A Foot switch module set to stomp 2 is pressed and released with it, ignores stomp 3, and when latching flips on each press.
+- `peepo_core_tests`, `peepo_ingen_tests`, `peepo_storage_tests` (16 October 2026): a stomp switching two modules is valid, the same module twice or a parameter beside bypasses is not; adding, unassigning one module and removing a module through the simulator and the adapter; one engine property holding both, seen by a second client; a bundle round trip.
+- `tools/ingen-spike/19-delay-footswitch.sh` in the engine under WSL: the Foot switch's control output gives Off value, then On value once Pressed is set.
 
 ## Open points
 

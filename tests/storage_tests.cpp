@@ -174,6 +174,19 @@ void bundles() {
     text.erase(text.find(" ;\n\tpeepo:tempo "), std::string(" ;\n\tpeepo:tempo \"87.5\"^^xsd:double").size());
     Bundle older;
     check(read_bundle(text, older).empty() && !older.tempo && bundle_graph(older).tempo == default_tempo, "a bundle without tempo did not play at the default");
+    // A stomp switching two modules is one property holding both, and comes back as two.
+    auto shared = demo;
+    Assignment one{"stomp1", demo.modules[2].id}, two{"stomp1", demo.modules[3].id};
+    one.action = two.action = ControlAction::Bypass;
+    one.plugin = demo.modules[2].uri; two.plugin = demo.modules[3].uri;
+    shared.assignments = {one, two};
+    const auto shared_text = write_main_ttl(shared);
+    check(shared_text.find("peepo:control-stomp1") == shared_text.rfind("peepo:control-stomp1"), "a shared stomp was written as two properties");
+    Bundle with_stomp;
+    check(read_bundle(shared_text, with_stomp).empty(), "a bundle with a shared stomp was not readable");
+    const auto stomp_back = bundle_graph(with_stomp);
+    check(bypass_assignments(stomp_back, "stomp1").size() == 2 && stomp_back.assignments[0].module == one.module && stomp_back.assignments[1].module == two.module &&
+          validate_graph(stomp_back).empty(), "a shared stomp did not come back with both modules");
     // Files are listed from the store's folder, by name, with the extension asked for.
     const auto files_root = fs::temp_directory_path() / "peepo-file-store-tests";
     fs::remove_all(files_root);

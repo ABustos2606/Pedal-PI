@@ -171,6 +171,40 @@ int main() {
         real.connections.push_back({8, 6, "out1", "position"});
         check(validate_graph(real).empty() && expand_connection(real, {8, 6, "out1", "position"}).connections.size() == 1, "control cable is not one engine connection");
         engine.submit(AddModule{fold->uri, 24, 24}); check(engine.advance(100)[0].accepted, "reference module could not be added");
+        // A time in beats names its note and steps from one note value to the next.
+        check(note_name(0.75) == "1/8 dot" && note_name(1.0 / 3) == "1/8 trip" && note_name(0.6).empty(), "note names");
+        check(step_note(0.5, 1, 0.001, 16) == 2.0 / 3 && step_note(0.5, -1, 0.001, 16) == 0.375, "a step from a note is not the next one");
+        check(step_note(0.6, 1, 0.001, 16) == 2.0 / 3 && step_note(0.6, -1, 0.001, 16) == 0.5, "between notes, a step does not land on the nearer one");
+        check(step_note(16, 1, 0.001, 16) == 16 && step_note(0.5, -40, 0.25, 16) == 0.25 && step_note(1, 3, 0.001, 2) == 2, "a step leaves the range");
+        Parameter beats{"time", "Time", beats_unit, ParameterKind::Continuous, 0.001, 16, 0.75};
+        check(format_value(beats) == "1/8 dot", "a note is not shown by name");
+        beats.value = 0.6; check(format_value(beats) == "0.60 beats", "a time between notes is not shown in beats");
+        // A stomp switches the bypass of several modules: each module once, and
+        // nothing else on the same control.
+        Graph stomps = demo_graph();
+        Assignment drive{"stomp1", 3}; drive.action = ControlAction::Bypass;
+        Assignment clouds{"stomp1", 4}; clouds.action = ControlAction::Bypass;
+        stomps.assignments = {drive};
+        auto held = assignments_after(stomps, clouds, true);
+        check(held.size() == 2 && held[0].module == 3 && held[1].module == 4, "adding a bypass dropped the others");
+        check(assignments_after(stomps, clouds, false).size() == 1, "assigning without adding kept the others");
+        stomps.assignments = held;
+        check(validate_graph(stomps).empty() && bypass_assignments(stomps, "stomp1").size() == 2, "a stomp switching two modules is invalid");
+        check(assignments_after(stomps, drive, true).size() == 2, "the same module was added twice");
+        stomps.assignments.push_back(drive);
+        check(!validate_graph(stomps).empty(), "the same module twice on one stomp accepted");
+        stomps.assignments.pop_back();
+        Assignment freeze{"stomp1", 4, "freeze", 0, 1};
+        stomps.assignments.push_back(freeze);
+        check(!validate_graph(stomps).empty(), "a parameter shared a stomp with bypasses");
+        check(assignment_parts(" a  b ") == std::vector<std::string>{"a", "b"} && assignment_parts("").empty(), "assignment parts");
+        engine.submit(LoadGraph{demo_graph()}); engine.advance(100);
+        engine.submit(Assign{drive, true}); engine.submit(Assign{clouds, true}); engine.advance(100);
+        check(engine.snapshot().assignments.size() == 2, "the simulator did not add a second bypass to a stomp");
+        engine.submit(Unassign{"stomp1", 3}); engine.advance(100);
+        check(engine.snapshot().assignments.size() == 1 && engine.snapshot().assignments[0].module == 4, "unassigning one module cleared the stomp");
+        engine.submit(Assign{drive, true}); engine.submit(RemoveModule{4}); engine.advance(100);
+        check(engine.snapshot().assignments.size() == 1 && engine.snapshot().assignments[0].module == 3, "removing a module took the stomp's other module along");
         std::cout << "Domain validation, typed ranges, delayed acknowledgment, rejection, reconnect and restore passed.\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

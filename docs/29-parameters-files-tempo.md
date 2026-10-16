@@ -60,11 +60,17 @@ NAM, LV2 Convolution and Poly's convolvers (IR reverb, Cabinet) were withheld on
 
 Every patch has a tempo, 30 to 300 BPM, 120 by default. It is a graph property (`peepo:tempo`), so it is in the engine, seen by every client and saved with the patch; a bundle saved before it existed plays at 120.
 
-Modules take the tempo the way Beebo's modules do, on a BPM control of their own. The overlay names that control (`"tempo": "BPM_1"`) for Poly's chorus, flanger, harmonic tremolo, vibrato, BPM sequencers, Grids, trigger-to-gate and tempo ratio, and AMS's beat repeaters, beat slicers and tempo LFO. Changing the tempo sets every such control in the patch, inside its own range; a module added later starts at the patch tempo. The control stays on the module's page: moved by hand, it leaves the tempo until the tempo next changes. Plugins that read JACK transport instead (a few MOD and x42 plugins) do not follow it; that needs the engine to act as a JACK timebase master, which it does not.
+Modules take the tempo the way Beebo's modules do, on a BPM control of their own. The overlay names that control (`"tempo": "BPM_1"`) for Beebo's Delay, Poly's chorus, flanger, harmonic tremolo, vibrato, BPM sequencers, Grids, trigger-to-gate and tempo ratio, and AMS's beat repeaters, beat slicers and tempo LFO (Beebo's LFO). Changing the tempo sets every such control in the patch, inside its own range; a module added later starts at the patch tempo. The control stays on the module's page: moved by hand, it leaves the tempo until the tempo next changes. Plugins that read JACK transport instead (a few MOD and x42 plugins) do not follow it; that needs the engine to act as a JACK timebase master, which it does not.
 
 The footer's **BPM** is now the patch tempo (no longer a simulator fixture) and opens the **Tempo** page: the tempo, -5, -1, +1, +5, a slider, a large **Tap** pad, and the modules that follow it. On that page an unpinned encoder 1 turns the tempo by one BPM a detent. A footswitch can be set to **Tap tempo** in Settings > Controls; like next/previous patch it works in every patch that does not use the switch otherwise. Taps: two give a tempo, up to four intervals are averaged, a pause longer than two seconds starts again, and the result is shown and stored in whole BPM.
 
 ![Tempo](images/ui-tempo.png)
+
+**Times in beats (16 October 2026).** Beebo's Delay (`http://polyeffects.com/lv2/digit_delay`, now built from Poly's archived Digit source) sets its time in beats at its own BPM, and its BPM follows the patch tempo. Rhythmic delays come for free: 1/8 is 250 ms at 120 BPM and 500 ms at 60. The overlay gives such a control the unit `beats`. Its tile then shows the note it lasts (1/32 up to 4 bars, with dotted and triplet values) and the same time in milliseconds at the module's tempo. **-** and **+** step from one note value to the next, as does an encoder; pushed and turned, the encoder moves freely, and so does the slider. Between two notes the value shows in beats ("0.60 beats").
+
+Beebo's Delay also has a milliseconds mode, which leaves the tempo alone. Peepo has none: a time in beats always follows the patch tempo, and its milliseconds are shown.
+
+![A time in beats](images/ui-beat-time.png)
 
 ## Verification
 

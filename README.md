@@ -80,6 +80,7 @@ Inside Debian under WSL2, as root: `bash tools/pi/build-arm64.sh` builds the eng
 | [NAM in Ingen](docs/21-nam.md) | The two NAM plugins compared in the engine: model loading, worker and state, errors and the selected candidate |
 | [Plugin catalogue](docs/22-plugin-catalogue.md) | The selected inventory, how the rest of Poly's and Beebo's plugins are built, and a compatibility record for every entry |
 | [Pi bring-up](docs/23-pi-bring-up.md) | The Pi as found, and the first sound through the Peepo engine and interface on it |
+| [Beebo manual gaps](docs/30-beebo-manual-gaps.md) | Features in the Beebo manual that Peepo lacked: looper, set list, MIDI, USB import/export, effects loops; Beebo's Delay, the Foot switch module and assigning stomps from the patch are done |
 
 ## Retrieve the project and reference sources
 

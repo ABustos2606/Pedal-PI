@@ -111,6 +111,14 @@ private:
     void gesture(const Gesture&);
     void encoder(const Gesture&);
     void stomp(const Gesture&);
+    // A stomp pressed while a module's actions are open: it switches that
+    // module's bypass from then on, beside any others, or no longer does.
+    void quick_assign(const std::string& control);
+    // Give Footswitch modules listening to a stomp its press or release;
+    // false when none listens. What changed is added to `said`.
+    bool drive_footswitches(const std::string& control, bool pressed, std::vector<std::string>& said);
+    // Whether a control's assignments all lead to modules that are gone.
+    bool orphaned(const std::string& control) const;
     void step_patch(int direction);
     const Assignment* pinned(const std::string& control) const;
     std::size_t parameter_pages(const Module&) const;

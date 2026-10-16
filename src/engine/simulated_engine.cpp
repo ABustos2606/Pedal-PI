@@ -130,10 +130,12 @@ std::string SimulatedEngine::apply(const Command& command) {
             if (!assignment_target(graph_, a)) return "Control target is unavailable";
             if (const auto* p = assignment_parameter(graph_, a); p && (a.minimum < p->minimum || a.maximum > p->maximum || a.minimum > a.maximum))
                 return "Invalid assignment parameter range";
+            auto held = assignments_after(graph_, a, c.add);
             std::erase_if(graph_.assignments, [&](const Assignment& old) { return old.control == a.control; });
-            graph_.assignments.push_back(std::move(a));
+            for (auto& entry : held) graph_.assignments.push_back(std::move(entry));
         } else if constexpr (std::is_same_v<T, Unassign>) {
-            if (!std::erase_if(graph_.assignments, [&](const Assignment& old) { return old.control == c.control; })) return "Control is not assigned";
+            if (!std::erase_if(graph_.assignments, [&](const Assignment& old) { return old.control == c.control && (!c.module || old.module == c.module); }))
+                return "Control is not assigned";
         } else if constexpr (std::is_same_v<T, LoadPatch>) {
             const auto path = local_path(c.location);
             std::ifstream in(path / "main.ttl", std::ios::binary);
