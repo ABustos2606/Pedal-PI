@@ -13,7 +13,7 @@ The software direction is a **new touchscreen interface designed for this instru
 | Computer | Raspberry Pi 5, 2 GB RAM, official 27 W supply (user-confirmed) | Confirm cooling and storage |
 | Operating system | Patchbox OS | Identify release, kernel, userland architecture, and audio configuration |
 | Display | 5-inch HDMI touchscreen, advertised 800 × 480; capacitive with five touch points, touch and power over USB, video over HDMI (user-confirmed 13 October 2026) | Confirm actual mode, controller identity and calibration |
-| Audio interface | Flexible; not yet selected; inexpensive USB is acceptable | Select input/output channels, guitar input impedance, Linux support, and usable latency |
+| Audio interface | Tascam US-100 (USB) in use for development; a smaller I²S option (PCM1808 ADC + PCM5102A DAC + op-amp guitar buffer) is under consideration for the enclosure ([I²S audio interface](27-i2s-audio-interface.md)) | Select input/output channels, guitar input impedance, Linux support, and usable latency |
 | Knobs | Four 20-pulse rotary encoders with push switches, owned by the user (14 October 2026) | Wire to the Pi and verify detent counting; see [physical controls](18-physical-controls.md) |
 | Stomp switches | Three momentary SPST footswitches (14 October 2026); momentary rather than latching, so their meaning is set per patch | Wire to the Pi; see [physical controls](18-physical-controls.md) |
 

@@ -83,7 +83,7 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 | D04 | Include Poly's Mutable Instruments-derived modules and compatible MODEP effects | Agreed ambition; individual compatibility unverified |
 | D05 | Documentation before implementation | Agreed |
 | D06 | OS/dependency baseline | Current baseline verified on Pi: Patchbox OS / Debian 12 bookworm arm64; matching bookworm build root with lilv 0.24.24 and zix 0.4.2 in /opt/peepo. The rebuilt package runs there; a later final OS decision remains separate ([record](23-pi-bring-up.md)) |
-| D07 | Audio interface, channels, sample rate and buffers | Current development path verified: Tascam US-100 / CODEC, stereo at 48 kHz / 128 frames × 3 periods. Guitar and short UI-restart continuity are confirmed; final interface choice, gain/latency and buffer budgets remain open |
+| D07 | Audio interface, channels, sample rate and buffers | Current development path verified: Tascam US-100 / CODEC, stereo at 48 kHz / 128 frames × 3 periods. Guitar and short UI-restart continuity are confirmed; final interface choice, gain/latency and buffer budgets remain open. A built-in I²S alternative (PCM1808 as clock master + PCM5102A + guitar buffer) is assessed but not yet built ([record](27-i2s-audio-interface.md)) |
 | D08 | Knob/switch counts and transport | Counts agreed 14 October 2026: four push encoders the user owns, three momentary SPST footswitches. Transport proposed: direct GPIO through the kernel's rotary-encoder and gpio-key drivers, to verify on the Pi ([physical controls](18-physical-controls.md)) |
 | D09 | Numeric cold-boot and latency targets | Open; measure first |
 | D10 | Storage layout, recovery, and shutdown design | Open |
@@ -103,10 +103,10 @@ The [technical implementation plan](10-technical-implementation-plan.md), prepar
 
 ## Remaining information and resolved implementation inputs
 
-1. Intended guitar/output connections and requirements for selecting a suitable USB audio interface.
+1. Intended guitar/output connections and requirements for selecting a suitable audio interface: USB, or the built-in I²S converters assessed in [I²S audio interface](27-i2s-audio-interface.md).
 2. Resolved for the current baseline: Debian 12 bookworm arm64, kernel and service inventory recorded in [Pi bring-up](23-pi-bring-up.md).
 3. Screen controller and actual pixel mode. The user confirms a capacitive panel with five touch points, touch and power over USB and video over HDMI, working under Zynthian and Patchbox/MODEP.
-4. Answered 14 October 2026: four 20-pulse push encoders and three momentary SPST footswitches. Still open: the enclosure arrangement, and the encoders' detent count on the bench.
+4. Answered 14 October 2026: four 20-pulse push encoders and three momentary SPST footswitches. Still open: the enclosure arrangement (its size depends mainly on the audio interface and power design; see [I²S audio interface](27-i2s-audio-interface.md)), and the encoders' detent count on the bench.
 5. Cooling, storage, and whether a spare card is available for development. The power supply is the official 27 W unit.
 6. Which conventional effects are essential in the first usable patch, alongside Clouds.
 7. Resolved: SSH access to the Pi is configured and has been used for deployment and native tests.

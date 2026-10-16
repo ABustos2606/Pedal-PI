@@ -138,7 +138,7 @@ The first command saves a new copy of the current patch and reloads it, leaving 
 
 - **On the Pi.** The package, DRM/KMS output and touch were first run on the Pi on 14 October 2026 ([Pi bring-up](23-pi-bring-up.md)). GPIO controls are still untried.
 - **Bench checks.** The overlays' names and steps per detent, and whether the panel offers 800 × 480, are to check on the bench. If it does not, a `video=` kernel argument may be needed.
-- **`peepo.conf` placeholders.** `JACK_DRIVER_OPTIONS=-d hw:USB -r 48000 -p 128 -n 3` is a placeholder until the audio interface is chosen and measured (P0.3). The Pi currently uses `-d hw:CODEC` for the Tascam US-100.
+- **`peepo.conf` placeholders.** `JACK_DRIVER_OPTIONS=-d hw:USB -r 48000 -p 128 -n 3` is a placeholder until the audio interface is chosen and measured (P0.3). The Pi currently uses `-d hw:CODEC` for the Tascam US-100. An I²S interface would need its own card name here ([I²S audio interface](27-i2s-audio-interface.md)).
 - **The startup patch.** Clouds guitar is selected and restored on boot by the interface, so audio still waits for the interface. Missing-plugin/asset startup validation on Pi remains P10.4.
 - **Power loss.** An abrupt power loss during a save is still untested (P5.5/P10.5).
 - **TCP after a quick restart.** An engine restarted with a TCP port immediately after a kill can fail to open it ([patch storage](17-patch-storage.md)). The installed engine has no TCP port.
