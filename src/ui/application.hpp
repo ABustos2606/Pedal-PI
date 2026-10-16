@@ -29,6 +29,10 @@ public:
     // How the instrument powers off, returning why it could not. Left unset
     // where the interface must never do it, such as on a desktop.
     void set_power_off(std::function<std::string()> power_off) { power_off_ = std::move(power_off); rebuild_ = true; }
+    // How the instrument is reached on the network, shown in Settings so it
+    // can be found without a keyboard. Left unset where it means nothing.
+    struct Network { bool connected = false; std::string text; };
+    void set_network(std::function<Network()> network) { network_ = std::move(network); rebuild_ = true; }
 private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
@@ -91,6 +95,7 @@ private:
     void update_viewport();
     void update_cables();
     void update_metrics();
+    void update_network();
     void indicate_targets(bool);
     std::optional<std::pair<int, int>> vacant_slot() const;
     void reveal(int x, int y);
@@ -126,6 +131,10 @@ private:
     struct Confirmation { std::string title, heading, body, button; std::function<void()> act; Page back = Page::Patches; };
     Confirmation confirmation_;
     std::function<std::string()> power_off_;
+    std::function<Network()> network_;
+    // Settings shows the network, read again every couple of seconds.
+    lv_obj_t* network_value_ = nullptr;
+    unsigned network_age_ = 0;
     // Physical controls: gestures, and what the encoders follow on a parameter page.
     ControlLayout layout_;
     ControlRecognizer recognizer_;

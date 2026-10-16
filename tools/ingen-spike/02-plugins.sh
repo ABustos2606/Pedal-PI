@@ -29,6 +29,14 @@ git -C lenticular_lv2 checkout -q "$LENTICULAR_COMMIT"
 # Only the DSP libraries the build reads; the firmware bootloaders are not needed.
 git -C lenticular_lv2 submodule update -q --init eurorack parasites/stmlib
 git -C lenticular_lv2/eurorack submodule update -q --init stmlib
+# Clouds' blend mixes the untouched input with Clouds' own sound, and an
+# Output control sets the level of the mix (the patch explains both). The two
+# files are reset first, so an earlier version of the patch never gets in the way.
+CLOUDS_PATCH="$(dirname "$(readlink -f "$0")")/../plugin-patches/clouds-blend-and-output.patch"
+if ! git -C lenticular_lv2 apply --reverse --check "$CLOUDS_PATCH" 2>/dev/null; then
+    git -C lenticular_lv2 checkout -q -- src/polyclouds.cpp polyclouds.ttl
+    git -C lenticular_lv2 apply "$CLOUDS_PATCH"
+fi
 
 # The makefile's rule for polyrings.ttl ends in a stray `""` command, which
 # fails. Copying that one file first means make never runs the rule.

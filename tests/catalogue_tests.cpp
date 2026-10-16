@@ -114,7 +114,8 @@ void overlay() {
         {"symbol": "pitch_param", "kind": "integer", "unit": "st", "default": 0}, {"symbol": "in_gain_param", "hidden": true})"), controls);
     check(applied.empty(), applied.c_str());
     const auto& changed = find(controls)->parameters;
-    check(changed.size() == original.size() - 1 && changed[0].symbol == "texture_param" && changed[0].name == "Grain shape" && changed[1].kind == ParameterKind::Toggle &&
+    // One hidden; and with no rule naming its own output, it gains the general Output last.
+    check(changed.size() == original.size() && changed.back().symbol == general_output_symbol && changed.back().unit == "dB" && changed[0].symbol == "texture_param" && changed[0].name == "Grain shape" && changed[1].kind == ParameterKind::Toggle &&
           changed[2].kind == ParameterKind::Integer && changed[2].unit == "st" && changed[2].value == 0 && changed[2].minimum == original[2].minimum, "parameter rule not applied");
     check(changed[3].symbol == "position_param" && changed[4].symbol == "size_param", "unlisted controls lost their order");
     check(find(controls)->project_defaults == std::vector<std::string>{"pitch_param"}, "chosen default not recorded for the adapter");
@@ -154,22 +155,23 @@ void fixture(const std::string& folder) {
     check(gain.symbol == "gain" && gain.minimum == -90 && gain.maximum == 24 && gain.value == 0 && gain.unit == "dB" && gain.kind == ParameterKind::Continuous, "exported range or unit wrong");
 
     // Clouds as the overlay presents it: named per mode, switches for freeze
-    // and reverse, whole semitones, the inert input gain hidden, and the
-    // controls that matter first.
+    // and reverse, whole semitones, the inert input gain hidden, the controls
+    // that matter first, and Peepo's Output level beside Blend.
     const ModuleDefinition* shown = nullptr;
     for (const auto& d : offered) if (d.uri == "http://polyeffects.com/lv2/polyclouds#granular") shown = &d;
-    check(shown && shown->name == "Clouds" && shown->parameters.size() == 11 && shown->enable_symbol == "enabled", "Clouds overlay not applied");
-    const char* order[] = {"position_param", "size_param", "density_param", "texture_param", "pitch_param", "blend_param", "freeze_param", "reverse_param"};
+    check(shown && shown->name == "Clouds" && shown->parameters.size() == 12 && shown->enable_symbol == "enabled", "Clouds overlay not applied");
+    const char* order[] = {"position_param", "size_param", "density_param", "texture_param", "pitch_param", "blend_param", "output_param", "freeze_param", "reverse_param"};
     for (std::size_t i = 0; i < std::size(order); ++i) check(shown->parameters[i].symbol == order[i], "Clouds controls not in the overlay's order");
     for (const auto& p : shown->parameters) {
         check(p.symbol != "in_gain_param", "Clouds' inert input gain is shown");
         if (p.symbol == "freeze_param" || p.symbol == "reverse_param") check(p.kind == ParameterKind::Toggle, "Clouds freeze or reverse is not a switch");
+        if (p.symbol == "output_param") check(p.name == "Output" && p.unit == "dB" && p.minimum == -24 && p.maximum == 12 && p.value == 0, "Clouds Output is not 0 dB in -24..+12 dB");
         if (p.symbol == "pitch_param") check(p.kind == ParameterKind::Integer && p.unit == "st" && p.value == 0 && p.minimum == -48 && p.maximum == 48, "Clouds pitch not whole semitones from 0 in the plugin's range");
     }
     check(shown->project_defaults == std::vector<std::string>{"pitch_param", "freeze_param", "reverse_param"}, "Clouds defaults not marked for the adapter to set");
     for (const auto& d : offered)
         if (d.uri.find("polyclouds#") != std::string::npos)
-            check(d.parameters.size() == 11 && std::none_of(d.parameters.begin(), d.parameters.end(), [](const Parameter& p) { return p.kind == ParameterKind::Continuous && (p.symbol == "freeze_param" || p.symbol == "pitch_param"); }),
+            check(d.parameters.size() == 12 && std::none_of(d.parameters.begin(), d.parameters.end(), [](const Parameter& p) { return p.kind == ParameterKind::Continuous && (p.symbol == "freeze_param" || p.symbol == "pitch_param"); }),
                   "a Clouds mode missed the shared rules");
 
     // Two independent readings of the same plugins must agree: the reference
@@ -197,7 +199,12 @@ void fixture(const std::string& folder) {
         if (!exported) continue;
         ++compared;
         check(exported->name == "Poly " + reference.name, "exported name differs from the reference reading");
-        check(exported->ports.size() == reference.ports.size() && exported->parameters.size() == reference.parameters.size(), "exported port or control count differs from the reference reading");
+        // Clouds' Output is Peepo's own (tools/plugin-patches/clouds-blend-and-output.patch),
+        // added after every upstream control; the reference reads the unpatched files.
+        const bool output_added = reference.uri.find("polyclouds#") != std::string::npos;
+        check(!output_added || (!exported->parameters.empty() && exported->parameters.back().symbol == "output_param"), "patched Clouds has no Output control");
+        check(exported->ports.size() == reference.ports.size() && exported->parameters.size() == reference.parameters.size() + (output_added ? 1 : 0),
+              "exported port or control count differs from the reference reading");
         for (std::size_t i = 0; i < reference.ports.size(); ++i)
             check(exported->ports[i].symbol == reference.ports[i].symbol && exported->ports[i].direction == reference.ports[i].direction && exported->ports[i].type == reference.ports[i].type,
                   "exported connector differs from the reference reading");
@@ -232,7 +239,7 @@ void fixture(const std::string& folder) {
     engine.submit(AddModule{"http://polyeffects.com/lv2/polyclouds#granular", 240, 240});
     check(engine.advance(100)[0].accepted, "simulation could not add an exported module");
     const auto& clouds = engine.snapshot().modules.back();
-    check(clouds.ports.size() == 16 && clouds.parameters.size() == 11, "exported module lost its connectors or controls in the simulation");
+    check(clouds.ports.size() == 16 && clouds.parameters.size() == 12, "exported module lost its connectors or controls in the simulation");
     engine.submit(SetParameter{clouds.id, clouds.parameters[0].symbol, clouds.parameters[0].maximum});
     engine.submit(Connect{{3, clouds.id, "out", "l_in"}});
     const auto events = engine.advance(100);

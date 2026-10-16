@@ -104,4 +104,10 @@ After a reboot:
 - The interface held the DRM card on its first start.
 - `pkcheck` granted power-off to `peepo` and refused it to other users.
 
-The Shut down button itself has not been pressed yet.
+The Shut down button was first used on 16 October 2026: the user shut down from Settings, power-cycled, and the instrument came back with its patch and services.
+
+**Wi-Fi, 16 October 2026.** The Pi sits upstairs on the guest network `Camarones-invitades-2.4`, where its signal is moderate (about -55 dBm). On one boot it failed to associate 26 times; NetworkManager then stopped retrying (its default allows 4 rounds), so the Pi stayed unreachable until a restart. With the instrument on the screen there is no visible console (Ctrl+Alt+F2 shows nothing while the interface holds the display), so:
+- the connection now retries without limit: `nmcli con mod Camarones-invitades-2.4 connection.autoconnect-retries 0` (undo with `-1`);
+- Settings shows the Wi-Fi name, address and signal, or "Not connected", so the instrument can be found without a keyboard.
+
+The new interface binary was installed by itself (`/opt/peepo/bin/peepo`, previous one kept as `peepo.prev`) and only `peepo-ui` was restarted; JACK and the engine kept their PIDs. The Pi still reported undervoltage and throttling (`vcgencmd get_throttled` = `0x50005`).

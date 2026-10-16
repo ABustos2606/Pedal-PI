@@ -21,6 +21,8 @@ const std::string value_key = iri(uri::ingen, "value"), enabled_key = iri(uri::i
 const std::string x_key = iri(uri::ingen, "canvasX"), y_key = iri(uri::ingen, "canvasY");
 const std::string name_key = iri(uri::peepo, "displayName"), patch_name_key = iri(uri::peepo, "patchName");
 const std::string patch_id_key = iri(uri::peepo, "patchId"), modified_key = iri(uri::peepo, "modified");
+// The general Output is the block's own property, in dB, not a plugin port.
+const std::string output_level_key = iri(uri::peepo, "outputLevel");
 // One graph property per pinned control: peepo:control-enc1 "parameter|m3|...".
 const std::string control_prefix = iri(uri::peepo, "control-");
 // Where the engine may write or read a bundle: a plain file URI to a .ingen
@@ -433,6 +435,12 @@ void Session::rebuild() {
                 m.parameters.push_back(std::move(parameter));
             }
         }
+        if (known)
+            for (auto parameter : known->parameters)
+                if (parameter.symbol == general_output_symbol) {
+                    parameter.value = std::clamp(finite(find(properties, output_level_key)).value_or(parameter.value), parameter.minimum, parameter.maximum);
+                    m.parameters.push_back(std::move(parameter));
+                }
         if (known) std::stable_sort(m.parameters.begin(), m.parameters.end(), [&](const Parameter& a, const Parameter& b) {
             auto rank = [&](const Parameter& p) {
                 return std::find_if(known->parameters.begin(), known->parameters.end(), [&](const Parameter& k) { return k.symbol == p.symbol; }) - known->parameters.begin();
@@ -577,7 +585,8 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
         send(to, put(number, path, block(m.uri, m.name, m.x, m.y, m.bypassed)), number);
         if (own_switch) set_local(child(path, known->enable_symbol), "ingen:value", value_key, float_literal(1), ingen::number(1));
         for (const auto& parameter : m.parameters)
-            set_local(child(path, parameter.symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
+            if (parameter.symbol == general_output_symbol) set_local(path, "peepo:outputLevel", output_level_key, float_literal(parameter.value), ingen::number(parameter.value));
+            else set_local(child(path, parameter.symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
         next_instance_ = std::max(next_instance_, m.id + 1);
     }
     for (const auto& cable : graph.connections) {
@@ -728,7 +737,10 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 auto number = sequence();
                 send(to, copy(number, found->second, copy_path), number);
                 number = sequence();
-                send(to, put(number, copy_path, position(c.x, c.y) + " ;\n\t\tpeepo:displayName " + string_literal(m->name)), number);
+                // The engine applies a block's output level only when told, so the copy is told too.
+                std::string level;
+                for (const auto& p : m->parameters) if (p.symbol == general_output_symbol) level = " ;\n\t\tpeepo:outputLevel " + float_literal(p.value);
+                send(to, put(number, copy_path, position(c.x, c.y) + " ;\n\t\tpeepo:displayName " + string_literal(m->name) + level), number);
                 send(to, get, copy_path);
             } else if constexpr (std::is_same_v<T, SetBypass>) {
                 if (m->fixed) return "Endpoints cannot be bypassed";
@@ -745,7 +757,8 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 // The engine stores whatever it is sent, so the range is enforced here.
                 if (!std::isfinite(c.value) || c.value < it->minimum || c.value > it->maximum) return "Value is outside the parameter range";
                 if (it->kind != ParameterKind::Continuous && c.value != std::round(c.value)) return "Parameter requires a discrete value";
-                set_local(child(found->second, c.symbol), "ingen:value", value_key, float_literal(c.value), ingen::number(c.value));
+                if (c.symbol == general_output_symbol) set_local(found->second, "peepo:outputLevel", output_level_key, float_literal(c.value), ingen::number(c.value));
+                else set_local(child(found->second, c.symbol), "ingen:value", value_key, float_literal(c.value), ingen::number(c.value));
             }
         }
         return result;

@@ -728,6 +728,32 @@ int main(int argc, char** argv) {
             check(!text_label(app.screen(), "LEGACY TUNER"), "hidden duplicate in Add list");
             const auto invalid = peepo::tuning_from_frequency(std::nan(""), 440);
             check(!invalid && !peepo::tuning_from_frequency(440, 0), "invalid pitch/reference accepted");
+            // Settings says how the instrument is reached, and follows changes while open.
+            peepo::Application::Network network{true, "Wi-Fi Camarones-invitades-2.4 / 192.168.10.157 / signal good (-55 dBm)"};
+            unsigned reads = 0;
+            app.set_network([&] { ++reads; return network; });
+            click(app, 70, 456); step(app); click(app, 707, 36);
+            check(app.page() == peepo::Page::Settings && text_label(app.screen(), network.text), "settings did not show the network");
+            capture(app, output / "43-settings-network.bmp");
+            network = {false, "Not connected"}; step(app, 2100);
+            check(text_label(app.screen(), "Not connected"), "the network line did not follow a lost connection");
+            click(app, 70, 456); const auto before = reads; step(app, 4200);
+            check(reads == before, "the network was read with Settings closed");
+        }
+        // A module with no output control of its own shows the general Output, in dB, on its page.
+        {
+            const std::string uri = "urn:peepo:test:chorus";
+            peepo::register_definitions({{uri, "Chorus", "Modulation", "Test chorus", 0xc4b5fd,
+                {{"in", peepo::Direction::Input}, {"out", peepo::Direction::Output}},
+                {{"depth", "Depth", "", peepo::ParameterKind::Continuous, 0, 1, 0.5}, peepo::general_output_parameter()}}});
+            peepo::SimulatedEngine sim;
+            sim.submit(peepo::LoadGraph{peepo::empty_graph("Output")}); sim.advance(100);
+            sim.submit(peepo::AddModule{uri, 184, 132}); sim.advance(100);
+            peepo::Application app(sim); step(app);
+            const auto chorus = app.graph().modules.back();
+            click(app, chorus.x + 48, chorus.y + 72 + 48);
+            check(app.page() == peepo::Page::Parameters && text_label(app.screen(), "OUTPUT") && text_label(app.screen(), "0 dB"), "general Output missing from the module page");
+            capture(app, output / "44-general-output.bmp");
         }
         // Release the headless devices before the global runtime.
         lv_indev_delete(indev);

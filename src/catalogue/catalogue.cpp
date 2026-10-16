@@ -272,6 +272,7 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
         if (uri.empty() == match.empty()) return rule.where + ": needs exactly one of \"uri\" and \"match\"";
         const auto name = rule.text("name", false, 96), category = rule.text("category", false, 48), description = rule.text("description", false);
         const auto color = rule.text("color", false), reason = rule.text("reason", false), prefix = rule.text("strip_prefix", false, 48);
+        const auto output = rule.text("output", false, 256);
         const bool has_availability = item.get("availability") != nullptr;
         const bool has_hidden = item.get("hidden") != nullptr;
         const bool hidden = rule.flag("hidden");
@@ -296,6 +297,23 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
             if (!category.empty()) { d.category = category; d.color = category_color(category); }
             if (!color.empty()) d.color = parsed;
             if (has_availability && static_cast<int>(availability) > static_cast<int>(d.availability)) { d.availability = availability; d.availability_reason = reason; }
+            if (!output.empty()) d.output_symbol = output;
+        }
+    }
+    // Every module that makes sound has one Output: the plugin's own level
+    // control where the overlay names one, the general one otherwise. "none"
+    // is for modules that only pass their input on, such as a tuner.
+    for (auto& d : changed) {
+        if (d.output_symbol == "none") continue;
+        if (!d.output_symbol.empty()) {
+            const auto own = std::find_if(d.parameters.begin(), d.parameters.end(), [&](const Parameter& p) { return p.symbol == d.output_symbol; });
+            if (own == d.parameters.end()) return d.uri + ": its output control " + d.output_symbol + " is not one of its shown controls";
+            own->name = "Output";
+        } else if (std::any_of(d.ports.begin(), d.ports.end(), [](const Port& p) { return p.type == PortType::Audio && p.direction == Direction::Output; }) &&
+                   std::none_of(d.parameters.begin(), d.parameters.end(), [](const Parameter& p) { return p.symbol == general_output_symbol; })) {
+            if (std::any_of(d.ports.begin(), d.ports.end(), [](const Port& p) { return p.symbol == general_output_symbol; }))
+                return d.uri + ": a port is named " + general_output_symbol + ", which the general Output needs";
+            d.parameters.push_back(general_output_parameter());
         }
     }
     modules = std::move(changed);

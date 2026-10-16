@@ -96,6 +96,8 @@ std::string read_bundle(std::string_view text, Bundle& out) {
             else if (predicate == ingen_ns + "canvasY") y = number(object);
             else if (predicate == ingen_ns + "enabled") block.enabled = boolean(object).value_or(true);
             else if (predicate == state_key && object.kind == Term::Kind::Iri) block.state = relative(object.value);
+            // The general Output is the block's own level, read like a control.
+            else if (predicate == peepo_ns + "outputLevel") { if (const auto value = number(object)) block.values[general_output_symbol] = *value; }
         }
         if (block.plugin.empty()) return "main.ttl has a block without a plugin: " + subject;
         if (!ingen::lv2_symbol(block.symbol) || !ingen::safe_iri(block.plugin)) return "main.ttl has a block the engine could not address: " + subject;
@@ -216,10 +218,13 @@ std::string write_main_ttl(const Graph& graph) {
         blocks.push_back(iri(symbol));
         const auto* known = definition(m.uri);
         const bool own_switch = known && !known->enable_symbol.empty();
+        std::string level;
+        for (const auto& p : m.parameters) if (p.symbol == general_output_symbol) level = " ;\n\tpeepo:outputLevel " + literal_number(p.value);
         text += iri(symbol) + "\n\ta ingen:Block ;\n\tlv2:prototype " + iri(m.uri) + " ;\n\tingen:canvasX " + literal_number(m.x) + " ;\n\tingen:canvasY " +
-                literal_number(m.y) + " ;\n\tpeepo:displayName " + ingen::string_literal(m.name) + (m.bypassed ?" ;\n\tingen:enabled false" : "") + " .\n\n";
+                literal_number(m.y) + " ;\n\tpeepo:displayName " + ingen::string_literal(m.name) + (m.bypassed ?" ;\n\tingen:enabled false" : "") + level + " .\n\n";
         if (own_switch) text += iri(symbol + "/" + known->enable_symbol) + "\n\tingen:value " + literal_number(1) +" .\n\n";
-        for (const auto& p : m.parameters) text += iri(symbol + "/" + p.symbol) + "\n\tingen:value " + literal_number(p.value) + " .\n\n";
+        for (const auto& p : m.parameters)
+            if (p.symbol != general_output_symbol) text += iri(symbol + "/" + p.symbol) + "\n\tingen:value " + literal_number(p.value) + " .\n\n";
     }
     auto address = [&](InstanceId id, const std::string& port, bool source) {
         for (const auto& endpoint : endpoints)

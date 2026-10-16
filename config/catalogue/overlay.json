@@ -9,31 +9,31 @@
       {"symbol": "freeze_param", "kind": "toggle", "default": 0},
       {"symbol": "reverse_param", "kind": "toggle", "default": 0}
     ]},
-    {"uri": "http://polyeffects.com/lv2/polyclouds#granular", "name": "Clouds", "description": "Granular texture from the live input. Freeze holds the buffer; blend at 0 is the dry signal, about 9 dB down.", "parameters": [
+    {"uri": "http://polyeffects.com/lv2/polyclouds#granular", "name": "Clouds", "description": "Granular texture from the live input. Freeze holds the buffer. Blend mixes in the clean input: all of it up to the middle, none at the top.", "parameters": [
       {"symbol": "position_param"}, {"symbol": "size_param"}, {"symbol": "density_param"}, {"symbol": "texture_param"},
-      {"symbol": "pitch_param"}, {"symbol": "blend_param"}, {"symbol": "freeze_param"}, {"symbol": "reverse_param"}
+      {"symbol": "pitch_param"}, {"symbol": "blend_param"}, {"symbol": "output_param", "name": "Output"}, {"symbol": "freeze_param"}, {"symbol": "reverse_param"}
     ]},
     {"uri": "http://polyeffects.com/lv2/polyclouds#stretch", "name": "Clouds Stretch", "category": "Pitch", "description": "A granular time stretching and pitch shifting module.", "parameters": [
-      {"symbol": "position_param"}, {"symbol": "size_param"}, {"symbol": "pitch_param"}, {"symbol": "blend_param"},
+      {"symbol": "position_param"}, {"symbol": "size_param"}, {"symbol": "pitch_param"}, {"symbol": "blend_param"}, {"symbol": "output_param", "name": "Output"},
       {"symbol": "density_param", "name": "Diffusion"}, {"symbol": "texture_param", "name": "Filter"}, {"symbol": "freeze_param"}, {"symbol": "reverse_param"}
     ]},
     {"uri": "http://polyeffects.com/lv2/polyclouds#looping_delay", "name": "Clouds Looper", "category": "Delay", "description": "Granular pitch shifting, micro looping delay. Freeze loops what is in the buffer.", "parameters": [
-      {"symbol": "position_param", "name": "Tape length"}, {"symbol": "size_param", "name": "Pitch window"}, {"symbol": "pitch_param"}, {"symbol": "blend_param"},
+      {"symbol": "position_param", "name": "Tape length"}, {"symbol": "size_param", "name": "Pitch window"}, {"symbol": "pitch_param"}, {"symbol": "blend_param"}, {"symbol": "output_param", "name": "Output"},
       {"symbol": "density_param", "name": "Diffusion"}, {"symbol": "texture_param", "name": "Filter"}, {"symbol": "freeze_param", "name": "Loop"}, {"symbol": "reverse_param"}
     ]},
     {"uri": "http://polyeffects.com/lv2/polyclouds#spectral", "name": "Clouds Spectral", "description": "Spectral processor that blurs, freezes and reshapes the input in the frequency domain.", "parameters": [
       {"symbol": "position_param"}, {"symbol": "size_param", "name": "Warp"}, {"symbol": "density_param", "name": "Refresh"}, {"symbol": "texture_param", "name": "Quantize"},
-      {"symbol": "pitch_param"}, {"symbol": "blend_param"}, {"symbol": "freeze_param"}, {"symbol": "reverse_param"}
+      {"symbol": "pitch_param"}, {"symbol": "blend_param"}, {"symbol": "output_param", "name": "Output"}, {"symbol": "freeze_param"}, {"symbol": "reverse_param"}
     ]},
     {"uri": "http://polyeffects.com/lv2/polyclouds#oliverb", "name": "Oliverb", "category": "Reverb", "description": "A special effects reverb with pitch-shifted, modulated tails. Hold sustains the tail.", "parameters": [
       {"symbol": "position_param", "name": "Pre-delay"}, {"symbol": "size_param"}, {"symbol": "density_param", "name": "Decay"}, {"symbol": "texture_param", "name": "Damp"},
-      {"symbol": "pitch_param"}, {"symbol": "blend_param"}, {"symbol": "freeze_param", "name": "Hold"}, {"symbol": "spread_param", "name": "Diffusion"},
+      {"symbol": "pitch_param"}, {"symbol": "blend_param"}, {"symbol": "output_param", "name": "Output"}, {"symbol": "freeze_param", "name": "Hold"}, {"symbol": "spread_param", "name": "Diffusion"},
       {"symbol": "feedback_param", "name": "Mod speed"}, {"symbol": "reverb_param", "name": "Mod amount"}, {"symbol": "reverse_param"}
     ]},
     {"uri": "http://polyeffects.com/lv2/polyclouds#resonestor", "name": "Resonestor", "category": "Resonator", "description": "Dual voice, four part resonator played by the input.", "parameters": [
       {"symbol": "position_param", "name": "Timbre"}, {"symbol": "size_param", "name": "Chord"}, {"symbol": "density_param", "name": "Decay"}, {"symbol": "texture_param", "name": "Filter"},
       {"symbol": "pitch_param"}, {"symbol": "feedback_param", "name": "Harmonics"}, {"symbol": "reverb_param", "name": "Scatter"}, {"symbol": "freeze_param", "name": "Switch voice"},
-      {"symbol": "spread_param"}, {"symbol": "blend_param", "name": "Random mod"}, {"symbol": "reverse_param"}
+      {"symbol": "spread_param"}, {"symbol": "blend_param", "name": "Random mod"}, {"symbol": "output_param", "name": "Output"}, {"symbol": "reverse_param"}
     ]},
     {"uri": "http://polyeffects.com/lv2/polyclouds#beat_repeat", "name": "Clouds Beat Repeat", "category": "Delay", "description": "Clocked beat repeat: loops and slices recent audio, with pitch and feedback."},
     {"match": "polywarps", "category": "Modulation"},
@@ -302,6 +302,46 @@
     {"match": "gareus.org/oss/lv2/convoLV2#", "availability": "untested", "reason": "Needs an impulse response file, and the interface cannot choose one yet (P8.3)."},
     {"match": "gareus.org/oss/lv2/zeroconvolv#", "availability": "untested", "reason": "Needs an impulse response file, and the interface cannot choose one yet (P8.3)."},
     {"uri": "http://polyeffects.com/lv2/polyfilter#moog_ladder", "availability": "untested", "reason": "Produced non-finite samples from a plain sine in the compatibility check."},
-    {"uri": "http://polyeffects.com/lv2/bitcrushed_delay", "availability": "untested", "reason": "Has crashed the engine; see docs/22-plugin-catalogue.md."}
+    {"uri": "http://polyeffects.com/lv2/bitcrushed_delay", "availability": "untested", "reason": "Has crashed the engine; see docs/22-plugin-catalogue.md."},
+    {"match": "polyclouds#", "output": "output_param"},
+    {"uri": "http://avwlv2.sourceforge.net/plugins/avw/granulator_mono", "output": "outputGain"},
+    {"uri": "http://avwlv2.sourceforge.net/plugins/avw/granulator_stereo", "output": "outputGain"},
+    {"uri": "http://avwlv2.sourceforge.net/plugins/avw/mixer_2ch_audio", "output": "gain"},
+    {"uri": "http://avwlv2.sourceforge.net/plugins/avw/mixer_4ch_audio", "output": "gain"},
+    {"uri": "http://avwlv2.sourceforge.net/plugins/avw/mooglpf", "output": "outputGain"},
+    {"uri": "http://avwlv2.sourceforge.net/plugins/avw/vcaexp_audio", "output": "outputLevel"},
+    {"uri": "http://avwlv2.sourceforge.net/plugins/avw/vcalin_audio", "output": "outputLevel"},
+    {"uri": "http://calf.sourceforge.net/plugins/Vinyl", "output": "level_out"},
+    {"uri": "http://distrho.sf.net/plugins/MVerb", "output": "gain"},
+    {"uri": "http://drobilla.net/plugins/fomp/mvclpf1", "output": "out_gain"},
+    {"uri": "http://drobilla.net/plugins/mda/Ambience", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Combo", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Degrade", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Delay", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Detune", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/DubDelay", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Dynamics", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Image", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Leslie", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Limiter", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Loudness", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Overdrive", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/RezFilter", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Shepard", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Splitter", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Tracker", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Transient", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/Vocoder", "output": "output"},
+    {"uri": "http://drobilla.net/plugins/mda/TestTone", "output": "level"},
+    {"match": "gareus.org/oss/lv2/convoLV2#", "output": "gain"},
+    {"match": "gareus.org/oss/lv2/fil4#", "output": "gain"},
+    {"uri": "http://github.com/mikeoliphant/neural-amp-modeler-lv2", "output": "output_level"},
+    {"match": "guitarix.sourceforge.net/plugins/gx_CreamMachine_", "output": "VOLUME"},
+    {"match": "guitarix.sourceforge.net/plugins/gx_ampegsvt_", "output": "VOLUME"},
+    {"match": "guitarix.sourceforge.net/plugins/gx_supersonic_", "output": "VOLUME"},
+    {"uri": "http://lv2plug.in/plugins/eg-amp", "output": "gain"},
+    {"uri": "http://moddevices.com/plugins/tap/sigmoid", "output": "Postgain"},
+    {"match": "polyeffects.com/lv2/polyconvo#", "output": "gain"},
+    {"match": "gareus.org/oss/lv2/tuna#", "output": "none"}
   ]
 }

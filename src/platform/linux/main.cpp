@@ -9,6 +9,7 @@
 #include "engine/ingen/ingen_engine.hpp"
 #include "engine/simulated_engine.hpp"
 #include "platform/linux/evdev_controls.hpp"
+#include "platform/linux/network_status.hpp"
 #include "ui/application.hpp"
 #include <algorithm>
 #include <csignal>
@@ -271,6 +272,11 @@ int main(int argc, char** argv) {
     // Only the instrument, drawing on its own screen, may power the machine off.
     if (display_name == "drm" || display_name == "fbdev")
         app.set_power_off([] { return std::system("systemctl poweroff") == 0 ? std::string() : std::string("Could not shut down: the system refused."); });
+    app.set_network([] {
+        const auto links = peepo::linux_network::links();
+        const bool connected = std::any_of(links.begin(), links.end(), [](const auto& link) { return !link.address.empty(); });
+        return peepo::Application::Network{connected, peepo::linux_network::describe(links)};
+    });
 
     const auto started = now_ms();
     auto last = started;

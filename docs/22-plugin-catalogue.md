@@ -122,6 +122,17 @@ The overlay (`config/catalogue/overlay.json`) now presents the whole offered cat
 
   The export may already offer them; withholding them is presentation, so the records above still show the host results.
 
+### Output on every module (16 October 2026)
+
+Every module that sends audio has exactly one **Output** control, because an effect that changes the level needs a way to set it back. It is chosen in one of two ways:
+
+- **The plugin's own level control,** where the overlay names it with `"output": "<symbol>"`. It is shown with the name Output and keeps its own range and units. Hand-checked on 16 October 2026: MDA Ambience, Combo, Degrade, Delay, Detune, DubDelay, Dynamics, Image, Leslie, Limiter, Loudness, Overdrive, RezFilter, Shepard, Splitter, Tracker, Transient and Vocoder (`output`) and TestTone (`level`); the Guitarix Cream, SVT and Supersonic amps (`VOLUME`); NAM (`output_level`); TAP Sigmoid (`Postgain`); fil4 (`gain`); fomp ladder (`out_gain`); AMS Moog LPF and granulators (`outputGain`), mixers (`gain`) and VCAs (`outputLevel`); MVerb (`gain`); Calf Vinyl (`level_out`); polyconvo and convoLV2 (`gain`); the LV2 example amp (`gain`); and every Clouds mode (`output_param`, added by the project's plugin patch).
+- **The general Output** for every other module with audio outputs: -24 to +12 dB, default 0 dB, shown last. It is not a plugin port: it is the block's `peepo:outputLevel` property, which engine patch 0008 applies to the block's audio outputs after the plugin runs, ramped across one period so changes do not click. It is saved with the patch, survives reload and duplication, and is not applied while the module is bypassed, so bypass stays exactly unity.
+
+Controls that set a dry or wet level, a single band, or only the input are not outputs, so those modules get the general Output (TAP Pitch and Reflector, zeroconvolv, Bandisto, MultiBand, b_whirl, the Twist modes, the darc compressor, Boost). `"output": "none"` leaves a pass-through module without either; the tuners use it.
+
+The general Output scales the sound after the plugin, so it cannot prevent clipping inside it; where a plugin has its own output control, that one acts inside the plugin. Checked end to end with `tools/ingen-spike/18-output-level.sh` against the patched engine: -6.02 dB halves the measured output (0.1250 for 0.2500 in), the value and the gain return after saving and loading the patch back from disk, a duplicate keeps it, and bypass passes 0.2500 unchanged. On the Pi, after installing the package with patch 0008, `tools/pi/check-output-level.sh` repeated the level, duplicate and bypass steps against the instrument's engine with the audio interface detached, with the same results; the save-and-reload step was checked on the PC only.
+
 Clouds has per-control presentation ([Clouds](20-clouds.md)). The tuner has a dedicated note/cents display. Conventional effects now have explicit categories and descriptions even when Pi metadata classifies them as Utility. See [effects and tuner](25-effects-and-tuner.md).
 
 ## arm64

@@ -196,7 +196,7 @@ def main():
     purity = float(numpy.sum(numpy.square(s[tone - 3: tone + 4])) / numpy.sum(numpy.square(s)))
     report(purity > 0.99 and abs(peak_frequency(out[0], rate) - 440) < 3,
            "blend 0 is the dry signal -- %.0f Hz, %.1f%% of its energy in that tone" % (peak_frequency(out[0], rate), 100 * purity))
-    note("but %.1f dB quieter than the input (%.4f RMS out for %.4f in)" % (20 * math.log10(dry / direct), dry, direct))
+    note("at %+.1f dB against the input (%.4f RMS out for %.4f in)" % (20 * math.log10(dry / direct), dry, direct))
     set_control(c, "blend_param", 1)
     wet = rig.record(1.0, settle=1.0)
     report(rms(wet[0]) > 0.005, "blend 1 is wet only and still heard -- %.4f RMS" % rms(wet[0]))

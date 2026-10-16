@@ -76,6 +76,9 @@ const ModuleDefinition* definition(const std::string& uri) {
     for (const auto& d : catalogue()) if (d.uri == uri) return &d;
     return nullptr;
 }
+Parameter general_output_parameter() {
+    return {general_output_symbol, "Output", "dB", ParameterKind::Continuous, -24, 12, 0, false, {}};
+}
 const Module* find_module(const Graph& g, InstanceId id) {
     for (const auto& m : g.modules) if (m.id == id) return &m;
     return nullptr;

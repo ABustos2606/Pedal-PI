@@ -259,6 +259,7 @@ void Application::tick(unsigned ms) {
     if (stream_ && !stream_->in_flight && !pressed) stream_.reset();
     if (rebuild_ && !dragging_ && !panning_ && !cable_source_ && !pressed) rebuild();
     update_metrics();
+    if ((network_age_ += ms) >= 2000) { network_age_ = 0; update_network(); }
     const auto* shown = page_ == Page::Parameters && !generic_parameters_ ? find_module(graph_, selected_) : nullptr;
     engine_.watch_tuner(shown && module_layout(*shown) == ModuleLayout::Tuner ? std::optional<InstanceId>{shown->id} : std::nullopt);
     update_tuner();
@@ -275,6 +276,13 @@ void Application::update_metrics() {
         lv_obj_set_style_text_color(tempo_value_, tempo_ink, 0);
     if (!lv_color_eq(lv_obj_get_style_text_color(cpu_value_, LV_PART_MAIN), cpu_ink))
         lv_obj_set_style_text_color(cpu_value_, cpu_ink, 0);
+}
+void Application::update_network() {
+    if (!network_value_ || !network_) return;
+    const auto network = network_();
+    if (network.text != lv_label_get_text(network_value_)) lv_label_set_text(network_value_, network.text.c_str());
+    const auto ink = color(network.connected ? accent : warning);
+    if (!lv_color_eq(lv_obj_get_style_text_color(network_value_, LV_PART_MAIN), ink)) lv_obj_set_style_text_color(network_value_, ink, 0);
 }
 void Application::bind(lv_obj_t* obj, Action action, InstanceId id, std::string symbol, int number, lv_obj_t* value) {
     bindings_.push_back({this, action, id, std::move(symbol), number, value});
@@ -624,7 +632,9 @@ void Application::handle(Binding& b, lv_event_t* e) {
         if (pending()) { message("Wait for pending edits before shutting down."); break; }
         ask("Shut down", "Shut down Peepo?", std::string(graph_.dirty ? "This patch has unsaved edits; they will be lost.\n" : "") +
             "Saved patches are safe. Unplug when the screen goes dark.", "Shut down", [this] {
-            if (const auto issue = power_off_(); !issue.empty()) message(issue);
+            // An edit or patch change made with a control while this was asked must finish first.
+            if (pending()) message("Wait for pending edits before shutting down.");
+            else if (const auto issue = power_off_(); !issue.empty()) message(issue);
             else message("Shutting down. Unplug when the screen goes dark.");
             navigate(Page::Settings);
         });
@@ -760,7 +770,7 @@ void Application::rebuild() {
     browser_list_ = browser_add_ = nullptr; browser_cards_.clear();
     visible_.clear();
     bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); cv_inputs_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
-    tempo_value_ = cpu_value_ = nullptr;
+    tempo_value_ = cpu_value_ = network_value_ = nullptr;
     tuner_note_ = tuner_detail_ = tuner_status_ = tuner_needle_ = nullptr;
     const bool patch = page_ == Page::Patch, ready = engine_.state() == EngineState::Ready;
     // Every page: a header naming where you are, the page, and a footer with
@@ -1501,7 +1511,12 @@ void Application::settings(lv_obj_t* parent) {
         button(parent, "Controls", 376, 142, 160, Action::Navigate, 0, {}, static_cast<int>(Page::Controls));
         if (power_off_) button(parent, "Shut down", 552, 142, 224, Action::PowerOff);
         label(parent, store_ ? "Patches are stored in " + store_->root().generic_string() : "Patch storage is not available: session snapshots only.", 24, 216, 752, muted, &lv_font_montserrat_14);
-        label(parent, "CPU is the engine's mean run load. Xruns, memory and temperature: not measured", 24, 300, 752, muted, &lv_font_montserrat_14);
+        if (network_) {
+            label(parent, "Network", 24, 244, 0, text, &peepo_bold_18);
+            network_value_ = label(parent, "", 24, 270, 752, muted, &lv_font_montserrat_14);
+            update_network();
+        }
+        label(parent, "CPU is the engine's mean run load. Xruns, memory and temperature: not measured", 24, 316, 752, muted, &lv_font_montserrat_14);
         return;
     }
     label(parent, "Windows simulator / 800 x 480", 24, 20, 0, text, &peepo_bold_24);

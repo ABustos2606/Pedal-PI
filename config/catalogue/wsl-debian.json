@@ -4324,7 +4324,8 @@
         {"symbol": "feedback_param", "name": "Pitch Mod", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.55, "logarithmic": false, "choices": []},
         {"symbol": "reverb_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
         {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
-        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "output_param", "name": "Output", "unit": "dB", "kind": "continuous", "minimum": -24, "maximum": 12, "default": 0, "logarithmic": false, "choices": []}
       ]
     },
     {
@@ -4367,7 +4368,8 @@
         {"symbol": "feedback_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.55, "logarithmic": false, "choices": []},
         {"symbol": "reverb_param", "name": "Reverb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
         {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
-        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "output_param", "name": "Output", "unit": "dB", "kind": "continuous", "minimum": -24, "maximum": 12, "default": 0, "logarithmic": false, "choices": []}
       ]
     },
     {
@@ -4410,7 +4412,8 @@
         {"symbol": "feedback_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.53, "logarithmic": false, "choices": []},
         {"symbol": "reverb_param", "name": "Reverb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.3, "logarithmic": false, "choices": []},
         {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
-        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "output_param", "name": "Output", "unit": "dB", "kind": "continuous", "minimum": -24, "maximum": 12, "default": 0, "logarithmic": false, "choices": []}
       ]
     },
     {
@@ -4453,7 +4456,8 @@
         {"symbol": "feedback_param", "name": "Modulation Speed", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.44, "logarithmic": false, "choices": []},
         {"symbol": "reverb_param", "name": "Modulation Amount", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
         {"symbol": "freeze_param", "name": "Hold", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
-        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "output_param", "name": "Output", "unit": "dB", "kind": "continuous", "minimum": -24, "maximum": 12, "default": 0, "logarithmic": false, "choices": []}
       ]
     },
     {
@@ -4496,7 +4500,8 @@
         {"symbol": "feedback_param", "name": "Harmonics", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.6, "logarithmic": false, "choices": []},
         {"symbol": "reverb_param", "name": "Scatter", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.08, "logarithmic": false, "choices": []},
         {"symbol": "freeze_param", "name": "Switch Voice", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
-        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "output_param", "name": "Output", "unit": "dB", "kind": "continuous", "minimum": -24, "maximum": 12, "default": 0, "logarithmic": false, "choices": []}
       ]
     },
     {
@@ -4539,7 +4544,8 @@
         {"symbol": "feedback_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
         {"symbol": "reverb_param", "name": "Reverb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
         {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
-        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []}
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.5, "logarithmic": false, "choices": []},
+        {"symbol": "output_param", "name": "Output", "unit": "dB", "kind": "continuous", "minimum": -24, "maximum": 12, "default": 0, "logarithmic": false, "choices": []}
       ]
     },
     {
@@ -4582,7 +4588,8 @@
         {"symbol": "feedback_param", "name": "Feedback", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.48, "logarithmic": false, "choices": []},
         {"symbol": "reverb_param", "name": "Reverb", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0.15, "logarithmic": false, "choices": []},
         {"symbol": "freeze_param", "name": "Freeze", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
-        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []}
+        {"symbol": "reverse_param", "name": "Reverse", "unit": "", "kind": "continuous", "minimum": 0, "maximum": 1, "default": 0, "logarithmic": false, "choices": []},
+        {"symbol": "output_param", "name": "Output", "unit": "dB", "kind": "continuous", "minimum": -24, "maximum": 12, "default": 0, "logarithmic": false, "choices": []}
       ]
     },
     {

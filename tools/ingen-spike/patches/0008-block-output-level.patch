@@ -1,0 +1,123 @@
+diff --git a/src/server/BlockImpl.cpp b/src/server/BlockImpl.cpp
+index b4f407c..e5e5297 100644
+--- a/src/server/BlockImpl.cpp
++++ b/src/server/BlockImpl.cpp
+@@ -277,9 +277,38 @@ BlockImpl::process(RunContext& ctx)
+ 		subcontext.slice(offset, chunk_end - offset);
+ 	}
+ 
++	apply_output_gain(ctx);
+ 	post_process(ctx);
+ }
+ 
++/** Peepo: scale the audio outputs to the block's output level, ramping across
++    the cycle so a change never clicks. Not applied while bypassed: a bypassed
++    block passes its input through unchanged. */
++void
++BlockImpl::apply_output_gain(RunContext& ctx)
++{
++	const float from = _output_gain_now;
++	const float to   = _output_gain;
++	if (from == 1.0f && to == 1.0f) {
++		return;
++	}
++
++	const SampleCount n = ctx.nframes();
++	for (uint32_t i = 0; _ports && i < _ports->size(); ++i) {
++		PortImpl* const port = _ports->at(i);
++		if (port->type() != PortType::AUDIO || !port->is_output()) {
++			continue;
++		}
++		for (uint32_t v = 0; v < _polyphony; ++v) {
++			Sample* const s = port->buffer(v)->samples();
++			for (SampleCount f = 0; f < n; ++f) {
++				s[f] *= from + (to - from) * static_cast<float>(f + 1) / static_cast<float>(n);
++			}
++		}
++	}
++	_output_gain_now = to;
++}
++
+ void
+ BlockImpl::post_process(RunContext& ctx)
+ {
+diff --git a/src/server/BlockImpl.hpp b/src/server/BlockImpl.hpp
+index 69564ff..37c3e8e 100644
+--- a/src/server/BlockImpl.hpp
++++ b/src/server/BlockImpl.hpp
+@@ -107,6 +107,9 @@ public:
+ 	/** Enable or disable (bypass) this block. */
+ 	void set_enabled(bool e) { _enabled = e; }
+ 
++	/** Peepo: the gain of this block's audio outputs (urn:peepo:ns#outputLevel). */
++	void set_output_gain(float gain) { _output_gain = gain; }
++
+ 	/** Load a preset from the world for this block. */
+ 	virtual StatePtr load_preset(const URI& uri) { return {}; }
+ 
+@@ -215,6 +218,10 @@ protected:
+ 	bool                     _polyphonic;
+ 	bool                     _activated{false};
+ 	bool                     _enabled{true};
++	float                    _output_gain{1.0f};
++	float                    _output_gain_now{1.0f};
++
++	void apply_output_gain(RunContext& ctx);
+ };
+ 
+ } // namespace server
+diff --git a/src/server/events/Delta.cpp b/src/server/events/Delta.cpp
+index cba2121..98e61c1 100644
+--- a/src/server/events/Delta.cpp
++++ b/src/server/events/Delta.cpp
+@@ -50,6 +50,8 @@
+ #include <lilv/lilv.h>
+ #include <raul/Path.hpp>
+ 
++#include <algorithm>
++#include <cmath>
+ #include <memory>
+ #include <mutex>
+ #include <set>
+@@ -362,6 +364,13 @@ Delta::pre_process(PreProcessContext& ctx)
+ 					} else {
+ 						_status = Status::BAD_VALUE_TYPE;
+ 					}
++				} else if (key == URI("urn:peepo:ns#outputLevel")) {
++					// Peepo: the block's output level in dB, applied by the block.
++					if (value.type() == uris.forge.Float || value.type() == uris.forge.Int) {
++						op = SpecialType::OUTPUT_LEVEL;
++					} else {
++						_status = Status::BAD_VALUE_TYPE;
++					}
+ 				} else if (key == uris.pset_preset) {
+ 					URI uri;
+ 					if (uris.forge.is_uri(value)) {
+@@ -574,6 +583,13 @@ Delta::execute(RunContext& ctx)
+ 			break;
+ 		case SpecialType::LOADED_BUNDLE:
+ 			break;
++		case SpecialType::OUTPUT_LEVEL:
++			if (block) {
++				const float db = value.type() == uris.forge.Int
++					? static_cast<float>(value.get<int32_t>()) : value.get<float>();
++				block->set_output_gain(std::pow(10.0f, std::clamp(db, -60.0f, 24.0f) / 20.0f));
++			}
++			break;
+ 		}
+ 	}
+ }
+diff --git a/src/server/events/Delta.hpp b/src/server/events/Delta.hpp
+index befbdcc..bc627db 100644
+--- a/src/server/events/Delta.hpp
++++ b/src/server/events/Delta.hpp
+@@ -95,7 +95,8 @@ private:
+ 		PORT_INDEX,
+ 		CONTROL_BINDING,
+ 		PRESET,
+-		LOADED_BUNDLE
++		LOADED_BUNDLE,
++		OUTPUT_LEVEL
+ 	};
+ 
+ 	using SetEvents = std::vector<std::unique_ptr<SetPortValue>>;

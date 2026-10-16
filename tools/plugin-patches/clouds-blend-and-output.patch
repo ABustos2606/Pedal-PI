@@ -1,0 +1,203 @@
+diff --git a/src/polyclouds.cpp b/src/polyclouds.cpp
+--- a/src/polyclouds.cpp
++++ b/src/polyclouds.cpp
+@@ -63,6 +63,7 @@ typedef enum {
+     FREEZE_PARAM = 26,
+ 	REVERSE_PARAM = 27,
+ 	BYPASS_PARAM = 28,
++	OUTPUT_PARAM = 29,
+ } PortIndex;
+ 
+ /**
+@@ -104,6 +105,7 @@ typedef struct {
+     const float* freeze_param;
+     const float* reverse_param;
+     const float* bypass_param;
++    const float* output_param;
+ 	/* bool is_on; */
+ 	/* bool was_down; */
+ 	int buffersize = 1;
+@@ -127,6 +129,11 @@ typedef struct {
+ 
+ 	bool prev_trigger = false;
+ 	bool prev_bypass = false;
++	// Peepo: blend mixes the untouched input with Clouds' own sound here,
++	// rather than inside Clouds (not for Resonestor, where blend is distortion).
++	bool dry_outside;
++	// Peepo: the output level, smoothed like the other controls.
++	float output_smooth;
+ 
+ } Clouds;
+ 
+@@ -161,7 +168,9 @@ instantiate(const LV2_Descriptor*     descriptor,
+ 	} else if (!strcmp (descriptor->URI, CLOUDS_URI "beat_repeat")) {
+ 		amp->processor->set_playback_mode(clouds::PLAYBACK_MODE_KAMMERL);
+ 	}
+-	
++	amp->dry_outside = strcmp(descriptor->URI, CLOUDS_URI "resonestor") != 0;
++	amp->output_smooth = 1.0f;
++
+ 	return (LV2_Handle)amp;
+ }
+ 
+@@ -260,6 +269,9 @@ connect_port(LV2_Handle instance,
+ 		case BYPASS_PARAM: // kill dry
+ 			amp->bypass_param = (const float*)data;
+ 			break;
++		case OUTPUT_PARAM:
++			amp->output_param = (const float*)data;
++			break;
+ 
+ 		default:
+ 			break;
+@@ -404,7 +416,9 @@ run(LV2_Handle instance, uint32_t n_samples)
+         texture_smooth += .008f * (texture_param - texture_smooth);
+ 		p->texture = clamp(texture_smooth + texture[j], 0.0f, 1.0f);
+         blend_smooth += .008f * (blend_param - blend_smooth);
+-		p->dry_wet = clamp(blend_smooth + blend[j], 0.0f, 1.0f);
++		const float blend_value = clamp(blend_smooth + blend[j], 0.0f, 1.0f);
++		// Fully wet inside: its reverb then colours only Clouds' sound.
++		p->dry_wet = amp->dry_outside ? 1.0f : blend_value;
+         spread_smooth += .008f * (spread_param - spread_smooth);
+ 		p->stereo_spread =  clamp(spread_smooth + spread[j], 0.0f, 1.0f);
+         feedback_smooth += .008f * (feedback_param - feedback_smooth);
+@@ -415,9 +429,17 @@ run(LV2_Handle instance, uint32_t n_samples)
+ 		clouds::ShortFrame output[block_size];
+ 		processor->Process(input, output, block_size);
+ 
++		// Like a pedal's mix knob: the input stays at full level up to the
++		// middle and fades out above it; Clouds comes up to full by the
++		// middle. Clouds halves its output on conversion (the module's analogue
++		// stage makes that up), so its sound is doubled back to the input's level.
++		// Output, in dB, sets the level of the whole mix.
++		amp->output_smooth += .008f * (powf(10.0f, clamp(*(amp->output_param), -24.0f, 12.0f) / 20.0f) - amp->output_smooth);
++		const float dry = (amp->dry_outside ? fminf(1.0f, 2.0f * (1.0f - blend_value)) : 0.0f) * amp->output_smooth;
++		const float wet = (amp->dry_outside ? fminf(1.0f, 2.0f * blend_value) * 2.0f : 1.0f) * amp->output_smooth;
+ 		for (uint32_t i = 0; i < block_size; i++) {
+-			out_l[pos+i] = output[i].l / 32768.0;
+-			out_r[pos+i] = output[i].r / 32768.0;
++			out_l[pos+i] = dry * in_l[pos+i] + wet * (output[i].l / 32768.0f);
++			out_r[pos+i] = dry * in_r[pos+i] + wet * (output[i].r / 32768.0f);
+ 		}
+ 		pos = pos + block_size;
+ 		if (pos+block_size > n_samples){
+diff --git a/polyclouds.ttl b/polyclouds.ttl
+--- a/polyclouds.ttl
++++ b/polyclouds.ttl
+@@ -264,6 +264,16 @@ clouds:granular
+ 		lv2:default 0.0 ;
+ 		lv2:minimum 0.0 ;
+ 		lv2:maximum 1.0 ;
++	] , [
++		a lv2:InputPort ,
++			lv2:ControlPort ;
++		lv2:index 29 ;
++		lv2:symbol "output_param" ;
++		lv2:name "output" ;
++		units:unit units:db ;
++		lv2:default 0.0 ;
++		lv2:minimum -24.0 ;
++		lv2:maximum 12.0 ;
+ 	] .
+ 
+ clouds:stretch
+@@ -521,6 +531,16 @@ clouds:stretch
+ 		lv2:default 0.0 ;
+ 		lv2:minimum 0.0 ;
+ 		lv2:maximum 1.0 ;
++	] , [
++		a lv2:InputPort ,
++			lv2:ControlPort ;
++		lv2:index 29 ;
++		lv2:symbol "output_param" ;
++		lv2:name "output" ;
++		units:unit units:db ;
++		lv2:default 0.0 ;
++		lv2:minimum -24.0 ;
++		lv2:maximum 12.0 ;
+ 	] .
+ clouds:looping_delay
+ 	a lv2:Plugin ;
+@@ -777,6 +797,16 @@ clouds:looping_delay
+ 		lv2:default 0.0 ;
+ 		lv2:minimum 0.0 ;
+ 		lv2:maximum 1.0 ;
++	] , [
++		a lv2:InputPort ,
++			lv2:ControlPort ;
++		lv2:index 29 ;
++		lv2:symbol "output_param" ;
++		lv2:name "output" ;
++		units:unit units:db ;
++		lv2:default 0.0 ;
++		lv2:minimum -24.0 ;
++		lv2:maximum 12.0 ;
+ 	] .
+ clouds:spectral
+ 	a lv2:Plugin ;
+@@ -1033,6 +1063,16 @@ clouds:spectral
+ 		lv2:default 0.0 ;
+ 		lv2:minimum 0.0 ;
+ 		lv2:maximum 1.0 ;
++	] , [
++		a lv2:InputPort ,
++			lv2:ControlPort ;
++		lv2:index 29 ;
++		lv2:symbol "output_param" ;
++		lv2:name "output" ;
++		units:unit units:db ;
++		lv2:default 0.0 ;
++		lv2:minimum -24.0 ;
++		lv2:maximum 12.0 ;
+ 	] .
+ clouds:oliverb
+ 	a lv2:Plugin ;
+@@ -1289,6 +1329,16 @@ clouds:oliverb
+ 		lv2:default 0.0 ;
+ 		lv2:minimum 0.0 ;
+ 		lv2:maximum 1.0 ;
++	] , [
++		a lv2:InputPort ,
++			lv2:ControlPort ;
++		lv2:index 29 ;
++		lv2:symbol "output_param" ;
++		lv2:name "output" ;
++		units:unit units:db ;
++		lv2:default 0.0 ;
++		lv2:minimum -24.0 ;
++		lv2:maximum 12.0 ;
+ 	] .
+ 
+ clouds:resonestor
+@@ -1546,6 +1596,16 @@ clouds:resonestor
+ 		lv2:default 0.0 ;
+ 		lv2:minimum 0.0 ;
+ 		lv2:maximum 1.0 ;
++	] , [
++		a lv2:InputPort ,
++			lv2:ControlPort ;
++		lv2:index 29 ;
++		lv2:symbol "output_param" ;
++		lv2:name "output" ;
++		units:unit units:db ;
++		lv2:default 0.0 ;
++		lv2:minimum -24.0 ;
++		lv2:maximum 12.0 ;
+ 	] .
+ 
+ clouds:beat_repeat
+@@ -1803,4 +1863,14 @@ clouds:beat_repeat
+ 		lv2:default 0.0 ;
+ 		lv2:minimum 0.0 ;
+ 		lv2:maximum 1.0 ;
++	] , [
++		a lv2:InputPort ,
++			lv2:ControlPort ;
++		lv2:index 29 ;
++		lv2:symbol "output_param" ;
++		lv2:name "output" ;
++		units:unit units:db ;
++		lv2:default 0.0 ;
++		lv2:minimum -24.0 ;
++		lv2:maximum 12.0 ;
+ 	] .

@@ -201,7 +201,8 @@ Both items are now complete: the Pi is confirmed as Debian 12 arm64, and the mat
 - [x] **P3.3 — Isolated engine run:** launch JACK and Ingen with explicit device/plugin paths in the development setup. Avoid competing MODEP graph ownership and record every configuration change and its rollback.
 - [ ] **P3.4 — Simple effect:** build/load one compatible low-cost LV2 effect and confirm guitar input → effect → output, gain behaviour and explicit JACK port routing. Record audio settings and observed xruns/latency.
   - [x] Real guitar input/output and stereo Clouds processing work with explicit JACK routes.
-  - [ ] Verify a low-cost conventional effect's gain behaviour and the outstanding latency/buffer checks on Pi.
+  - [x] MDA Overdrive's gain measured on the Pi with a test tone kept off the speakers: unity at neutral, output -20/+20 dB, muffle -14.4 dB at 1 kHz, level-dependent drive gain (light +8.1 to +1.2 dB). JACK's nominal round trip is 10.67 ms (128 + 384 frames); 2 xruns while the graph was rebuilt and controls changed, none in 22 s of steady playback. [Results](evidence/pi-effect-results.md).
+  - [ ] Listen to the guitar through Overdrive; measure converter round-trip latency with a loopback cable and try other buffer sizes once the power supply is fixed.
 - [ ] **P3.5 — Protocol proof:** verify socket address, connection lifecycle, Turtle/Atom message structure, framing, request/status correlation, subscriptions and full graph retrieval. Capture sanitized examples for add/remove/connect/disconnect/set/read operations.
   - [x] Protocol and sanitized operation traces verified on PC; native discovery/control/save/load and UI reconnect work.
   - [ ] Complete the full operation/subscription protocol acceptance record on the Pi.
@@ -301,10 +302,12 @@ See [Clouds](20-clouds.md). Pi guitar listening, native mode/control checks, Clo
 - [x] **P6.3 — Editor integration:** generate the generic parameter page and project-owned overlay for key granular controls, ranges, units and freeze. A custom Clouds editor is optional after the generic page is usable.
 - [ ] **P6.4 — Musical validation:** exercise live input, wet/dry, pitch/grain controls, freeze and supported modes; check levels, unintended silence and state restoration.
   - [x] Live guitar listening, granular control changes, saved-control restore and UI-restart continuity confirmed.
-  - [ ] Finish the per-mode wet/dry, pitch/grain/freeze, level and unintended-silence listening checklist.
+  - [x] Wet/dry fixed after the user heard the dry signal drop when Clouds was switched on: blend now mixes the untouched input like a pedal's mix knob (full dry to 0.5, Clouds full from 0.5), with Clouds' reverb kept off the dry path. Measured on the Pi: blend 0 equals the input, 0.5 is full dry plus Clouds, 1 is Clouds alone. Since that sum is above unity, every Clouds mode now has an Output control (-24 to +12 dB, default 0 dB; the dry path follows it to within 0.03 dB). [Results](evidence/pi-effect-results.md#clouds-blend), [Clouds](20-clouds.md).
+  - [ ] Finish the per-mode pitch/grain/freeze, level and unintended-silence listening checklist, including blend by ear in each mode.
 - [ ] **P6.5 — Milestone patch:** build input → Clouds plus one conventional effect → output, using series or validated parallel routing as musically appropriate. Save it through Phase 5 workflows and reload it on the instrument.
   - [x] Clouds guitar patch is saved and reloaded on the instrument with two retained revisions.
-  - [ ] Add one conventional effect, validate its routing/sound, then save and reload the combined patch.
+  - [x] `Overdrive into Clouds` (IN -> MDA Overdrive -> Clouds -> OUT) built through the adapter, saved as a new patch and reloaded from the card with every module, cable, control and layout restored; 22 s of steady playback without gaps or xruns. [Results](evidence/pi-effect-results.md).
+  - [ ] User listening with the guitar, then edit/save/reload it on the touchscreen.
 - [ ] **P6.6 — Combined load:** record DSP, memory, xruns, latency and thermal behaviour while changing parameters and navigating. Document limitations before adding more expensive modules.
   - [x] Short restart continuity run: 22 seconds, 8,251 blocks, no observed gaps/xruns/silent outputs.
   - [ ] Measure sustained DSP/memory/latency/thermal behaviour while editing representative combined patches.
@@ -399,8 +402,11 @@ See [the plugin catalogue](22-plugin-catalogue.md) and [the compatibility matrix
   - [ ] Run and record required native behaviour/state/assets checks for each entry advertised as supported.
 - [ ] **P9.4 — Presentation overlays:** add project-owned categories, names, parameter grouping and suitable value editors. Use generic pages first; add custom editors only when they materially improve musical operation.
   - [x] Categories/readable names for exported modules, generic editors and Clouds per-mode overlays are implemented.
+  - [x] One Output on every module that sends audio: the plugin's own level control where it has one (hand-checked list in the overlay), otherwise a general -24 to +12 dB Output applied by the engine (patch 0008), saved with the patch and not applied when bypassed. Verified against the patched engine under WSL2 (level, save/reload, duplicate, bypass). [Catalogue](22-plugin-catalogue.md#output-on-every-module-16-october-2026).
   - [ ] Finish required per-module parameter grouping/value-editor adaptations and physical-screen review.
 - [ ] **P9.5 — Complete screens:** finish browser filtering, patch management, assignment management, diagnostics/settings, shutdown navigation and repair states for missing plugins/assets.
+  - [x] Settings shows how the instrument is reached: Wi-Fi name, IPv4 address and signal (or "Not connected"), read from the kernel and refreshed every 2 s while open. Linux parsing test and LVGL check pass (arm64 too); installed on the Pi 16 October 2026.
+  - [ ] Finish browser filtering, patch/assignment management, remaining diagnostics, shutdown navigation and missing-plugin/asset repair states.
 - [ ] **P9.6 — Usability and load:** exercise sparse/dense graphs, long names, touch keyboard and navigation on the physical screen. Record module costs and tested combination budgets rather than one universal module count.
 
 **Deliverable:** versioned supported catalogue, completed interface workflows and per-entry compatibility matrix.
@@ -427,6 +433,8 @@ See [the plugin catalogue](22-plugin-catalogue.md) and [the compatibility matrix
   - [x] Select Clouds guitar and verify native boot restoration of its saved revision, identity, controls, layout and cables.
   - [ ] Verify native missing-asset/plugin startup handling; boot restoration currently depends on the UI.
 - [ ] **P10.5 — Shutdown/storage:** finish saves before graceful shutdown, document safe recovery and decide whether an overlay/read-only root is needed after measuring its implications for persistent user storage.
+  - [x] Saved revisions, the startup choice and control settings are flushed (`fsync` of each file and its directory) around their atomic renames. Shut down refuses while an edit, patch change or save is pending, checked again at confirmation.
+  - [ ] Pull-the-power test after a save on the Pi, documented recovery, and the overlay/read-only root decision.
 - [ ] **P10.6 — Cold-boot measurements:** perform the proposed five cold boots and measure power-on-to-audio and power-on-to-responsive-editor separately. Optimize observed delays; set numeric targets from the measured baseline.
   - [x] Record one software reboot's service timings: UI starts at 9.40 s, Clouds load begins at 10.33 s, all external routes at 11.92 s since kernel startup. Physical display/touch confirmed.
   - [ ] Five physical cold boots and separate power-on/audio/editor measurements, including firmware time.

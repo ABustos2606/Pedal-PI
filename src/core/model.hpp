@@ -49,7 +49,15 @@ struct ModuleDefinition {
     std::vector<std::string> project_defaults;
     // Keep legacy identities loadable without offering duplicates in Add.
     bool hidden = false;
+    // The plugin's own control for its output level, shown as Output. A module
+    // with audio outputs and none of its own gets the general Output instead;
+    // "none" leaves a pass-through module, such as a tuner, without either.
+    std::string output_symbol;
 };
+// The general Output: not a plugin port but the block's own level, which the
+// engine applies to its audio outputs (urn:peepo:ns#outputLevel, in dB).
+inline constexpr const char* general_output_symbol = "peepo_output";
+Parameter general_output_parameter();
 struct Module {
     InstanceId id;
     std::string uri, name;
