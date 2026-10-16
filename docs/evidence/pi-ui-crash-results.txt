@@ -1,0 +1,44 @@
+# Native interface crash on the Pi: tools/pi/check-ui-crash.sh, 16 October 2026
+# The instrument was playing its saved patch 'Overdrive into Clouds' (no guitar played: input RMS is the noise floor).
+# A first run passed every check except detecting the reconnection, which the script then read wrongly
+# (grep -q under pipefail); fixed and run again:
+
+BEFORE JACK=85049 ENGINE=85064 UI=126656 restarts=1
+PASS  the interface is connected to the engine
+CRASHING the interface with SIGKILL
+AFTER JACK=85049 ENGINE=85064 UI=127966 restarts=2
+PASS  systemd started a new interface by itself (restart count 1 -> 2)
+PASS  the new interface connected to the engine, 1.7 s after the crash
+PASS  JACK and the engine kept their processes
+PASS  the engine's graph is unchanged: same patch, modules, controls and cables
+PASS  audio callbacks ran without a gap through the crash: 8251 blocks over 22.0 s, 0 gaps, 0 xruns, peak input RMS ['0.0026', '0.0028'], silent output blocks [0, 0]
+GRAPH Overdrive into Clouds id=p20261016-133756-59b6 dirty=0
+
+# audio monitor
+{
+  "duration_seconds": 22.0000661640006,
+  "sample_rate": 48000,
+  "period_frames": 128,
+  "blocks": 8251,
+  "frames": 1056128,
+  "callback_frame_gaps": 0,
+  "xruns": 0,
+  "all_finite": true,
+  "exactly_silent_output_blocks": [
+    0,
+    0
+  ],
+  "minimum_output_rms": [
+    0.0028540242742418616,
+    0.003029708331805141
+  ],
+  "maximum_input_rms": [
+    0.0026063847532987222,
+    0.002830152058978699
+  ],
+  "maximum_output_rms": [
+    0.014132880380730012,
+    0.01549210649310833
+  ]
+}
+PASS audio monitor across interface restart

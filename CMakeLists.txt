@@ -30,8 +30,9 @@ if(UNIX AND NOT APPLE)
   add_library(peepo_linux_input src/platform/linux/evdev_controls.cpp)
   target_link_libraries(peepo_linux_input PUBLIC peepo_core)
   target_compile_options(peepo_linux_input PRIVATE -Wall -Wextra -Wno-missing-field-initializers)
-  # The network links shown in Settings, so the instrument can be found.
-  add_library(peepo_linux_network src/platform/linux/network_status.cpp)
+  # The network links shown in Settings, so the instrument can be found, and
+  # the machine's readings on the Diagnostics page.
+  add_library(peepo_linux_network src/platform/linux/network_status.cpp src/platform/linux/system_status.cpp)
   target_include_directories(peepo_linux_network PUBLIC src)
   target_compile_options(peepo_linux_network PRIVATE -Wall -Wextra)
 endif()
@@ -157,6 +158,9 @@ if(BUILD_TESTING)
     add_executable(peepo_linux_network_tests tests/linux_network_tests.cpp)
     target_link_libraries(peepo_linux_network_tests PRIVATE peepo_linux_network)
     add_test(NAME linux_network COMMAND peepo_linux_network_tests)
+    add_executable(peepo_linux_system_tests tests/linux_system_tests.cpp)
+    target_link_libraries(peepo_linux_system_tests PRIVATE peepo_linux_network)
+    add_test(NAME linux_system COMMAND peepo_linux_system_tests)
   endif()
   # These need a running engine, so they are not CTests: see tools/ingen-spike/07-adapter.sh and 08-catalogue.sh.
   add_executable(peepo_ingen_live tests/ingen_live.cpp)

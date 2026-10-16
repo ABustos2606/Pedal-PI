@@ -64,6 +64,8 @@ for name in sorted(os.listdir(os.path.join(bundle, "m4"))):
     print(open(os.path.join(bundle, "m4", name)).read())
 
 def blocks(text):
+    # Debian 12's serd 0.30 (the Pi) writes </main/m3> for <ingen:/main/m3>.
+    text = text.replace("</main/", "<ingen:/main/")
     return sorted(set(w for w in text.replace("<", " ").replace(">", " ").split() if w.startswith("ingen:/main/m") and w.count("/") == 2))
 
 print("==== clear the graph, then load the bundle into the root")

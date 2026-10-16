@@ -57,7 +57,7 @@ A separate deliberate JACK `SIGKILL` recovered automatically: JACK PID 736 becam
 
 A passive 22-second post-boot monitor observed 8,250 blocks with no frame gaps or xruns and finite samples throughout. It also recorded 96 left and 86 right exactly silent blocks, so this run is **not** a sustained-playing/no-silence acceptance test. A subsequent audit saw a dirty graph during the touch session; the later recovery audit verified the saved revision. No audio was injected or recorded by the monitor.
 
-Phase 10 remains partial: physical offline boot, five cold power cycles, late physical USB availability, native UI-crash/controller recovery, missing-plugin/asset startup cases and shutdown/power-loss storage acceptance remain open. Existing undervoltage history (`throttled=0x50000`) remains a performance limitation.
+Phase 10 remains partial: physical offline boot, five cold power cycles, late physical USB availability, controller recovery, missing-plugin/asset startup cases and shutdown/power-loss storage acceptance remain open. Existing undervoltage history (`throttled=0x50000`) remains a performance limitation.
 
 Evidence: [instrument boot results](evidence/pi-instrument-boot-results.txt). The boot utility and service changes were deployed without rebuilding or replacing the engine, plugins or touchscreen application; the patch-preservation CLI was compiled natively against the already deployed core library. Bash syntax and systemd unit verification passed on the Pi.
 
@@ -111,3 +111,5 @@ The Shut down button was first used on 16 October 2026: the user shut down from 
 - Settings shows the Wi-Fi name, address and signal, or "Not connected", so the instrument can be found without a keyboard.
 
 The new interface binary was installed by itself (`/opt/peepo/bin/peepo`, previous one kept as `peepo.prev`) and only `peepo-ui` was restarted; JACK and the engine kept their PIDs. The Pi still reported undervoltage and throttling (`vcgencmd get_throttled` = `0x50005`).
+
+**Native interface crash, 16 October 2026 (P10.7).** `tools/pi/check-ui-crash.sh` sent SIGKILL to the interface while the instrument played its saved patch. systemd started a new one at once; it reconnected to the engine 1.7 s after the crash. JACK and the engine kept their PIDs, the engine's graph was unchanged, and a passive monitor counted 8,251 audio blocks over 22 s with no gap and no xrun. [Results](evidence/pi-ui-crash-results.txt).

@@ -36,6 +36,12 @@ Our interface is new and has no need for Poly's JSON, so the engine built here i
 | Relative paths (14 October 2026) | Built against Debian 12's serd 0.30, the engine writes its paths relative to its base: `</main/m3>` for `<ingen:/main/m3>`. The adapter resolves them ([Linux and Pi](19-linux-and-pi.md)). |
 | Parallel processing | The engine has a `-p/--threads` option. Not exercised here. |
 
+## Repeated on the Pi (16 October 2026)
+
+`tools/pi/check-engine.sh` runs these probes on the Pi beside the running instrument: a second engine from the installed `/opt/peepo`, on its own JACK server (`-n peepo-check`, dummy driver, not real time), so the instrument's JACK, engine, interface and patch are never touched. All 34 checks of `04-verify.py` pass with the same results as above, including fan-out and fan-in summing at unity (0.5000 from two 0.25 branches). The control round trip there was a median 5.17 ms. The bundle probe, the interface adapter's 56 live checks and the NAM probe pass too. The instrument kept its processes and logged no xruns. [Results](evidence/pi-engine-check-results.txt).
+
+Two probe changes were needed, neither an engine fault. The Pi's serd 0.30 writes paths relative to their base (`</main/amp>`), which the probes now read as the adapter already does. With patch 0006 a subscribed client never sees a quiet line, so `drain()` now has a time limit.
+
 ## Engine defects found, and what was done
 
 1. **Clients that leave are never forgotten.** `SocketServer::on_hangup()` was meant to unregister a departed client, but the socket reader it owns is a plain `SocketReader` whose virtual `on_hangup()` does nothing, so it was never called. Every interface restart left one more dead client that the engine wrote to on every change: 40 changes after 10 departures produced about 3,800 failed writes. This is what Beebo's README means by Ingen not coping with a frontend restart. **Fixed** by `patches/0001-unregister-clients-on-hangup.patch`; the same test now produces zero.

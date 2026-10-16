@@ -75,3 +75,7 @@ bash tools/ingen-spike/13-nam.sh    # host checks, about 10 minutes
 ```
 
 `13-nam.sh` takes two model paths as arguments; without them it uses the two Casette captures above.
+
+**Pi, 16 October 2026 (P8.2 on the Pi):** the same probe ran on the Pi with `tools/pi/check-engine.sh`, against a second engine from `/opt/peepo` on its own dummy JACK server beside the running instrument, with the selected current plugin and the same two captures. Every case passed as on the PC: both message forms, both models, missing and corrupt files, 60 switches (engine 114 to 118 MiB), A2 quality switching, the model saved inside the bundle (also after renaming the original file, and into a fresh engine), and loading at 64, 128 and 1024 frames. The instrument kept its processes and logged no xruns. The dummy server does not run in real time, so this still measures no cost. [Results](evidence/pi-engine-check-results.txt).
+
+The probe had to change for the Pi engine: with patch 0006 a subscribed client receives control updates continuously, so waiting for a quiet line never ended; `ingenprobe.drain()` now also stops after a time limit.

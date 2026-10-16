@@ -26,7 +26,7 @@ import jack
 import numpy
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ingenprobe import Client
+from ingenprobe import Client, engine_alive, engine_pid
 
 URI = "http://github.com/mikeoliphant/neural-amp-modeler-lv2"
 MODEL = URI + "#model"
@@ -98,7 +98,7 @@ def differs(a, b, rate):
 
 
 def engine_rss():
-    pid = subprocess.run(["pgrep", "-n", "-x", "ingen"], capture_output=True, text=True).stdout.strip()
+    pid = engine_pid()
     try:
         with open("/proc/%s/status" % pid) as f:
             return int(re.search(r"VmRSS:\s+(\d+)", f.read()).group(1)) // 1024
@@ -243,7 +243,7 @@ def main():
         send_model(c, value_of(path))
         time.sleep(1.5)
         out = rig.record()
-        alive = subprocess.run(["pgrep", "-x", "ingen"], capture_output=True).returncode == 0
+        alive = engine_alive()
         kept = not differs(out, before, rate)
         bypass = not differs(out, empty, rate)
         report(alive and numpy.isfinite(out).all(), "%s: the engine survives; the plugin %s" % (

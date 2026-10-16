@@ -10,6 +10,7 @@
 #include "engine/simulated_engine.hpp"
 #include "platform/linux/evdev_controls.hpp"
 #include "platform/linux/network_status.hpp"
+#include "platform/linux/system_status.hpp"
 #include "ui/application.hpp"
 #include <algorithm>
 #include <csignal>
@@ -269,13 +270,19 @@ int main(int argc, char** argv) {
         if (const auto issue = store->open(); !issue.empty()) std::cerr << "patches: " << issue << "\n";
     }
     peepo::Application app(*engine, store.get());
-    // Only the instrument, drawing on its own screen, may power the machine off.
-    if (display_name == "drm" || display_name == "fbdev")
+    // Only the instrument, drawing on its own screen, may power the machine off or restart it.
+    if (display_name == "drm" || display_name == "fbdev") {
         app.set_power_off([] { return std::system("systemctl poweroff") == 0 ? std::string() : std::string("Could not shut down: the system refused."); });
+        app.set_restart([] { return std::system("systemctl reboot") == 0 ? std::string() : std::string("Could not restart: the system refused."); });
+    }
     app.set_network([] {
         const auto links = peepo::linux_network::links();
         const bool connected = std::any_of(links.begin(), links.end(), [](const auto& link) { return !link.address.empty(); });
         return peepo::Application::Network{connected, peepo::linux_network::describe(links)};
+    });
+    app.set_system([] {
+        const auto r = peepo::linux_system::read();
+        return peepo::Application::System{r.temperature_c, r.memory_total, r.memory_available, r.under_voltage, r.uptime_s};
     });
 
     const auto started = now_ms();

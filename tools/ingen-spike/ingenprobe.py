@@ -6,11 +6,25 @@ Deliberately dumb: it frames messages, keeps a transcript, and correlates
 replies by patch:sequenceNumber. No RDF library, so what is printed is exactly
 what crosses the socket.
 """
+import os
 import re
 import socket
+import subprocess
 import time
 
-SOCKET_PATH = "/tmp/peepo-ingen.sock"
+# The engine under test. On the Pi a separate check engine runs beside the
+# instrument's, so its socket and process are named rather than guessed.
+SOCKET_PATH = os.environ.get("PEEPO_INGEN_SOCKET", "/tmp/peepo-ingen.sock")
+
+
+def engine_pid():
+    return os.environ.get("PEEPO_ENGINE_PID") or subprocess.run(
+        ["pgrep", "-n", "-x", "ingen"], capture_output=True, text=True).stdout.strip()
+
+
+def engine_alive():
+    pid = engine_pid()
+    return bool(pid) and os.path.exists("/proc/" + pid)
 PREFIXES = """@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
 @prefix ingen: <http://drobilla.net/ns/ingen#> .
 @prefix lv2: <http://lv2plug.in/ns/lv2core#> .
@@ -72,9 +86,13 @@ class Client:
         self.log("<", text)
         return text
 
-    def drain(self, quiet=0.3):
+    def drain(self, quiet=0.3, limit=None):
+        """Messages until the engine has been quiet for `quiet` seconds, or
+        `limit` seconds have passed: with patch 0006 a subscribed client gets
+        control updates continuously, so the line is never quiet."""
         out = []
-        while (m := self.read_message(quiet)) is not None:
+        deadline = time.monotonic() + (limit if limit is not None else max(1.0, 4 * quiet))
+        while time.monotonic() < deadline and (m := self.read_message(quiet)) is not None:
             out.append(m)
         return out
 

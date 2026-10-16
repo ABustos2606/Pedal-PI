@@ -16,7 +16,7 @@ import jack
 import numpy
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from ingenprobe import Client, SOCKET_PATH
+from ingenprobe import Client, SOCKET_PATH, engine_alive
 
 LEVEL = 0.25
 results = []
@@ -173,9 +173,12 @@ killed = subprocess.Popen([sys.executable, "-c",
 time.sleep(0.5)
 killed.kill(); killed.wait()             # SIGKILL: no orderly close at all
 time.sleep(0.5)
-check(os.path.exists(SOCKET_PATH) and subprocess.run(["pgrep", "-x", "ingen"], capture_output=True).returncode == 0, "engine survives client disconnects, a half-sent message and a killed client")
+check(os.path.exists(SOCKET_PATH) and engine_alive(), "engine survives client disconnects, a half-sent message and a killed client")
 c = Client()
 status, reply, _ = c.get("ingen:/main")
+# Built against Debian 12's serd 0.30 (the Pi) the engine writes its paths
+# relative to its base: </main/amp> for <ingen:/main/amp>.
+reply = reply.replace("</main/", "<ingen:/main/")
 expected = ["ingen:/main/amp>", "ingen:/main/amp2>", "ingen:/main/amp/gain>", "ingen:canvasX", "Clean boost", "knob-1", "ingen:Arc"]
 missing = [item for item in expected if item not in reply]
 check(status == 0 and not missing, "a new client reads back the whole live graph, including unsaved metadata", "missing: %s" % missing if missing else "blocks, ports, arcs, positions and custom properties present")

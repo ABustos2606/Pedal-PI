@@ -140,7 +140,7 @@ Every page uses one look, taken from a design sketch the user chose (15 October 
 A full-screen page with three bands:
 
 - **Header:** the group pills on the right, each as wide as its name: ALL, GAIN, MOD, TIME, TEXTURE, CV + UTIL. The open group is white. A group with no modules in the catalogue gets no pill.
-- **Middle:** a scrolling grid of large module cards, two per row. Each card shows the module name, a tag for its finer category in the group colour, and a two-line description, with black space below.
+- **Middle:** inside a group with more than one finer category, a row of category chips (ALL, then each category; the open one in the group colour) above the cards. Then a scrolling grid of large module cards, two per row. Each card shows the module name, a tag for its finer category in the group colour, and a two-line description, with black space below.
 - **Footer:** Back, a `GROUP // N MODULES` line, and **Add module**.
 
 The groups merge the catalogue's categories the way the Beebo firmware does:
@@ -163,7 +163,11 @@ Only plugins that are installed and passed compatibility checks can be added. Th
 
 ## Patch manager
 
-Full-screen list of saved patches: load, save, save as, rename, delete, and set as the startup patch. Text entry uses an on-screen keyboard sized for fingers.
+Full-screen list of saved patches: load, save, save as, rename, delete, and set as the startup patch. A **Revert** pill in its header reloads the last saved revision of the patch being played. Text entry uses an on-screen keyboard sized for fingers.
+
+## Settings, diagnostics and power
+
+Settings shows the engine connection, patch storage and network; its header pills lead to **Controls**, **Diagnostics** (engine, power supply, temperature, memory, storage, uptime, read from the kernel) and **Power** (shut down, restart). See [the record](28-screens-and-diagnostics.md).
 
 ## Initial sizing targets — proposed
 

@@ -11,7 +11,7 @@
 
 namespace peepo {
 enum class Page { Patch, Browser, Parameters, Patches, Settings, ModuleActions, NamePatch, ConfirmReplace, CvConnect, ConfirmAction,
-                  Controls, AssignPicker, AssignmentDetail };
+                  Controls, AssignPicker, AssignmentDetail, Diagnostics, Power, Halting };
 class Application {
 public:
     // Without a store the Patches page offers the in-memory session snapshot.
@@ -29,17 +29,30 @@ public:
     // How the instrument powers off, returning why it could not. Left unset
     // where the interface must never do it, such as on a desktop.
     void set_power_off(std::function<std::string()> power_off) { power_off_ = std::move(power_off); rebuild_ = true; }
+    // The same for restarting the machine.
+    void set_restart(std::function<std::string()> restart) { restart_ = std::move(restart); rebuild_ = true; }
     // How the instrument is reached on the network, shown in Settings so it
     // can be found without a keyboard. Left unset where it means nothing.
     struct Network { bool connected = false; std::string text; };
     void set_network(std::function<Network()> network) { network_ = std::move(network); rebuild_ = true; }
+    // The machine's readings for Diagnostics, from the platform. Unknown ones
+    // are shown as not measured. Read every couple of seconds on every page,
+    // so a supply that drops too low is noticed even with Diagnostics closed.
+    struct System {
+        std::optional<double> temperature_c;
+        std::optional<std::uint64_t> memory_total, memory_available;
+        std::optional<bool> under_voltage;
+        std::optional<double> uptime_s;
+    };
+    void set_system(std::function<System()> system) { system_ = std::move(system); system_age_ = 2000; }
 private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
                         NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserGroup, BrowserPick, MissingFixture,
                         ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage,
                         SavePatch, LoadStored, DeleteStored, StartupStored, PatchPage, ConfirmAction, CancelAction,
-                        AssignControl, EditControl, ClearControl, PickModule, PickTarget, PickerPage, InvertControl, SwitchModeChoice, RangeEnd, PowerOff };
+                        AssignControl, EditControl, ClearControl, PickModule, PickTarget, PickerPage, InvertControl, SwitchModeChoice, RangeEnd, PowerOff,
+                        Restart, BrowserCategory, Revert };
     struct Binding {
         Application* app;
         Action action;
@@ -67,6 +80,11 @@ private:
     void update_tuner();
     void patches(lv_obj_t*);
     void settings(lv_obj_t*);
+    void diagnostics(lv_obj_t*);
+    void power(lv_obj_t*);
+    void halting(lv_obj_t*);
+    void power_action(bool restart);
+    void update_system();
     void module_actions(lv_obj_t*);
     void name_patch(lv_obj_t*);
     void confirm_replace(lv_obj_t*);
@@ -131,7 +149,15 @@ private:
     struct Confirmation { std::string title, heading, body, button; std::function<void()> act; Page back = Page::Patches; };
     Confirmation confirmation_;
     std::function<std::string()> power_off_;
+    std::function<std::string()> restart_;
     std::function<Network()> network_;
+    std::function<System()> system_;
+    System reading_;
+    // Whether the supply was ever too low while the interface ran.
+    bool low_voltage_seen_ = false;
+    unsigned system_age_ = 0;
+    // What the halting page says: shutting down or restarting.
+    bool restarting_ = false;
     // Settings shows the network, read again every couple of seconds.
     lv_obj_t* network_value_ = nullptr;
     unsigned network_age_ = 0;
@@ -148,6 +174,8 @@ private:
     // The module browser: the group filter (empty for all), the picked module,
     // and where the cards were scrolled.
     std::string browser_group_, browser_pick_;
+    // A finer category inside the open group; empty for the whole group.
+    std::string browser_category_;
     int browser_scroll_ = 0;
     lv_obj_t *browser_list_ = nullptr, *browser_add_ = nullptr;
     std::map<std::string, lv_obj_t*> browser_cards_;

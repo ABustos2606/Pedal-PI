@@ -1,0 +1,932 @@
+# Engine behaviour on the Pi beside the running instrument: tools/pi/check-engine.sh, 16 October 2026
+# Full run (all sections) after the probe fixes; then the bundles section again after its block-listing fix.
+# The probes' fixed texts mention the PC, WSL or "the PC's dummy backend"; here they ran on the Pi, on a
+# second JACK server with the dummy driver (not real time), so no timing or xrun figure is a performance result.
+
+INSTRUMENT peepo-jack=85049 peepo-engine=85064 peepo-ui=85090 
+SYSTEM aarch64 Debian GNU/Linux 12 (bookworm) jack 1.9.21 throttled=0x50005
+==== protocol, routing and reconnects (04-verify.py)
+PASS  create graph audio input -- status 0
+PASS  create graph audio output -- status 0
+PASS  graph ports appear as JACK ports -- ingen:control, ingen:notify, ingen:in, ingen:out
+PASS  unconnected graph is silent -- measured 0.0000..0.0000, expected 0.0000
+PASS  connect input straight to output -- status 0
+PASS  pass-through level -- measured 0.2500..0.2500, expected 0.2500
+PASS  disconnect -- status 0
+PASS  silence after disconnect -- measured 0.0000..0.0000, expected 0.0000
+PASS  add plugin block -- status 0
+PASS  unknown plugin is refused with an error status
+PASS  cable into plugin -- status 0
+PASS  cable out of plugin -- status 0
+PASS  series chain at 0 dB -- measured 0.2500..0.2500, expected 0.2500
+PASS  set control value -- status 0
+PASS  control change is audible (+6.02 dB doubles the level) -- measured 0.5000..0.5000, expected 0.5000
+PASS  restore control value -- status 0
+PASS  add second block -- status 0
+PASS  fan-out: same source to a second block -- status 0
+PASS  fan-out does not change the first branch -- measured 0.2500..0.2500, expected 0.2500
+PASS  fan-in: second cable into the same input -- status 0
+PASS  fan-in sums at unity, with no compensation -- two 0.25 branches measured 0.5000
+INFO  merge policy -- two equal branches are +6 dB; the UI needs a mixer/attenuation rule
+PASS  attenuate before feedback test -- status 0
+INFO  feedback cable -- engine returned status 0 (0 means it accepts cycles; the UI refuses them itself)
+INFO  string sent as a float control value -- status 0 (0 = accepted: the engine does not type-check values)
+INFO  control value far outside the plugin range -- status 0, output now inf (the engine does not clamp; the client must)
+PASS  store canvas position on a block -- status 0
+PASS  store canvas position (y) -- status 0
+PASS  store a project-owned property on a block -- status 0
+PASS  store a project-owned property on a port -- status 0
+PASS  level unchanged by metadata edits -- measured 0.5000..0.5000, expected 0.5000
+INFO  control round trip over the socket -- median 5.17 ms, p95 5.24 ms, max 5.30 ms (200 requests, 128-frame dummy period = 2.67 ms)
+PASS  a second client is told about another client's change -- 1 message(s)
+PASS  engine survives client disconnects, a half-sent message and a killed client
+PASS  a new client reads back the whole live graph, including unsaved metadata -- blocks, ports, arcs, positions and custom properties present
+PASS  audio level never moves across client restarts -- 565 blocks, level 0.5000..0.5000, 0 xruns in this phase (0 earlier, during graph edits)
+INFO  xruns -- 0 in total; WSL has no real-time scheduling and the dummy backend also xruns when idle, so this number means nothing until it is measured on the Pi
+PASS  save the graph to a bundle -- status 0
+PASS  the save is a directory bundle -- main.ttl, manifest.ttl, plugins.ttl
+PASS  positions, project properties and cables are inside the saved bundle -- {'canvasX': True, 'Clean boost': True, 'knob-1': True, 'ingen:tail': True, 'eg-amp': True}
+SUMMARY 34 passed, 0 failed, 6 informational
+==== bundles, plugin state and paths (10-bundle-probe.py)
+put in_l, out_l                                            (0, 0)
+put amp m3 with name, position                             0
+put params m4 (has LV2 state)                              0
+set gain 6                                                 0
+cables                                                     (0, 0)
+graph property peepo:patchName                             0
+graph property peepo:patchId                               0
+graph property peepo:schemaVersion                         0
+assignment property on a port                              0
+save to /tmp/peepo-check/bundles/one.ingen                 (0, '0.00 s')
+files                                                      ['m4', 'main.ttl', 'manifest.ttl', 'plugins.ttl']
+---- m4/ ['manifest.ttl', 'state.ttl', 'params.ttl']
+---- main.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix midi: <http://lv2plug.in/ns/ext/midi#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix peepo: <urn:peepo:ns#> .
+
+<control>
+	ingen:canvasX 32.0 ;
+	ingen:canvasY 32.0 ;
+	atom:bufferType atom:Sequence ;
+	atom:supports patch:Message ;
+	<http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+	lv2:designation lv2:control ;
+	lv2:index 0 ;
+	lv2:name "Control" ;
+	lv2:portProperty lv2:connectionOptional ;
+	lv2:symbol "control" ;
+	a atom:AtomPort ,
+		lv2:InputPort .
+
+<in_l>
+	lv2:index 2 ;
+	lv2:name "in_l" ;
+	lv2:symbol "in_l" ;
+	a lv2:AudioPort ,
+		lv2:InputPort .
+
+<m3>
+	ingen:canvasX 300.0 ;
+	ingen:canvasY 200.0 ;
+	lv2:port <m3/gain> ,
+		<m3/in> ,
+		<m3/out> ;
+	lv2:prototype <http://lv2plug.in/plugins/eg-amp> ;
+	a ingen:Block ;
+	peepo:displayName "Boost" .
+
+<m3/gain>
+	ingen:value 6.0 ;
+	lv2:index 0 ;
+	a lv2:ControlPort ,
+		lv2:InputPort ;
+	peepo:assignedControl "knob1" .
+
+<m3/in>
+	lv2:index 1 ;
+	a lv2:AudioPort ,
+		lv2:InputPort .
+
+<m3/out>
+	lv2:index 2 ;
+	a lv2:AudioPort ,
+		lv2:OutputPort .
+
+<m4>
+	<http://lv2plug.in/ns/ext/state#state> <m4/state.ttl> ;
+	lv2:port <m4/in> ,
+		<m4/out> ;
+	lv2:prototype <http://lv2plug.in/plugins/eg-params> ;
+	a ingen:Block .
+
+<m4/in>
+	atom:bufferType atom:Sequence ;
+	atom:supports patch:Message ;
+	lv2:designation lv2:control ;
+	lv2:index 0 ;
+	a atom:AtomPort ,
+		lv2:InputPort .
+
+<m4/out>
+	atom:bufferType atom:Sequence ;
+	atom:supports patch:Message ;
+	lv2:designation lv2:control ;
+	lv2:index 1 ;
+	a atom:AtomPort ,
+		lv2:OutputPort .
+
+<>
+	ingen:arc [
+		ingen:head <m3/in> ;
+		ingen:tail <in_l>
+	] , [
+		ingen:head <out_l> ;
+		ingen:tail <m3/out>
+	] ;
+	ingen:block <m3> ,
+		<m4> ;
+	ingen:polyphony 1 ;
+	<http://lv2plug.in/ns/extensions/ui#ui> ingen:GraphUIGtk2 ;
+	lv2:extensionData <http://lv2plug.in/ns/ext/state#interface> ;
+	lv2:port <control> ,
+		<in_l> ,
+		<notify> ,
+		<out_l> ;
+	doap:name "one" ;
+	a ingen:Graph ,
+		lv2:Plugin ;
+	peepo:patchId "p-0001" ;
+	peepo:patchName "Saved one" ;
+	peepo:schemaVersion 1 .
+
+<notify>
+	ingen:canvasX 128.0 ;
+	ingen:canvasY 32.0 ;
+	atom:bufferType atom:Sequence ;
+	atom:supports patch:Message ;
+	<http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+	lv2:designation lv2:control ;
+	lv2:index 1 ;
+	lv2:name "Notify" ;
+	lv2:portProperty lv2:connectionOptional ;
+	lv2:symbol "notify" ;
+	a atom:AtomPort ,
+		lv2:OutputPort .
+
+<out_l>
+	lv2:index 3 ;
+	lv2:name "out_l" ;
+	lv2:symbol "out_l" ;
+	a lv2:AudioPort ,
+		lv2:OutputPort .
+
+
+---- manifest.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix midi: <http://lv2plug.in/ns/ext/midi#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix peepo: <urn:peepo:ns#> .
+
+<main.ttl>
+	lv2:prototype ingen:GraphPrototype ;
+	a ingen:Graph ,
+		lv2:Plugin ;
+	rdfs:seeAlso <main.ttl> .
+
+
+---- plugins.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix midi: <http://lv2plug.in/ns/ext/midi#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix peepo: <urn:peepo:ns#> .
+
+<http://lv2plug.in/plugins/eg-amp>
+	a lv2:Plugin .
+
+<http://lv2plug.in/plugins/eg-params>
+	a lv2:Plugin .
+
+
+==== what the saving client was told
+> []
+> 	a patch:Copy ;
+> 	patch:subject <ingen:/main> ;
+> 	patch:destination <file:///tmp/peepo-check/bundles/one.ingen> ;
+> 	patch:sequenceNumber "12"^^xsd:int .
+> <NUL>
+<  _:b69
+< 	a ingen:BundleStart ;
+< 	patch:sequenceNumber "48"^^xsd:int .
+< 
+<  _:b70
+< 	a patch:Response ;
+< 	patch:sequenceNumber "12"^^xsd:int ;
+< 	patch:body "0"^^xsd:int .
+< 
+<  _:b71
+< 	a patch:Copy ;
+< 	patch:sequenceNumber "12"^^xsd:int ;
+< 	patch:subject </main> ;
+< 	patch:destination <file:///tmp/peepo-check/bundles/one.ingen> .
+< 
+<  _:b72
+< 	a ingen:BundleEnd ;
+< 	patch:sequenceNumber "49"^^xsd:int .
+< <NUL>
+save to a percent-encoded path                             0
+  written where                                            ['/tmp/peepo-check/bundles/with space/two.ingen', '/tmp/peepo-check/bundles/with%20space/two.ingen']
+save to a path without .ingen                              0
+save into a missing directory                              0
+save a block, not a graph                                  3
+---- m4/manifest.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<state.ttl>
+	lv2:appliesTo <http://lv2plug.in/plugins/eg-params> ;
+	a pset:Preset ;
+	rdfs:seeAlso <state.ttl> .
+
+
+---- m4/params.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix param: <http://lv2plug.in/ns/ext/parameters#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix plug: <http://lv2plug.in/plugins/eg-params#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# An existing parameter or RDF property can be used as a parameter.  The LV2
+# parameters extension <http://lv2plug.in/ns/ext/parameters> defines many
+# common audio parameters.  Where possible, existing parameters should be used
+# so hosts can intelligently control plugins.
+
+# If no suitable parameter exists, one can be defined for the plugin like so:
+
+plug:int
+	a lv2:Parameter ;
+	rdfs:label "int" ;
+	rdfs:range atom:Int .
+
+plug:long
+	a lv2:Parameter ;
+	rdfs:label "long" ;
+	rdfs:range atom:Long .
+
+plug:float
+	a lv2:Parameter ;
+	rdfs:label "float" ;
+	rdfs:range atom:Float .
+
+plug:double
+	a lv2:Parameter ;
+	rdfs:label "double" ;
+	rdfs:range atom:Double .
+
+plug:bool
+	a lv2:Parameter ;
+	rdfs:label "bool" ;
+	rdfs:range atom:Bool .
+
+plug:string
+	a lv2:Parameter ;
+	rdfs:label "string" ;
+	rdfs:range atom:String .
+
+plug:path
+	a lv2:Parameter ;
+	rdfs:label "path" ;
+	rdfs:range atom:Path .
+
+plug:lfo
+	a lv2:Parameter ;
+	rdfs:label "LFO" ;
+	rdfs:range atom:Float ;
+	lv2:minimum -1.0 ;
+	lv2:maximum 1.0 .
+
+plug:spring
+	a lv2:Parameter ;
+	rdfs:label "spring" ;
+	rdfs:range atom:Float .
+
+# Most of the plugin description is similar to the others we have seen, but
+# this plugin has only two ports, for receiving and sending messages used to
+# manipulate and access parameters.
+<http://lv2plug.in/plugins/eg-params>
+	a lv2:Plugin ,
+		lv2:UtilityPlugin ;
+	doap:name "Example Parameters" ;
+	doap:license <http://opensource.org/licenses/isc> ;
+	lv2:project <http://lv2plug.in/ns/lv2> ;
+	lv2:requiredFeature urid:map ;
+	lv2:optionalFeature lv2:hardRTCapable ,
+		state:loadDefaultState ;
+	lv2:extensionData state:interface ;
+	lv2:port [
+		a lv2:InputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports patch:Message ;
+		lv2:designation lv2:control ;
+		lv2:index 0 ;
+		lv2:symbol "in" ;
+		lv2:name "In"
+	] , [
+		a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports patch:Message ;
+		lv2:designation lv2:control ;
+		lv2:index 1 ;
+		lv2:symbol "out" ;
+		lv2:name "Out"
+	] ;
+# The plugin must list all parameters that can be written (e.g. changed by the
+# user) as patch:writable:
+	patch:writable plug:int ,
+		plug:long ,
+		plug:float ,
+		plug:double ,
+		plug:bool ,
+		plug:string ,
+		plug:path ,
+		plug:spring ;
+# Similarly, parameters that may change internally must be listed as patch:readable,
+# meaning to host should watch for changes to the parameter's value:
+		patch:readable plug:lfo ,
+			plug:spring ;
+# Parameters map directly to properties of the plugin's state.  So, we can
+# specify initial parameter values with the state:state property.  The
+# state:loadDefaultState feature (required above) requires that the host loads
+# the default state after instantiation but before running the plugin.
+	state:state [
+		plug:int 0 ;
+		plug:long "0"^^xsd:long ;
+		plug:float "0.1234"^^xsd:float ;
+		plug:double "0e0"^^xsd:double ;
+		plug:bool false ;
+		plug:string "Hello, world" ;
+		plug:path <params.ttl> ;
+		plug:spring "0.0"^^xsd:float ;
+		plug:lfo "0.0"^^xsd:float
+	] .
+
+---- m4/state.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<>
+	a pset:Preset ;
+	lv2:appliesTo <http://lv2plug.in/plugins/eg-params> ;
+	state:state [
+		<http://lv2plug.in/plugins/eg-params#spring> "0.0"^^xsd:float ;
+		<http://lv2plug.in/plugins/eg-params#int> "0"^^xsd:int ;
+		<http://lv2plug.in/plugins/eg-params#long> "0"^^xsd:long ;
+		<http://lv2plug.in/plugins/eg-params#float> "0.1234"^^xsd:float ;
+		<http://lv2plug.in/plugins/eg-params#double> "0.0"^^xsd:double ;
+		<http://lv2plug.in/plugins/eg-params#bool> false ;
+		<http://lv2plug.in/plugins/eg-params#string> "Hello, world" ;
+		<http://lv2plug.in/plugins/eg-params#path> <params.ttl> ;
+		<http://lv2plug.in/plugins/eg-params#lfo> "0.0"^^xsd:float
+	] .
+
+
+==== clear the graph, then load the bundle into the root
+load into ingen:/main                                      0
+what arrives first                                         response
+blocks afterwards                                          []
+gain restored                                              True
+name, position, assignment restored                        (True, True, True)
+graph properties restored                                  (True, True)
+plugin state reloaded (engine log)                         see the engine log below
+==== load again on top of the same blocks
+load into a graph that already has m3                      0
+blocks afterwards                                          []
+==== the bundle moved to another folder, plugin state with it
+load the moved bundle                                      0
+blocks afterwards                                          []
+saved again: its state and the file it names               ['manifest.ttl', 'params.ttl', 'state.ttl']
+==== a bundle whose plugin is missing
+load bundle with an absent plugin                          0
+blocks afterwards                                          []
+load a bundle that does not exist                          0
+load an unreadable bundle                                  0
+engine still answers; blocks                               (0, [])
+==== a client that connects and never reads
+next request answered while that client is idle            None after 5.0 s
+==== the interface's adapter and patch store (peepo_ingen_live)
+SUMMARY all adapter checks passed
+56 adapter checks passed
+MODEL a1.nam: WaveNet 0.5.4, 48000 Hz, sha256 7b781974d180d5bf
+MODEL a2.nam: SlimmableContainer 0.7.0, 48000 Hz, sha256 9c1976410fbda885
+==== NAM at 128 frames (13-nam.py)
+==== current, engine at 48000 Hz, 128 frames
+PASS  the plugin loads in Ingen (it requires urid:map and work:schedule)
+NOTE  without a model: 0.2121 RMS out for 0.2121 in, 0.0% not the input tone
+PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-check/nam/models/a1 standard.nam'
+PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-check/nam/models/a1 standard.nam'
+NOTE  continuing with the file URI form
+PASS  A1 standard model runs -- 0.1362 RMS, 6.7% of the output is not the input tone, peak 0.205
+PASS  A2 model runs -- 0.0793 RMS, 17.1% of the output is not the input tone, peak 0.209
+PASS  a missing file: the engine survives; the plugin drops to no model (dry signal)
+PASS  a corrupt file: the engine survives; the plugin drops to no model (dry signal)
+NOTE  after 30 model switches: engine RSS 117 MiB (was 114), 0 xruns on the PC's dummy backend
+NOTE  after 60 model switches: engine RSS 118 MiB (was 114), 1 xruns on the PC's dummy backend
+PASS  still processing after 60 switches -- 0.0793 RMS
+PASS  A2 quality 1 -> 0 -> 0.5 -> 1: the sound changes between 1 and 0 and returns at 1; 0 xruns while switching
+PASS  saved to /tmp/peepo-check/nam/nam.ingen
+NOTE  bundle files: main.ttl, manifest.ttl, nam/a1 standard.nam, nam/manifest.ttl, nam/state.ttl, plugins.ttl
+NOTE  nam/state.ttl: <http://github.com/mikeoliphant/neural-amp-modeler-lv2#model> <a1%20standard.nam>
+PASS  loaded back into the running engine
+PASS  the reloaded block runs the saved model -- 0.1362 RMS against 0.1362 before saving
+NOTE  bundle moved and the original model file renamed: the plugin still runs the model (the bundle carries it)
+==== all passed
+      1 /nam: Unable to load model from: ''
+      2 /nam: Unable to load model from: '/nonexistent-reset.nam'
+      1 /nam: Unable to load model from: '/tmp/peepo-check/nam/models/absent.nam'
+      1 /nam: Unable to load model from: '/tmp/peepo-check/nam/models/corrupt.nam'
+      4 warning: Relative path but base is not a file URI.
+      4 warning: Writing ambiguous atom:Path literal.
+/tmp/pi-check/check-engine.sh: line 38: 124025 Segmentation fault      ingen -e -f -E 0 -s $SERVER -S "$RUN/ingen.sock" > "$RUN/ingen.log" 2>&1
+/tmp/pi-check/check-engine.sh: line 35: 124010 Killed                  jackd -n $SERVER --no-realtime -d dummy -r 48000 -p "$1" > "$RUN/jackd.log" 2>&1
+==== current, restoring /tmp/peepo-check/nam/nam.ingen into a fresh engine
+PASS  the bundle loads
+NOTE  the restored patch: 0.1362 RMS, 6.7% of the output is not the input tone; plugin reports '/tmp/peepo-check/nam/nam.ingen/nam/a1 standard.nam'
+==== all passed
+PASS  the check engine is still running
+==== NAM at 64 frames (13-nam.py)
+==== current, engine at 48000 Hz, 64 frames
+PASS  the plugin loads in Ingen (it requires urid:map and work:schedule)
+NOTE  without a model: 0.2121 RMS out for 0.2121 in, 0.0% not the input tone
+PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-check/nam-64/models/a1 standard.nam'
+PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-check/nam-64/models/a1 standard.nam'
+NOTE  continuing with the file URI form
+PASS  A1 standard model runs -- 0.1362 RMS, 6.7% of the output is not the input tone, peak 0.205
+PASS  A2 model runs -- 0.0793 RMS, 17.1% of the output is not the input tone, peak 0.209
+==== all passed
+PASS  the check engine is still running
+==== NAM at 1024 frames (13-nam.py)
+==== current, engine at 48000 Hz, 1024 frames
+PASS  the plugin loads in Ingen (it requires urid:map and work:schedule)
+NOTE  without a model: 0.2121 RMS out for 0.2121 in, 0.0% not the input tone
+PASS  file URI, as Beebo sends it: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-check/nam-1024/models/a1 standard.nam'
+PASS  atom:Path literal: accepted by the engine; sound changed (model running); plugin reports '/tmp/peepo-check/nam-1024/models/a1 standard.nam'
+NOTE  continuing with the file URI form
+PASS  A1 standard model runs -- 0.1362 RMS, 6.7% of the output is not the input tone, peak 0.205
+PASS  A2 model runs -- 0.0793 RMS, 17.1% of the output is not the input tone, peak 0.209
+==== all passed
+PASS  the check engine is still running
+PASS  the instrument's JACK, engine and interface kept their processes (peepo-jack=85049 peepo-engine=85064 peepo-ui=85090 )
+NOTE  the instrument's JACK logged 0 xrun lines while this ran
+exit=0
+
+#### bundles section re-run
+INSTRUMENT peepo-jack=85049 peepo-engine=85064 peepo-ui=85090 
+SYSTEM aarch64 Debian GNU/Linux 12 (bookworm) jack 1.9.21 throttled=0x50005
+==== bundles, plugin state and paths (10-bundle-probe.py)
+put in_l, out_l                                            (0, 0)
+put amp m3 with name, position                             0
+put params m4 (has LV2 state)                              0
+set gain 6                                                 0
+cables                                                     (0, 0)
+graph property peepo:patchName                             0
+graph property peepo:patchId                               0
+graph property peepo:schemaVersion                         0
+assignment property on a port                              0
+save to /tmp/peepo-check/bundles/one.ingen                 (0, '0.00 s')
+files                                                      ['m4', 'main.ttl', 'manifest.ttl', 'plugins.ttl']
+---- m4/ ['manifest.ttl', 'state.ttl', 'params.ttl']
+---- main.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix midi: <http://lv2plug.in/ns/ext/midi#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix peepo: <urn:peepo:ns#> .
+
+<control>
+	ingen:canvasX 32.0 ;
+	ingen:canvasY 32.0 ;
+	atom:bufferType atom:Sequence ;
+	atom:supports patch:Message ;
+	<http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+	lv2:designation lv2:control ;
+	lv2:index 0 ;
+	lv2:name "Control" ;
+	lv2:portProperty lv2:connectionOptional ;
+	lv2:symbol "control" ;
+	a atom:AtomPort ,
+		lv2:InputPort .
+
+<in_l>
+	lv2:index 2 ;
+	lv2:name "in_l" ;
+	lv2:symbol "in_l" ;
+	a lv2:AudioPort ,
+		lv2:InputPort .
+
+<m3>
+	ingen:canvasX 300.0 ;
+	ingen:canvasY 200.0 ;
+	lv2:port <m3/gain> ,
+		<m3/in> ,
+		<m3/out> ;
+	lv2:prototype <http://lv2plug.in/plugins/eg-amp> ;
+	a ingen:Block ;
+	peepo:displayName "Boost" .
+
+<m3/gain>
+	ingen:value 6.0 ;
+	lv2:index 0 ;
+	a lv2:ControlPort ,
+		lv2:InputPort ;
+	peepo:assignedControl "knob1" .
+
+<m3/in>
+	lv2:index 1 ;
+	a lv2:AudioPort ,
+		lv2:InputPort .
+
+<m3/out>
+	lv2:index 2 ;
+	a lv2:AudioPort ,
+		lv2:OutputPort .
+
+<m4>
+	<http://lv2plug.in/ns/ext/state#state> <m4/state.ttl> ;
+	lv2:port <m4/in> ,
+		<m4/out> ;
+	lv2:prototype <http://lv2plug.in/plugins/eg-params> ;
+	a ingen:Block .
+
+<m4/in>
+	atom:bufferType atom:Sequence ;
+	atom:supports patch:Message ;
+	lv2:designation lv2:control ;
+	lv2:index 0 ;
+	a atom:AtomPort ,
+		lv2:InputPort .
+
+<m4/out>
+	atom:bufferType atom:Sequence ;
+	atom:supports patch:Message ;
+	lv2:designation lv2:control ;
+	lv2:index 1 ;
+	a atom:AtomPort ,
+		lv2:OutputPort .
+
+<>
+	ingen:arc [
+		ingen:head <m3/in> ;
+		ingen:tail <in_l>
+	] , [
+		ingen:head <out_l> ;
+		ingen:tail <m3/out>
+	] ;
+	ingen:block <m3> ,
+		<m4> ;
+	ingen:polyphony 1 ;
+	<http://lv2plug.in/ns/extensions/ui#ui> ingen:GraphUIGtk2 ;
+	lv2:extensionData <http://lv2plug.in/ns/ext/state#interface> ;
+	lv2:port <control> ,
+		<in_l> ,
+		<notify> ,
+		<out_l> ;
+	doap:name "one" ;
+	a ingen:Graph ,
+		lv2:Plugin ;
+	peepo:patchId "p-0001" ;
+	peepo:patchName "Saved one" ;
+	peepo:schemaVersion 1 .
+
+<notify>
+	ingen:canvasX 128.0 ;
+	ingen:canvasY 32.0 ;
+	atom:bufferType atom:Sequence ;
+	atom:supports patch:Message ;
+	<http://lv2plug.in/ns/ext/resize-port#minimumSize> 4096 ;
+	lv2:designation lv2:control ;
+	lv2:index 1 ;
+	lv2:name "Notify" ;
+	lv2:portProperty lv2:connectionOptional ;
+	lv2:symbol "notify" ;
+	a atom:AtomPort ,
+		lv2:OutputPort .
+
+<out_l>
+	lv2:index 3 ;
+	lv2:name "out_l" ;
+	lv2:symbol "out_l" ;
+	a lv2:AudioPort ,
+		lv2:OutputPort .
+
+
+---- manifest.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix midi: <http://lv2plug.in/ns/ext/midi#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix peepo: <urn:peepo:ns#> .
+
+<main.ttl>
+	lv2:prototype ingen:GraphPrototype ;
+	a ingen:Graph ,
+		lv2:Plugin ;
+	rdfs:seeAlso <main.ttl> .
+
+
+---- plugins.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix ingen: <http://drobilla.net/ns/ingen#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix midi: <http://lv2plug.in/ns/ext/midi#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix peepo: <urn:peepo:ns#> .
+
+<http://lv2plug.in/plugins/eg-amp>
+	a lv2:Plugin .
+
+<http://lv2plug.in/plugins/eg-params>
+	a lv2:Plugin .
+
+
+==== what the saving client was told
+> []
+> 	a patch:Copy ;
+> 	patch:subject <ingen:/main> ;
+> 	patch:destination <file:///tmp/peepo-check/bundles/one.ingen> ;
+> 	patch:sequenceNumber "12"^^xsd:int .
+> <NUL>
+<  _:b69
+< 	a ingen:BundleStart ;
+< 	patch:sequenceNumber "48"^^xsd:int .
+< 
+<  _:b70
+< 	a patch:Response ;
+< 	patch:sequenceNumber "12"^^xsd:int ;
+< 	patch:body "0"^^xsd:int .
+< 
+<  _:b71
+< 	a patch:Copy ;
+< 	patch:sequenceNumber "12"^^xsd:int ;
+< 	patch:subject </main> ;
+< 	patch:destination <file:///tmp/peepo-check/bundles/one.ingen> .
+< 
+<  _:b72
+< 	a ingen:BundleEnd ;
+< 	patch:sequenceNumber "49"^^xsd:int .
+< <NUL>
+save to a percent-encoded path                             0
+  written where                                            ['/tmp/peepo-check/bundles/with space/two.ingen', '/tmp/peepo-check/bundles/with%20space/two.ingen']
+save to a path without .ingen                              0
+save into a missing directory                              0
+save a block, not a graph                                  3
+---- m4/manifest.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<state.ttl>
+	lv2:appliesTo <http://lv2plug.in/plugins/eg-params> ;
+	a pset:Preset ;
+	rdfs:seeAlso <state.ttl> .
+
+
+---- m4/params.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix param: <http://lv2plug.in/ns/ext/parameters#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix plug: <http://lv2plug.in/plugins/eg-params#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix urid: <http://lv2plug.in/ns/ext/urid#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# An existing parameter or RDF property can be used as a parameter.  The LV2
+# parameters extension <http://lv2plug.in/ns/ext/parameters> defines many
+# common audio parameters.  Where possible, existing parameters should be used
+# so hosts can intelligently control plugins.
+
+# If no suitable parameter exists, one can be defined for the plugin like so:
+
+plug:int
+	a lv2:Parameter ;
+	rdfs:label "int" ;
+	rdfs:range atom:Int .
+
+plug:long
+	a lv2:Parameter ;
+	rdfs:label "long" ;
+	rdfs:range atom:Long .
+
+plug:float
+	a lv2:Parameter ;
+	rdfs:label "float" ;
+	rdfs:range atom:Float .
+
+plug:double
+	a lv2:Parameter ;
+	rdfs:label "double" ;
+	rdfs:range atom:Double .
+
+plug:bool
+	a lv2:Parameter ;
+	rdfs:label "bool" ;
+	rdfs:range atom:Bool .
+
+plug:string
+	a lv2:Parameter ;
+	rdfs:label "string" ;
+	rdfs:range atom:String .
+
+plug:path
+	a lv2:Parameter ;
+	rdfs:label "path" ;
+	rdfs:range atom:Path .
+
+plug:lfo
+	a lv2:Parameter ;
+	rdfs:label "LFO" ;
+	rdfs:range atom:Float ;
+	lv2:minimum -1.0 ;
+	lv2:maximum 1.0 .
+
+plug:spring
+	a lv2:Parameter ;
+	rdfs:label "spring" ;
+	rdfs:range atom:Float .
+
+# Most of the plugin description is similar to the others we have seen, but
+# this plugin has only two ports, for receiving and sending messages used to
+# manipulate and access parameters.
+<http://lv2plug.in/plugins/eg-params>
+	a lv2:Plugin ,
+		lv2:UtilityPlugin ;
+	doap:name "Example Parameters" ;
+	doap:license <http://opensource.org/licenses/isc> ;
+	lv2:project <http://lv2plug.in/ns/lv2> ;
+	lv2:requiredFeature urid:map ;
+	lv2:optionalFeature lv2:hardRTCapable ,
+		state:loadDefaultState ;
+	lv2:extensionData state:interface ;
+	lv2:port [
+		a lv2:InputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports patch:Message ;
+		lv2:designation lv2:control ;
+		lv2:index 0 ;
+		lv2:symbol "in" ;
+		lv2:name "In"
+	] , [
+		a lv2:OutputPort ,
+			atom:AtomPort ;
+		atom:bufferType atom:Sequence ;
+		atom:supports patch:Message ;
+		lv2:designation lv2:control ;
+		lv2:index 1 ;
+		lv2:symbol "out" ;
+		lv2:name "Out"
+	] ;
+# The plugin must list all parameters that can be written (e.g. changed by the
+# user) as patch:writable:
+	patch:writable plug:int ,
+		plug:long ,
+		plug:float ,
+		plug:double ,
+		plug:bool ,
+		plug:string ,
+		plug:path ,
+		plug:spring ;
+# Similarly, parameters that may change internally must be listed as patch:readable,
+# meaning to host should watch for changes to the parameter's value:
+		patch:readable plug:lfo ,
+			plug:spring ;
+# Parameters map directly to properties of the plugin's state.  So, we can
+# specify initial parameter values with the state:state property.  The
+# state:loadDefaultState feature (required above) requires that the host loads
+# the default state after instantiation but before running the plugin.
+	state:state [
+		plug:int 0 ;
+		plug:long "0"^^xsd:long ;
+		plug:float "0.1234"^^xsd:float ;
+		plug:double "0e0"^^xsd:double ;
+		plug:bool false ;
+		plug:string "Hello, world" ;
+		plug:path <params.ttl> ;
+		plug:spring "0.0"^^xsd:float ;
+		plug:lfo "0.0"^^xsd:float
+	] .
+
+---- m4/state.ttl
+@prefix atom: <http://lv2plug.in/ns/ext/atom#> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<>
+	a pset:Preset ;
+	lv2:appliesTo <http://lv2plug.in/plugins/eg-params> ;
+	state:state [
+		<http://lv2plug.in/plugins/eg-params#spring> "0.0"^^xsd:float ;
+		<http://lv2plug.in/plugins/eg-params#int> "0"^^xsd:int ;
+		<http://lv2plug.in/plugins/eg-params#long> "0"^^xsd:long ;
+		<http://lv2plug.in/plugins/eg-params#float> "0.1234"^^xsd:float ;
+		<http://lv2plug.in/plugins/eg-params#double> "0.0"^^xsd:double ;
+		<http://lv2plug.in/plugins/eg-params#bool> false ;
+		<http://lv2plug.in/plugins/eg-params#string> "Hello, world" ;
+		<http://lv2plug.in/plugins/eg-params#path> <params.ttl> ;
+		<http://lv2plug.in/plugins/eg-params#lfo> "0.0"^^xsd:float
+	] .
+
+
+==== clear the graph, then load the bundle into the root
+load into ingen:/main                                      0
+what arrives first                                         response
+blocks afterwards                                          ['ingen:/main/m3', 'ingen:/main/m4']
+gain restored                                              True
+name, position, assignment restored                        (True, True, True)
+graph properties restored                                  (True, True)
+plugin state reloaded (engine log)                         see the engine log below
+==== load again on top of the same blocks
+load into a graph that already has m3                      0
+blocks afterwards                                          ['ingen:/main/m3', 'ingen:/main/m4']
+==== the bundle moved to another folder, plugin state with it
+load the moved bundle                                      0
+blocks afterwards                                          ['ingen:/main/m3', 'ingen:/main/m4']
+saved again: its state and the file it names               ['manifest.ttl', 'params.ttl', 'state.ttl']
+==== a bundle whose plugin is missing
+load bundle with an absent plugin                          0
+blocks afterwards                                          []
+load a bundle that does not exist                          0
+load an unreadable bundle                                  0
+engine still answers; blocks                               (0, [])
+==== a client that connects and never reads
+next request answered while that client is idle            None after 5.0 s
+MODEL a1.nam: WaveNet 0.5.4, 48000 Hz, sha256 7b781974d180d5bf
+MODEL a2.nam: SlimmableContainer 0.7.0, 48000 Hz, sha256 9c1976410fbda885
+PASS  the instrument's JACK, engine and interface kept their processes (peepo-jack=85049 peepo-engine=85064 peepo-ui=85090 )
+NOTE  the instrument's JACK logged 0 xrun lines while this ran

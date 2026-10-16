@@ -87,7 +87,7 @@ run install -m 0755 "$HERE/splash.sh" "$PREFIX/bin/peepo-splash"
 run install -m 0755 "$HERE/slim-boot.sh" "$PREFIX/bin/peepo-slim-boot"
 run install -d -m 0755 "$PREFIX/share/peepo/splash"
 run cp -r "$HERE/config/splash/peepo" "$PREFIX/share/peepo/splash/"
-run install -m 0755 "$HERE/check-ui-restart.sh" "$HERE/monitor-ui-restart.py" "$HERE/check-effect.sh" "$HERE/measure-effect.py" "$HERE/check-output-level.sh" "$PREFIX/libexec/peepo/"
+run install -m 0755 "$HERE/check-ui-restart.sh" "$HERE/check-ui-crash.sh" "$HERE/monitor-ui-restart.py" "$HERE/check-effect.sh" "$HERE/measure-effect.py" "$HERE/check-output-level.sh" "$PREFIX/libexec/peepo/"
 run "$PREFIX/bin/peepo-export-catalogue"
 
 # Settings are the user's: installed once, never overwritten.

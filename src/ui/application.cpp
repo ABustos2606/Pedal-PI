@@ -260,6 +260,7 @@ void Application::tick(unsigned ms) {
     if (rebuild_ && !dragging_ && !panning_ && !cable_source_ && !pressed) rebuild();
     update_metrics();
     if ((network_age_ += ms) >= 2000) { network_age_ = 0; update_network(); }
+    if (system_ && (system_age_ += ms) >= 2000) { system_age_ = 0; update_system(); }
     const auto* shown = page_ == Page::Parameters && !generic_parameters_ ? find_module(graph_, selected_) : nullptr;
     engine_.watch_tuner(shown && module_layout(*shown) == ModuleLayout::Tuner ? std::optional<InstanceId>{shown->id} : std::nullopt);
     update_tuner();
@@ -283,6 +284,15 @@ void Application::update_network() {
     if (network.text != lv_label_get_text(network_value_)) lv_label_set_text(network_value_, network.text.c_str());
     const auto ink = color(network.connected ? accent : warning);
     if (!lv_color_eq(lv_obj_get_style_text_color(network_value_, LV_PART_MAIN), ink)) lv_obj_set_style_text_color(network_value_, ink, 0);
+}
+void Application::update_system() {
+    reading_ = system_();
+    // Said once: a weak supply makes audio crackle and slows the CPU down.
+    if (reading_.under_voltage == true && !low_voltage_seen_) {
+        low_voltage_seen_ = true;
+        if (page_ != Page::Halting) message("The power supply's voltage is too low; audio can crackle. Settings > Diagnostics.");
+    }
+    if (page_ == Page::Diagnostics) rebuild_ = true;
 }
 void Application::bind(lv_obj_t* obj, Action action, InstanceId id, std::string symbol, int number, lv_obj_t* value) {
     bindings_.push_back({this, action, id, std::move(symbol), number, value});
@@ -627,18 +637,12 @@ void Application::handle(Binding& b, lv_event_t* e) {
         break;
     case Action::ConfirmAction: if (confirmation_.act) { auto act = std::move(confirmation_.act); confirmation_.act = nullptr; act(); } break;
     case Action::CancelAction: confirmation_.act = nullptr; navigate(confirmation_.back); break;
-    case Action::PowerOff:
-        if (!power_off_) break;
-        if (pending()) { message("Wait for pending edits before shutting down."); break; }
-        ask("Shut down", "Shut down Peepo?", std::string(graph_.dirty ? "This patch has unsaved edits; they will be lost.\n" : "") +
-            "Saved patches are safe. Unplug when the screen goes dark.", "Shut down", [this] {
-            // An edit or patch change made with a control while this was asked must finish first.
-            if (pending()) message("Wait for pending edits before shutting down.");
-            else if (const auto issue = power_off_(); !issue.empty()) message(issue);
-            else message("Shutting down. Unplug when the screen goes dark.");
-            navigate(Page::Settings);
-        });
-        confirmation_.back = Page::Settings;
+    case Action::PowerOff: power_action(false); break;
+    case Action::Restart: power_action(true); break;
+    case Action::Revert:
+        // Back to the last saved revision, through the same guard as any load.
+        if (graph_.patch_id.empty() || !graph_.dirty) { message("Nothing to revert: the patch is as it was saved."); break; }
+        load_stored(graph_.patch_id, false, true);
         break;
     case Action::CommitName: commit_name(); break;
     case Action::Confirm:
@@ -648,7 +652,10 @@ void Application::handle(Binding& b, lv_event_t* e) {
     case Action::CancelReplace: replacement_.reset(); navigate(confirm_origin_); break;
     case Action::ParameterPage: parameter_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
     case Action::BrowserGroup:
-        if (browser_group_ != b.symbol) { browser_group_ = b.symbol; browser_pick_.clear(); browser_scroll_ = 0; rebuild_ = true; }
+        if (browser_group_ != b.symbol) { browser_group_ = b.symbol; browser_category_.clear(); browser_pick_.clear(); browser_scroll_ = 0; rebuild_ = true; }
+        break;
+    case Action::BrowserCategory:
+        if (browser_category_ != b.symbol) { browser_category_ = b.symbol; browser_pick_.clear(); browser_scroll_ = 0; rebuild_ = true; }
         break;
     case Action::BrowserPick:
         // The first tap picks a card; tapping it again, or Add, adds it.
@@ -744,6 +751,21 @@ void Application::load_stored(const std::string& id, bool allow_missing, bool gu
     if (guarded) replace_patch(std::move(command), Page::Patches);
     else submit(std::move(command));
 }
+void Application::power_action(bool restart) {
+    if (!(restart ? restart_ : power_off_)) return;
+    if (pending()) { message(restart ? "Wait for pending edits before restarting." : "Wait for pending edits before shutting down."); return; }
+    const std::string what = restart ? "Restart" : "Shut down";
+    ask(what, restart ? "Restart Peepo?" : "Shut down Peepo?", std::string(graph_.dirty ? "This patch has unsaved edits; they will be lost.\n" : "") +
+        (restart ? "Saved patches are safe. Peepo starts again by itself, with its startup patch." : "Saved patches are safe. Unplug when the screen goes dark."), what, [this, restart] {
+        // An edit or patch change made with a control while this was asked must finish first.
+        if (pending()) { message(restart ? "Wait for pending edits before restarting." : "Wait for pending edits before shutting down."); navigate(Page::Power); return; }
+        if (const auto issue = (restart ? restart_ : power_off_)(); !issue.empty()) { message(issue); navigate(Page::Power); return; }
+        restarting_ = restart;
+        message(restart ? "Restarting." : "Shutting down. Unplug when the screen goes dark.");
+        navigate(Page::Halting);
+    });
+    confirmation_.back = Page::Power;
+}
 void Application::ask(std::string title, std::string heading, std::string body, std::string button, std::function<void()> act) {
     confirmation_ = {std::move(title), std::move(heading), std::move(body), std::move(button), std::move(act)};
     navigate(Page::ConfirmAction);
@@ -802,6 +824,9 @@ void Application::rebuild() {
         if (picking_module_) if (const auto* m = find_module(graph_, picking_module_)) title = control_label(editing_control_) + ": " + m->name;
         break;
     case Page::AssignmentDetail: section = "CONTROLS"; title = control_label(editing_control_); break;
+    case Page::Diagnostics: section = "SETTINGS"; title = "Diagnostics"; break;
+    case Page::Power: section = "SETTINGS"; title = "Power"; break;
+    case Page::Halting: section = "POWER"; title = restarting_ ? "Restarting" : "Shutting down"; break;
     }
     // The dot is the engine: green when it answers.
     auto* dot = panel(header, 24, title.empty() ? 32 : 17, 8, 8, ready ? accent : warning);
@@ -810,7 +835,7 @@ void Application::rebuild() {
     auto* crumb = label(header, "PEEPO // " + section, 40, title.empty() ? 27 : 12, 0, faint, &peepo_mono_14);
     lv_obj_set_style_text_letter_space(crumb, 2, 0);
     if (!title.empty()) {
-        auto* heading = label(header, upper(title), 24, 32, patch ? 412 : 600, text, &peepo_bold_24);
+        auto* heading = label(header, upper(title), 24, 32, patch ? 412 : page_ == Page::Settings ? 330 : page_ == Page::Patches ? 480 : 600, text, &peepo_bold_24);
         lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT); lv_obj_set_height(heading, 30);
         if (patch) {
             // Tapping the patch name brings the canvas back to its start.
@@ -828,7 +853,28 @@ void Application::rebuild() {
         pill(button(header, "Settings", 672, 12, 104, Action::Navigate, 0, {}, static_cast<int>(Page::Settings)));
     } else if (page_ == Page::NamePatch) {
         primary(pill(button(header, saving_as_ ? "Save" : renaming_ ? "Rename" : "Create", 640, 12, 136, Action::CommitName)));
-    } else {
+    } else if (page_ == Page::Settings || (page_ == Page::Patches && store_)) {
+        // The pages Settings leads to, or what Patches can do to the patch playing,
+        // as pills as wide as their names.
+        auto* pills = lv_obj_create(header); lv_obj_remove_style_all(pills);
+        lv_obj_set_size(pills, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_set_flex_flow(pills, LV_FLEX_FLOW_ROW); lv_obj_set_style_pad_column(pills, 8, 0);
+        lv_obj_remove_flag(pills, LV_OBJ_FLAG_CLICKABLE);
+        auto link = [&](const std::string& name, Action action, Page target) {
+            auto* b = pill(button(pills, name, 0, 0, 0, action, 0, {}, static_cast<int>(target)));
+            lv_obj_set_width(b, LV_SIZE_CONTENT); lv_obj_set_style_pad_hor(b, 18, 0);
+            return b;
+        };
+        if (page_ == Page::Patches) {
+            auto* revert = link("Revert", Action::Revert, Page::Patches);
+            if (graph_.patch_id.empty() || !graph_.dirty) lv_obj_add_state(revert, LV_STATE_DISABLED);
+        } else {
+            link("Controls", Action::Navigate, Page::Controls);
+            link("Diagnostics", Action::Navigate, Page::Diagnostics);
+            if (power_off_ || restart_) link("Power", Action::Navigate, Page::Power);
+        }
+        lv_obj_align(pills, LV_ALIGN_RIGHT_MID, -24, 0);
+    } else if (page_ != Page::Halting) {
         auto* mode = label(header, engine_.capabilities().simulation ? "SIMULATED" : "ENGINE", 640, 28, 136, faint, &peepo_mono_14);
         lv_obj_set_style_text_align(mode, LV_TEXT_ALIGN_RIGHT, 0); lv_obj_set_style_text_letter_space(mode, 2, 0);
     }
@@ -846,22 +892,31 @@ void Application::rebuild() {
     case Page::Controls: controls(content); break;
     case Page::AssignPicker: assign_picker(content); break;
     case Page::AssignmentDetail: assignment_detail(content); break;
+    case Page::Diagnostics: diagnostics(content); break;
+    case Page::Power: power(content); break;
+    case Page::Halting: halting(content); break;
     }
-    if (patch && !ready) {
+    std::string missing;
+    if (patch) for (const auto& m : graph_.modules) if (!module_available(m)) missing += (missing.empty() ? "" : ", ") + m.name;
+    if (patch && (!ready || !missing.empty())) {
         // Over the canvas, but never in the way: touches pass through to the patch below.
         auto* banner = panel(content, 24, 8, 752, 40, 0x1f130a);
         lv_obj_set_style_border_color(banner, color(warning), 0);
         lv_obj_remove_flag(banner, LV_OBJ_FLAG_CLICKABLE);
-        auto* note = label(banner, engine_banner(), 14, 10, 724, warning, &lv_font_montserrat_14);
+        // The engine first: nothing can be repaired while it is away.
+        auto* note = label(banner, !ready ? engine_banner() : "Not available here: " + missing + ". Its cables are silent; hold it to delete it.",
+                           14, 10, 724, warning, &lv_font_montserrat_14);
         lv_label_set_long_mode(note, LV_LABEL_LONG_DOT); lv_obj_set_height(note, 18);
     }
-    if (!patch) {
+    // Nothing is left to go back to once the machine is going down.
+    if (!patch && page_ != Page::Halting) {
         // Back returns to where the page was opened from.
-        const auto back = page_ == Page::NamePatch ? Page::Patches : page_ == Page::Controls ? Page::Settings :
+        const auto back = page_ == Page::NamePatch ? Page::Patches :
+            page_ == Page::Controls || page_ == Page::Diagnostics || page_ == Page::Power ? Page::Settings :
             page_ == Page::AssignPicker || page_ == Page::AssignmentDetail ? Page::Controls : Page::Patch;
         slim(button(foot, "< Back", 14, 0, 112, Action::Navigate, 0, {}, static_cast<int>(back)));
     }
-    const int message_x = patch ? 24 : 142;
+    const int message_x = patch || page_ == Page::Halting ? 24 : 142;
     footer_ = label(foot, message_, message_x, 7, patch && selected_cable_ ? 240 : 592 - message_x, faint, &peepo_mono_14);
     lv_obj_set_height(footer_, 34); lv_label_set_long_mode(footer_, LV_LABEL_LONG_DOT);
     if (patch && selected_cable_) {
@@ -1092,14 +1147,51 @@ void Application::browser(lv_obj_t* header, lv_obj_t* content, lv_obj_t* foot) {
     lv_obj_set_style_pad_bottom(content, 12, 0);
     browser_list_ = content;
     browser_order_.clear();
+    // An open group with several finer categories offers them as a row of
+    // chips above its cards, in the order the group lists them.
+    std::vector<std::string> categories;
+    if (!browser_group_.empty()) {
+        const auto gi = static_cast<std::size_t>(std::find_if(groups.begin(), groups.end(), [&](const ModuleGroup& x) { return browser_group_ == x.name; }) - groups.begin());
+        for (const auto& name : groups[gi].categories)
+            if (std::any_of(members[gi].begin(), members[gi].end(), [&](const ModuleDefinition* d) { return d->category == name; })) categories.push_back(name);
+        for (const auto* d : members[gi])
+            if (std::find(categories.begin(), categories.end(), d->category) == categories.end()) categories.push_back(d->category);
+    }
+    if (categories.size() < 2 || std::find(categories.begin(), categories.end(), browser_category_) == categories.end()) browser_category_.clear();
+    int top = 8;
+    if (categories.size() > 1) {
+        const auto& g = *std::find_if(groups.begin(), groups.end(), [&](const ModuleGroup& x) { return browser_group_ == x.name; });
+        auto* chips = lv_obj_create(content); lv_obj_remove_style_all(chips);
+        lv_obj_set_pos(chips, 14, 8); lv_obj_set_size(chips, 772, LV_SIZE_CONTENT);
+        lv_obj_set_flex_flow(chips, LV_FLEX_FLOW_ROW_WRAP); lv_obj_set_style_pad_column(chips, 8, 0); lv_obj_set_style_pad_row(chips, 8, 0);
+        lv_obj_remove_flag(chips, LV_OBJ_FLAG_CLICKABLE);
+        categories.insert(categories.begin(), std::string());
+        for (const auto& name : categories) {
+            const bool open = name == browser_category_;
+            auto* chip = lv_button_create(chips); lv_obj_remove_style_all(chip);
+            lv_obj_set_size(chip, LV_SIZE_CONTENT, 40); lv_obj_set_style_pad_hor(chip, 16, 0);
+            lv_obj_set_style_radius(chip, LV_RADIUS_CIRCLE, 0);
+            lv_obj_set_style_bg_color(chip, color(open ? g.bright : surface), 0); lv_obj_set_style_bg_opa(chip, LV_OPA_COVER, 0);
+            lv_obj_set_style_bg_opa(chip, LV_OPA_80, LV_STATE_PRESSED);
+            lv_obj_set_style_border_width(chip, open ? 0 : 1, 0); lv_obj_set_style_border_color(chip, color(rim), 0);
+            lv_obj_set_style_outline_color(chip, color(text), LV_STATE_FOCUS_KEY); lv_obj_set_style_outline_width(chip, 2, LV_STATE_FOCUS_KEY);
+            auto* l = label(chip, name.empty() ? std::string("ALL") : upper(name), 0, 0, 0, open ? background : g.bright, &peepo_bold_14);
+            lv_obj_set_style_text_letter_space(l, 1, 0); lv_obj_center(l);
+            bind(chip, Action::BrowserCategory, 0, name);
+            if (group) lv_group_add_obj(group, chip);
+        }
+        lv_obj_update_layout(chips);
+        top = 8 + lv_obj_get_height(chips) + 12;
+    }
     int shown = 0;
     for (std::size_t gi = 0; gi < groups.size(); ++gi) {
         if (!browser_group_.empty() && browser_group_ != groups[gi].name) continue;
         const auto& g = groups[gi];
         for (const auto* d : members[gi]) {
+            if (!browser_category_.empty() && d->category != browser_category_) continue;
             const bool usable = d->availability == Availability::Available;
             auto* card = lv_button_create(content); lv_obj_remove_style_all(card);
-            lv_obj_set_pos(card, shown % 2 ? 406 : 14, 8 + shown / 2 * 172); lv_obj_set_size(card, 380, 160);
+            lv_obj_set_pos(card, shown % 2 ? 406 : 14, top + shown / 2 * 172); lv_obj_set_size(card, 380, 160);
             lv_obj_set_style_bg_color(card, color(surface), 0); lv_obj_set_style_bg_opa(card, LV_OPA_COVER, 0);
             lv_obj_set_style_bg_color(card, color(pressed_fill), LV_STATE_PRESSED);
             lv_obj_set_style_radius(card, 12, 0);
@@ -1141,7 +1233,8 @@ void Application::browser(lv_obj_t* header, lv_obj_t* content, lv_obj_t* foot) {
 
     // Footer: back, what is in view, and add.
     slim(button(foot, "< Back", 14, 0, 112, Action::Navigate, 0, {}, static_cast<int>(Page::Patch)));
-    auto* count = label(foot, (browser_group_.empty() ? std::string("ALL") : browser_group_) + " // " + std::to_string(shown) + (shown == 1 ? " MODULE" : " MODULES"),
+    const auto in_view = (browser_group_.empty() ? std::string("ALL") : browser_group_) + (browser_category_.empty() ? std::string() : " / " + upper(browser_category_));
+    auto* count = label(foot, in_view + " // " + std::to_string(shown) + (shown == 1 ? " MODULE" : " MODULES"),
                         142, 15, 460, faint, &peepo_mono_14);
     lv_obj_set_style_text_letter_space(count, 2, 0); lv_obj_set_style_text_align(count, LV_TEXT_ALIGN_CENTER, 0);
     browser_add_ = primary(slim(button(foot, "Add module +", 618, 0, 168, Action::BrowserPick)));
@@ -1498,7 +1591,14 @@ void Application::module_actions(lv_obj_t* parent) {
     auto* duplicate = button(parent, "Duplicate", 24, 156, 352, Action::Duplicate, m->id);
     if (!module_available(*m)) { lv_obj_add_state(bypass, LV_STATE_DISABLED); lv_obj_add_state(duplicate, LV_STATE_DISABLED); }
     button(parent, "Delete module", 408, 156, 368, Action::Remove, m->id);
-    label(parent, "Duplicate keeps parameter values and software bypass.\nCables and control assignments stay with the original.\nPhysical switch assignment will arrive with control mapping.", 24, 240, 752, muted);
+    if (!module_available(*m)) {
+        const auto* d = definition(m->uri);
+        const auto why = d && !d->availability_reason.empty() ? d->availability_reason : std::string("its plugin is not installed here");
+        auto* note = label(parent, "Not available: " + why + ".\nIts cables carry no sound. Delete module removes it and its cables;\nthe saved patch keeps it until you save again.", 24, 232, 752, warning);
+        lv_obj_set_height(note, 96); lv_label_set_long_mode(note, LV_LABEL_LONG_DOT);
+        return;
+    }
+    label(parent, "Duplicate keeps parameter values and software bypass.\nCables and control assignments stay with the original.\nPhysical controls are assigned in Settings > Controls.", 24, 240, 752, muted);
 }
 void Application::settings(lv_obj_t* parent) {
     if (!engine_.capabilities().simulation) {
@@ -1508,15 +1608,13 @@ void Application::settings(lv_obj_t* parent) {
         label(parent, "Disconnecting stops only this interface; the engine keeps playing.\nA lost engine is retried every second.", 24, 96, 752, muted, &lv_font_montserrat_14);
         button(parent, "Connect", 24, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Ready));
         button(parent, "Disconnect", 200, 142, 160, Action::State, 0, {}, static_cast<int>(EngineState::Disconnected));
-        button(parent, "Controls", 376, 142, 160, Action::Navigate, 0, {}, static_cast<int>(Page::Controls));
-        if (power_off_) button(parent, "Shut down", 552, 142, 224, Action::PowerOff);
         label(parent, store_ ? "Patches are stored in " + store_->root().generic_string() : "Patch storage is not available: session snapshots only.", 24, 216, 752, muted, &lv_font_montserrat_14);
         if (network_) {
             label(parent, "Network", 24, 244, 0, text, &peepo_bold_18);
             network_value_ = label(parent, "", 24, 270, 752, muted, &lv_font_montserrat_14);
             update_network();
         }
-        label(parent, "CPU is the engine's mean run load. Xruns, memory and temperature: not measured", 24, 316, 752, muted, &lv_font_montserrat_14);
+        label(parent, "Temperature, memory, the power supply and CPU load: Diagnostics.", 24, 316, 752, muted, &lv_font_montserrat_14);
         return;
     }
     label(parent, "Windows simulator / 800 x 480", 24, 20, 0, text, &peepo_bold_24);
@@ -1526,9 +1624,87 @@ void Application::settings(lv_obj_t* parent) {
     button(parent, "Engine error", 376, 142, 180, Action::State, 0, {}, static_cast<int>(EngineState::Error));
     button(parent, "Reject next edit", 24, 216, 220, Action::Reject);
     button(parent, "Missing module", 264, 216, 220, Action::MissingFixture);
-    button(parent, "Controls", 504, 216, 220, Action::Navigate, 0, {}, static_cast<int>(Page::Controls));
     label(parent, "Keys: Q/A W/S E/D R/F turn encoders 1-4, keys 1-4 push them, Z X C are the stomps.", 24, 276, 752, muted, &lv_font_montserrat_14);
-    label(parent, "DSP, xruns, memory and temperature: not measured", 24, 300, 730, muted, &lv_font_montserrat_14);
+}
+namespace {
+std::string decimal(double value, int places) {
+    std::ostringstream out; out << std::fixed << std::setprecision(places) << value;
+    return out.str();
+}
+std::string gigabytes(std::uint64_t bytes) { return decimal(bytes / 1073741824.0, 1) + " GB"; }
+std::string duration(double seconds) {
+    const auto minutes = static_cast<long long>(seconds / 60), hours = minutes / 60, days = hours / 24;
+    if (days) return std::to_string(days) + " d " + std::to_string(hours % 24) + " h";
+    if (hours) return std::to_string(hours) + " h " + std::to_string(minutes % 60) + " min";
+    return std::to_string(minutes) + " min";
+}
+}
+void Application::diagnostics(lv_obj_t* parent) {
+    // Six cards: a caption, the reading, and what it means. Nothing is
+    // estimated: a reading this machine does not give is said to be missing.
+    struct Card { const char* caption; std::string value, detail; std::uint32_t ink; };
+    const auto& r = reading_;
+    const bool measured = static_cast<bool>(system_);
+    std::vector<Card> cards;
+    const auto cpu = engine_.telemetry().cpu_percent;
+    cards.push_back({"ENGINE", status_text(), metric_text(cpu, true) == "--" ? "The engine reports no CPU load." :
+                     "CPU " + metric_text(cpu, true) + ": the engine's mean run load" + (engine_.capabilities().simulation ? ", simulated." : "."),
+                     engine_.state() == EngineState::Ready ? accent : warning});
+    if (!r.under_voltage) cards.push_back({"POWER", "--", "The supply voltage is not measured here.", muted});
+    else if (*r.under_voltage) cards.push_back({"POWER", "TOO LOW", "The supply is too weak now: audio can crackle and the CPU slows down.", warning});
+    else if (low_voltage_seen_) cards.push_back({"POWER", "WAS LOW", "It dropped too low since this screen started. Use a 5 V, 5 A supply.", warning});
+    else cards.push_back({"POWER", "OK", "Not too low since this screen started.", accent});
+    if (r.temperature_c) cards.push_back({"TEMPERATURE", decimal(*r.temperature_c, 1) + " C",
+                                          *r.temperature_c >= 80 ? "Hot: the CPU slows down near 85 C." : "The CPU slows down near 85 C.", *r.temperature_c >= 80 ? warning : text});
+    else cards.push_back({"TEMPERATURE", "--", "Not measured here.", muted});
+    if (r.memory_total && r.memory_available) {
+        const bool short_of = *r.memory_available * 10 < *r.memory_total;
+        cards.push_back({"MEMORY", gigabytes(*r.memory_available) + " free", "Of " + gigabytes(*r.memory_total) + ", shared by the engine, its plugins and this screen.", short_of ? warning : text});
+    } else cards.push_back({"MEMORY", "--", "Not measured here.", muted});
+    std::error_code error;
+    const auto space = store_ ? std::filesystem::space(store_->root(), error) : std::filesystem::space_info{};
+    if (store_ && !error && space.capacity) {
+        const bool short_of = space.available * 20 < space.capacity;
+        cards.push_back({"STORAGE", gigabytes(space.available) + " free", "Of " + gigabytes(space.capacity) + " where patches are saved.", short_of ? warning : text});
+    } else cards.push_back({"STORAGE", "--", "No patch storage: session snapshots only.", muted});
+    if (r.uptime_s) cards.push_back({"UPTIME", duration(*r.uptime_s), "Since the system started.", text});
+    else cards.push_back({"UPTIME", "--", "Not measured here.", muted});
+    for (std::size_t i = 0; i < cards.size(); ++i) {
+        auto* card = panel(parent, 24 + static_cast<int>(i % 3) * 256, 12 + static_cast<int>(i / 3) * 162, 240, 150);
+        auto* caption = label(card, cards[i].caption, 16, 14, 208, faint, &peepo_mono_14);
+        lv_obj_set_style_text_letter_space(caption, 2, 0);
+        auto* value = label(card, cards[i].value, 16, 38, 208, cards[i].ink, &peepo_bold_24);
+        lv_label_set_long_mode(value, LV_LABEL_LONG_DOT); lv_obj_set_height(value, 30);
+        auto* detail = label(card, cards[i].detail, 16, 78, 208, muted, &lv_font_montserrat_14);
+        lv_label_set_long_mode(detail, LV_LABEL_LONG_DOT); lv_obj_set_height(detail, 60);
+    }
+    label(parent, measured ? "Read every 2 s. Audio dropouts (xruns) are not counted here yet." : "This computer's readings are not shown; the instrument shows its own.",
+          24, 334, 752, faint, &lv_font_montserrat_14);
+}
+void Application::power(lv_obj_t* parent) {
+    struct Choice { const char* title; const char* detail; Action action; bool offered; };
+    const Choice choices[] = {
+        {"Shut down", "Saved patches are safe. Unplug the instrument when the screen goes dark.", Action::PowerOff, static_cast<bool>(power_off_)},
+        {"Restart", "Starts the whole instrument again. It comes back by itself, playing its startup patch.", Action::Restart, static_cast<bool>(restart_)}};
+    int y = 12;
+    for (const auto& choice : choices) {
+        if (!choice.offered) continue;
+        auto* card = panel(parent, 24, y, 752, 120);
+        label(card, upper(choice.title), 20, 18, 480, text, &peepo_bold_20);
+        auto* detail = label(card, choice.detail, 20, 54, 520, muted, &lv_font_montserrat_14);
+        lv_obj_set_height(detail, 50);
+        auto* b = button(card, choice.title, 572, 35, 160, choice.action);
+        if (choice.action == Action::PowerOff) primary(b);
+        y += 136;
+    }
+    if (graph_.dirty) {
+        auto* note = label(parent, "This patch has unsaved edits. Save it in Patches first to keep them.", 24, y + 8, 752, warning, &lv_font_montserrat_14);
+        lv_label_set_long_mode(note, LV_LABEL_LONG_DOT); lv_obj_set_height(note, 20);
+    }
+}
+void Application::halting(lv_obj_t* parent) {
+    label(parent, restarting_ ? "Peepo is restarting" : "Peepo is shutting down", 24, 96, 752, text, &peepo_bold_24);
+    label(parent, restarting_ ? "It comes back by itself, playing its startup patch." : "Unplug the instrument when the screen goes dark.", 24, 144, 752, muted);
 }
 
 // Physical controls. Events arrive from whatever stands in for the hardware;
@@ -1547,7 +1723,8 @@ std::size_t Application::parameter_pages(const Module& m) const {
 }
 void Application::gesture(const Gesture& g) {
     // Typing a name: the keys standing in for controls are text there.
-    if (page_ == Page::NamePatch) return;
+    // Going down: nothing is changed any more.
+    if (page_ == Page::NamePatch || page_ == Page::Halting) return;
     active_control_ = g.control;
     if (page_ == Page::Controls) rebuild_ = true;
     if (is_encoder(g.control)) encoder(g);
@@ -1566,7 +1743,7 @@ void Application::encoder(const Gesture& g) {
             const auto count = static_cast<int>(browser_groups_.size());
             const auto at = static_cast<int>(std::find(browser_groups_.begin(), browser_groups_.end(), browser_group_) - browser_groups_.begin());
             browser_group_ = browser_groups_[static_cast<std::size_t>(((at + g.steps) % count + count) % count)];
-            browser_pick_.clear(); browser_scroll_ = 0; rebuild_ = true;
+            browser_category_.clear(); browser_pick_.clear(); browser_scroll_ = 0; rebuild_ = true;
         } else if (!browser_order_.empty()) {
             const auto last = static_cast<int>(browser_order_.size()) - 1;
             const auto it = std::find(browser_order_.begin(), browser_order_.end(), browser_pick_);

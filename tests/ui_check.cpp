@@ -76,6 +76,23 @@ void tap(peepo::Application& app, const std::string& text) {
     check(area.y1 >= 0 && area.y2 < 432, "browser entry could not be scrolled into view");
     click(app, (area.x1 + area.x2) / 2, (area.y1 + area.y2) / 2);
 }
+// The first label with exactly this text below the header, in tree order: a
+// category chip comes before the card tags that repeat its name.
+lv_obj_t* first_label(lv_obj_t* root, const std::string& text) {
+    if (lv_obj_check_type(root, &lv_label_class) && text == lv_label_get_text(root)) {
+        lv_area_t area; lv_obj_get_coords(root, &area);
+        if (area.y1 >= 72) return root;
+    }
+    for (unsigned i = 0; i < lv_obj_get_child_count(root); ++i)
+        if (auto* found = first_label(lv_obj_get_child(root, i), text)) return found;
+    return nullptr;
+}
+void tap_first(peepo::Application& app, const std::string& text) {
+    auto* l = first_label(app.screen(), text); check(l != nullptr, "label missing");
+    lv_area_t area; lv_obj_get_coords(l, &area);
+    click(app, (area.x1 + area.x2) / 2, (area.y1 + area.y2) / 2);
+}
+bool disabled_button(lv_obj_t* l) { return l && lv_obj_has_state(lv_obj_get_parent(l), LV_STATE_DISABLED); }
 // The first tap on a card picks it, the second adds it.
 void pick_and_add(peepo::Application& app, const std::string& name) { tap(app, name); tap(app, name); }
 void add_module(peepo::Application& app, const std::string& group, const std::string& name) {
@@ -277,11 +294,16 @@ int main(int argc, char** argv) {
             click(app, 707, 36); click(app, 374, 312);
             check(app.page() == peepo::Page::Patch && app.graph().connections.size() == 8 &&
                 !peepo::module_available(*peepo::find_module(app.graph(), 4)), "missing module fixture lost graph");
+            check(text_label(app.screen(), "Not available here: Missing texture") != nullptr, "the canvas did not say which module is missing");
             capture(app, output / "16-missing-module.bmp");
             click(app, 396, 244); check(app.page() == peepo::Page::Parameters, "missing placeholder could not be inspected");
             capture(app, output / "17-missing-parameters.bmp");
             check(widget(app.screen(), &lv_slider_class) == nullptr, "missing module exposed editable sliders");
-            click(app, 70, 456); hold(app, 396, 244); click(app, 170, 252);
+            click(app, 70, 456); hold(app, 396, 244);
+            check(app.page() == peepo::Page::ModuleActions && text_label(app.screen(), "Not available: ") && text_label(app.screen(), "until you save again"),
+                  "the missing module's actions did not explain it");
+            capture(app, output / "45-missing-actions.bmp");
+            click(app, 170, 252);
             check(app.graph().modules.size() == 5 && !app.pending(), "disabled missing-module duplication submitted an edit");
             click(app, 600, 252); check(app.graph().modules.size() == 4 && app.graph().connections.size() == 4, "missing placeholder deletion failed");
             click(app, 490, 36); tap(app, "GAIN");
@@ -638,7 +660,7 @@ int main(int argc, char** argv) {
             check(first_changed != 99 && second_changed != 99 && first_changed != second_changed, "tap did not move the encoders to the next page of Clouds");
             click(app, 70, 456);
             // Stomps are assigned on the Controls page: stomp 1 toggles Clouds freeze.
-            click(app, 707, 36); click(app, 614, 312);
+            click(app, 707, 36); tap(app, "CONTROLS");
             check(app.page() == peepo::Page::Controls && text_label(app.screen(), "Follows the parameter page"), "Controls page did not open");
             click(app, 618, 304); check(app.page() == peepo::Page::AssignPicker, "Assign did not open the picker");
             click(app, 592, 160); check(text_label(app.screen(), "BYPASS") != nullptr, "picking Clouds did not list its controls");
@@ -739,6 +761,95 @@ int main(int argc, char** argv) {
             check(text_label(app.screen(), "Not connected"), "the network line did not follow a lost connection");
             click(app, 70, 456); const auto before = reads; step(app, 4200);
             check(reads == before, "the network was read with Settings closed");
+        }
+        // Settings leads to Diagnostics and Power; the readings come from the platform.
+        {
+            const auto store_root = std::filesystem::temp_directory_path() / "peepo-ui-diagnostics";
+            std::filesystem::remove_all(store_root);
+            peepo::PatchStore store(store_root);
+            check(store.open().empty(), "diagnostics store did not open");
+            peepo::SimulatedEngine sim;
+            peepo::Application app(sim, &store); step(app);
+            peepo::Application::System system;
+            system.temperature_c = 47.9; system.memory_total = 2053120ull * 1024; system.memory_available = 1675728ull * 1024;
+            system.under_voltage = false; system.uptime_s = 11628.07;
+            unsigned reads = 0;
+            app.set_system([&] { ++reads; return system; });
+            step(app, 256);
+            check(reads == 1, "the readings were not taken at once");
+            click(app, 707, 36);
+            check(app.page() == peepo::Page::Settings && exact_label(app.screen(), "CONTROLS") && exact_label(app.screen(), "DIAGNOSTICS") && !exact_label(app.screen(), "POWER"),
+                  "Settings pills wrong without power control");
+            tap(app, "DIAGNOSTICS");
+            check(app.page() == peepo::Page::Diagnostics && text_label(app.screen(), "47.9 C") && text_label(app.screen(), "1.6 GB free") &&
+                  exact_label(app.screen(), "OK") && text_label(app.screen(), "3 h 13 min") && text_label(app.screen(), "SIMULATED"),
+                  "Diagnostics did not show the readings");
+            capture(app, output / "46-diagnostics.bmp");
+            // The supply drops: said at once, on the card and in the footer.
+            system.under_voltage = true; step(app, 2100);
+            check(exact_label(app.screen(), "TOO LOW") && app.message().find("too low") != std::string::npos, "low voltage not reported");
+            capture(app, output / "47-diagnostics-low-voltage.bmp");
+            system.under_voltage = false; step(app, 2100);
+            check(exact_label(app.screen(), "WAS LOW") != nullptr, "a low supply was forgotten when it recovered");
+            system = {}; step(app, 2100);
+            check(!text_label(app.screen(), "47.9 C") && text_label(app.screen(), "Not measured here."), "a missing reading kept an old value");
+            click(app, 70, 456); check(app.page() == peepo::Page::Settings, "Diagnostics did not go back to Settings");
+            // Power: shut down and restart, each confirmed, then nothing more to do.
+            unsigned restarts = 0, power_offs = 0;
+            std::string refusal;
+            app.set_restart([&] { ++restarts; return refusal; });
+            app.set_power_off([&] { ++power_offs; return refusal; });
+            step(app);
+            tap(app, "POWER"); check(app.page() == peepo::Page::Power && exact_label(app.screen(), "SHUT DOWN") && exact_label(app.screen(), "RESTART"), "Power page missing its choices");
+            capture(app, output / "48-power.bmp");
+            refusal = "Could not restart: the system refused.";
+            tap(app, "RESTART"); check(app.page() == peepo::Page::ConfirmAction && text_label(app.screen(), "Restart Peepo?"), "restart was not confirmed first");
+            click(app, 664, 364);
+            check(restarts == 1 && app.page() == peepo::Page::Power && app.message() == refusal, "a refused restart was not reported on the Power page");
+            refusal.clear();
+            tap(app, "RESTART"); click(app, 130, 364);
+            check(restarts == 1 && app.page() == peepo::Page::Power, "cancelled restart went ahead");
+            tap(app, "SHUT DOWN"); click(app, 664, 364);
+            check(power_offs == 1 && app.page() == peepo::Page::Halting && text_label(app.screen(), "shutting down") && !exact_label(app.screen(), "< BACK"),
+                  "shutting down did not leave a final page");
+            capture(app, output / "49-shutting-down.bmp");
+            app.control({peepo::ControlEvent::Type::Turn, "enc1", 3}); step(app, 256);
+            check(app.page() == peepo::Page::Halting && !app.pending(), "a control acted while shutting down");
+            std::filesystem::remove_all(store_root);
+        }
+        // Revert: back to the last saved revision, guarded like any load.
+        {
+            const auto store_root = std::filesystem::temp_directory_path() / "peepo-ui-revert";
+            std::filesystem::remove_all(store_root);
+            peepo::PatchStore store(store_root);
+            check(store.open().empty(), "revert store did not open");
+            peepo::SimulatedEngine sim;
+            peepo::Application app(sim, &store); step(app);
+            click(app, 600, 36); check(disabled_button(exact_label(app.screen(), "REVERT")), "Revert offered for a patch never saved");
+            click(app, 94, 376); step(app, 256);
+            check(!app.graph().dirty && disabled_button(exact_label(app.screen(), "REVERT")), "Revert offered for a saved patch without edits");
+            const auto y = peepo::find_module(app.graph(), 3)->y;
+            click(app, 70, 456); drag(app, 225, 244, 225, 124); check(app.graph().dirty && peepo::find_module(app.graph(), 3)->y != y, "edit after save not made");
+            click(app, 600, 36); check(!disabled_button(exact_label(app.screen(), "REVERT")), "Revert not offered for unsaved edits");
+            tap(app, "REVERT"); check(app.page() == peepo::Page::ConfirmReplace, "Revert did not ask before discarding edits");
+            click(app, 664, 364); step(app, 256);
+            check(app.page() == peepo::Page::Patch && !app.graph().dirty && peepo::find_module(app.graph(), 3)->y == y, "Revert did not restore the saved revision");
+            std::filesystem::remove_all(store_root);
+        }
+        // Inside a group, the finer categories filter the cards.
+        {
+            peepo::SimulatedEngine sim;
+            peepo::Application app(sim); step(app);
+            click(app, 490, 36); tap(app, "GAIN");
+            check(first_label(app.screen(), "DRIVE") && first_label(app.screen(), "AMP") && first_label(app.screen(), "CABINET"), "GAIN did not offer its categories");
+            tap_first(app, "AMP");
+            check(text_label(app.screen(), "GAIN / AMP // 1 MODULE") && !text_label(app.screen(), "Warm saturation"), "the category did not filter the cards");
+            capture(app, output / "50-browser-category.bmp");
+            tap_first(app, "ALL");
+            check(text_label(app.screen(), "GAIN // ") && text_label(app.screen(), "Warm saturation"), "ALL did not show the whole group again");
+            tap_first(app, "AMP"); tap(app, "TIME");
+            check(text_label(app.screen(), "TIME // 2 MODULES") != nullptr, "the category outlived its group");
+            check(!first_label(app.screen(), "AMP"), "another group's categories shown");
         }
         // A module with no output control of its own shows the general Output, in dB, on its page.
         {
