@@ -213,7 +213,7 @@ third mod-cv-plugins https://github.com/moddevices/mod-cv-plugins.git f0a6b39a5e
 # project's own. Its Makefile adds -fno-fast-math after OPT: its NaN guards
 # need IEEE arithmetic, so it gets plain -O2 rather than the shared flags.
 DISCIPLINE_OPT="-O2"; [ "$(uname -m)" = aarch64 ] && DISCIPLINE_OPT="-O2 -mcpu=cortex-a76"
-third discipline https://github.com/ABustos2606/discipline.git 812eb9c0ee12fe64df3a9b99441b23f57a927993 "make" \
+third discipline https://github.com/ABustos2606/discipline.git 4f68f3b967f8fb92c4968554b44c131adfda3717 "make" \
     make -j"$JOBS" OPT="$DISCIPLINE_OPT" LV2DIR="$LV2DIR" install
 
 echo "==== components"

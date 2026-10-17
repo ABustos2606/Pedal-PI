@@ -60,7 +60,7 @@ Describe the plugins as "inspired by" these pedals, and don't copy the real peda
 
 - **Its own repository.** Peepo builds it at a pinned commit, like every other plugin, and updates on tagged releases. It can be tested in any LV2 host without Ingen or the Pi, and its license is chosen separately from Peepo's GPLv3.
 - **URI** `https://github.com/ABustos2606/discipline#`, not Peepo's namespace. No "Habit" or "Chase Bliss" in names or descriptions.
-- **Two plugins, Discipline and Discipline Return,** sharing one buffer. Ingen rejects connections that close a loop (`COMPILATION_FAILED`, `reference/upstream/ingen/src/server/events/Connect.cpp:137`), so the send and return of one plugin can't be patched through other modules. The return writes into the echo's feedback loop (IN), into the memory (FEED) or into the output (OUT).
+- **Two plugins, Discipline and Discipline Return,** sharing one buffer. Ingen rejects connections that close a loop (`COMPILATION_FAILED`, `reference/upstream/ingen/src/server/events/Connect.cpp:137`), so the send and return of one plugin can't be patched through other modules. The return writes into the echo's feedback loop (IN), into the memory (FEED) or into the output (OUT). **Update, 17 October 2026, after the first Pi test:** the echo now runs inside Discipline and works alone; the Return is used only when Discipline's Modifier is Outside, and the Pair control is gone (one pair per patch). See Discipline's `docs/design.md`.
 - **CV inputs instead of Habit's ramp engine.** Auto-scan is still built in.
 - **Patch tempo** reaches it through a BPM control, as for Beebo's Delay ([29-parameters-files-tempo.md](29-parameters-files-tempo.md)).
 
