@@ -27,14 +27,14 @@ LRESULT CALLBACK control_keys(HWND window, UINT message, WPARAM key, LPARAM deta
         const bool down = message == WM_KEYDOWN, repeat = down && (details & (1 << 30));
         std::vector<peepo::ControlEvent> found;
         static const std::pair<char, std::pair<int, int>> turns[] = {
-            // Upper row clockwise, the key below it anticlockwise: Q/A, W/S, E/D, R/F.
-            {'Q', {1, 1}}, {'A', {1, -1}}, {'W', {2, 1}}, {'S', {2, -1}}, {'E', {3, 1}}, {'D', {3, -1}}, {'R', {4, 1}}, {'F', {4, -1}}};
+            // Upper row clockwise, the key below it anticlockwise: Q/A, W/S.
+            {'Q', {1, 1}}, {'A', {1, -1}}, {'W', {2, 1}}, {'S', {2, -1}}};
         for (const auto& [letter, turn] : turns)
             if (down && key == static_cast<WPARAM>(letter)) found.push_back({peepo::ControlEvent::Type::Turn, "enc" + std::to_string(turn.first), turn.second});
         auto press = [&](const std::string& control) {
             if (!repeat) found.push_back({down ? peepo::ControlEvent::Type::Press : peepo::ControlEvent::Type::Release, control, 0});
         };
-        if (key >= '1' && key <= '4') press("enc" + std::to_string(key - '0'));
+        if (key == '1' || key == '2') press("enc" + std::to_string(key - '0'));
         if (key == 'Z') press("stomp1");
         if (key == 'X') press("stomp2");
         if (key == 'C') press("stomp3");

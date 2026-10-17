@@ -60,7 +60,7 @@ void gestures() {
     r.input({Type::Press, "stomp1"});
     out = r.advance(5000);
     check(out.size() == 1 && out[0].kind == Kind::Press, "repeated press or stomp hold produced extra gestures");
-    check(ControlLayout{}.ids() == std::vector<std::string>{"enc1", "enc2", "enc3", "enc4", "stomp1", "stomp2", "stomp3"}, "default surface is not four encoders and three stomps");
+    check(ControlLayout{}.ids() == std::vector<std::string>{"enc1", "enc2", "stomp1", "stomp2", "stomp3"}, "default surface is not two encoders and three stomps");
     check(control_label("enc2") == "Encoder 2" && control_label("stomp3") == "Stomp 3", "control names wrong");
 }
 

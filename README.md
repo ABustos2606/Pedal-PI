@@ -39,13 +39,13 @@ To drive a real engine instead of the simulation, start Ingen under WSL and pass
 
 Drag empty space to pan; **Home** restores the original view. Hold a module for parameters, software bypass, duplication or deletion. Tap a cable to select it, then use **Delete cable** in the footer. These editor features work entirely with the simulated engine.
 
-Clouds and Delay have their own parameter layouts; the Tuner has a live note, cents and flat/sharp meter with an adjustable A reference. **All** opens the generic editor. The Add list offers one tuner and explains effect categories and setup requirements; see [effects and tuner](docs/25-effects-and-tuner.md). **Patches → Parallel demo** loads an editable split/merge example: Drive feeds Clouds and Delay, then both connect to OUT. Loading it guards unsaved edits. This demonstrates routing and UI behavior; audio summing still requires Pi verification.
+A module's page shows all its controls as bars, a dozen on one screen: drag one sideways to set it, tap a switch or a mode. The Tuner adds a live note, cents and flat/sharp meter above its A reference. The Add list offers one tuner and explains effect categories and setup requirements; see [effects and tuner](docs/25-effects-and-tuner.md). **Patches → Parallel demo** loads an editable split/merge example: Drive feeds Clouds and Delay, then both connect to OUT. Loading it guards unsaved edits. This demonstrates routing and UI behavior; audio summing still requires Pi verification.
 
 Global BPM and CPU readouts stay in the bottom-right footer on every page. The simulator displays 120 BPM / 12% CPU SIM as fixed display fixtures; real tempo synchronization and processor measurements await engine integration. CPU is shown as `--` when the simulator is unavailable.
 
-**Patches** saves patches to disk (`%LOCALAPPDATA%/Peepo/patches`, or `--patches DIR`) and provides **Save**, **Save as**, **Load**, **Startup**, **Delete**, **New patch** and **Rename**; see [patch storage](docs/17-patch-storage.md). Names can be entered with the on-screen keyboard; replacing unsaved edits has a cancel option. Clouds' demo controls span two parameter pages. The catalogue distinguishes available, untested and unavailable demo entries; **Settings → Missing module** exercises placeholder recovery.
+**Patches** saves patches to disk (`%LOCALAPPDATA%/Peepo/patches`, or `--patches DIR`) and provides **Save**, **Save as**, **Load**, **Startup**, **Delete**, **New patch** and **Rename**; see [patch storage](docs/17-patch-storage.md). Names can be entered with the on-screen keyboard; replacing unsaved edits has a cancel option. The catalogue distinguishes available, untested and unavailable demo entries; **Settings → Missing module** exercises placeholder recovery.
 
-Keys stand in for the physical controls: **Q/A, W/S, E/D, R/F** turn encoders 1–4, **1–4** push them, **Z, X, C** are the stomps. On a parameter page the encoders follow the four tiles; **Settings → Controls** assigns them and the stomps. See [physical controls](docs/18-physical-controls.md).
+Keys stand in for the physical controls: **Q/A, W/S** turn encoders 1 and 2, **1, 2** push them, **Z, X, C** are the stomps. Encoder 1 moves through the page (hold it for Back), encoder 2 turns the highlighted value; **Settings → Controls** can pin them and assigns the stomps. See [physical controls](docs/18-physical-controls.md).
 
 ## Build for the Pi
 
@@ -74,12 +74,13 @@ Inside Debian under WSL2, as root: `bash tools/pi/build-arm64.sh` builds the eng
 | [Ingen engine adapter](docs/15-ingen-adapter.md) | The interface's real engine backend: mapping, threading, synchronization, reconnection, live results and limits |
 | [Domain and engine contracts](docs/13-domain-and-engine-contracts.md) | Identity, typed metadata, missing modules, mono/stereo routing, lifecycle, save and capability semantics |
 | [Patch storage and connection states](docs/17-patch-storage.md) | Patches on disk with plugin state: what the engine does on save and load, revisions and recovery, property schema, assets, the patch manager and the connection banner |
-| [Physical controls](docs/18-physical-controls.md) | The four encoders and three momentary footswitches: behaviour, mapping rules, assignments, simulator keys and a proposed GPIO wiring |
+| [Physical controls](docs/18-physical-controls.md) | The two encoders and three momentary footswitches: behaviour, mapping rules, assignments, simulator keys and a proposed GPIO wiring |
 | [Linux build, Pi packaging and services](docs/19-linux-and-pi.md) | The interface on Linux (DRM/KMS, framebuffer, SDL), the arm64 build route under emulation, the package, installer and rollback, and the services that keep audio playing while the interface restarts |
 | [Clouds](docs/20-clouds.md) | Clouds' build record for x86-64 and arm64, its seven modes checked in Ingen with test signals, and the per-control overlay |
 | [NAM in Ingen](docs/21-nam.md) | The two NAM plugins compared in the engine: model loading, worker and state, errors and the selected candidate |
 | [Plugin catalogue](docs/22-plugin-catalogue.md) | The selected inventory, how the rest of Poly's and Beebo's plugins are built, and a compatibility record for every entry |
 | [Pi bring-up](docs/23-pi-bring-up.md) | The Pi as found, and the first sound through the Peepo engine and interface on it |
+| [Module page and two encoders](docs/31-module-page-and-two-encoders.md) | Every control as a bar, a dozen on one screen, set by dragging; two encoders (move, turn) instead of four |
 | [Beebo manual gaps](docs/30-beebo-manual-gaps.md) | Features in the Beebo manual that Peepo lacked: looper, set list, MIDI, USB import/export, effects loops; Beebo's Delay, the Foot switch module and assigning stomps from the patch are done |
 
 ## Retrieve the project and reference sources
@@ -113,7 +114,7 @@ Initialize the top-level references first, then the three repositories with decl
 - Raspberry Pi 5 with 2 GB RAM.
 - Existing Patchbox OS installation from an experiment last year; release and architecture are unknown.
 - 5-inch HDMI touchscreen advertised as 800 × 480. The user confirms (13 October 2026) that it is capacitive with five touch points, touch and power over USB, video over HDMI, so it leaves the GPIO header free. The Pi and screen already run Zynthian and Patchbox OS with MODEP, on the official 27 W supply. The controller identity and any calibration still need checking on the Pi.
-- The user has four 20-pulse rotary encoders with push switches and will use three momentary SPST footswitches (14 October 2026). Their wiring to the Pi is proposed in [physical controls](docs/18-physical-controls.md), not yet built.
+- The user has four 20-pulse rotary encoders with push switches and will use three momentary SPST footswitches (14 October 2026); since 17 October 2026 Peepo uses two of the encoders. Their wiring to the Pi is proposed in [physical controls](docs/18-physical-controls.md), not yet built.
 - The audio interface is flexible and still to be selected; an inexpensive USB interface is acceptable to the user. Its suitability for guitar input and low-latency Linux audio must be checked when selecting it.
 - Public Beebo-related source repositories are stored under `reference/` in the project. Their source code has not been compiled, installed, or tested on the Pi.
 - Casette is also downloaded under `reference/upstream/Casette` at commit `75ded6663e2d758bfe8a290952c672b2e8c01697`. It is a reference for LVGL, JACK, NAM, and preset handling; its fixed effects chain does not replace our modular engine.

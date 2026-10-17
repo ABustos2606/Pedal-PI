@@ -28,7 +28,7 @@ std::string read_file(const std::string& path) {
 
 void bindings(const std::string& shipped) {
     std::vector<Binding> b;
-    check(parse_bindings(read_file(shipped), b).empty() && b.size() == 11, "the shipped bindings do not read as four encoders with pushes and three stomps");
+    check(parse_bindings(read_file(shipped), b).empty() && b.size() == 7, "the shipped bindings do not read as two encoders with pushes and three stomps");
     check(b[0].control == "enc1" && b[0].kind == Binding::Kind::Turn && b[0].code == REL_X, "encoder 1 is not REL_X");
     auto turn = translate(b, "rotary@5", EV_REL, REL_Y, -1);
     check(turn && turn->type == ControlEvent::Type::Turn && turn->control == "enc2" && turn->steps == -1, "a turn of encoder 2 was not translated");

@@ -117,7 +117,7 @@ Proper support needs:
 
 ## Smaller differences, probably fine as they are
 
-- **Knob mapping.** On Beebo the last slider touched is mapped to the knobs, the right one coarse and the left one fine. Peepo's encoders follow the page's tiles and can be pinned; with four encoders this is arguably better.
+- **Knob mapping.** On Beebo the last slider touched is mapped to the knobs, the right one coarse and the left one fine. Since 17 October 2026 Peepo also has two encoders: encoder 1 moves a highlight between the page's bars and encoder 2 turns the highlighted one, with push and turn for fine steps; either can be pinned.
 - **Typing a value.** Beebo lets the delay time be typed in milliseconds. Peepo has no numeric entry for values.
 - **CPU meter.** Beebo shows it only above 60 %; Peepo always shows it.
 

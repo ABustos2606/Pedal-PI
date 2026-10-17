@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -76,6 +77,32 @@ void tap(peepo::Application& app, const std::string& text) {
     check(area.y1 >= 0 && area.y2 < 432, "browser entry could not be scrolled into view");
     click(app, (area.x1 + area.x2) / 2, (area.y1 + area.y2) / 2);
 }
+// A parameter bar on a module page, by the name it shows, scrolled into view.
+// The page title comes first in tree order, so the last match is the bar's.
+lv_obj_t* bar(peepo::Application& app, const std::string& name) {
+    auto* l = exact_label(app.screen(), name); check(l != nullptr, "parameter bar missing");
+    auto* b = lv_obj_get_parent(l);
+    lv_obj_scroll_to_view_recursive(b, LV_ANIM_OFF); lv_obj_update_layout(app.screen());
+    return b;
+}
+lv_point_t bar_point(peepo::Application& app, const std::string& name) {
+    lv_area_t area; lv_obj_get_coords(bar(app, name), &area);
+    check(area.y1 >= 72 && area.y2 < 432, "parameter bar could not be scrolled into view");
+    return {area.x1 + 60, (area.y1 + area.y2) / 2};
+}
+// Drag a bar sideways by a share of its width, or tap it.
+void slide(peepo::Application& app, const std::string& name, double share) {
+    const auto at = bar_point(app, name);
+    drag(app, at.x, at.y, at.x + static_cast<int>(share * 372), at.y);
+}
+void tap_bar(peepo::Application& app, const std::string& name) {
+    const auto at = bar_point(app, name);
+    click(app, at.x, at.y);
+}
+// What a bar says: its third child is the value.
+std::string bar_value(peepo::Application& app, const std::string& name) {
+    return lv_label_get_text(lv_obj_get_child(bar(app, name), 2));
+}
 // The first label with exactly this text below the header, in tree order: a
 // category chip comes before the card tags that repeat its name.
 lv_obj_t* first_label(lv_obj_t* root, const std::string& text) {
@@ -89,6 +116,21 @@ lv_obj_t* first_label(lv_obj_t* root, const std::string& text) {
 }
 void tap_first(peepo::Application& app, const std::string& text) {
     auto* l = first_label(app.screen(), text); check(l != nullptr, "label missing");
+    lv_area_t area; lv_obj_get_coords(l, &area);
+    click(app, (area.x1 + area.x2) / 2, (area.y1 + area.y2) / 2);
+}
+// A header pill, by its label: On or Bypassed, Actions.
+void tap_header(peepo::Application& app, const std::string& text) {
+    std::function<lv_obj_t*(lv_obj_t*)> find = [&](lv_obj_t* root) -> lv_obj_t* {
+        if (lv_obj_check_type(root, &lv_label_class) && text == lv_label_get_text(root)) {
+            lv_area_t area; lv_obj_get_coords(root, &area);
+            if (area.y2 < 72) return root;
+        }
+        for (unsigned i = 0; i < lv_obj_get_child_count(root); ++i)
+            if (auto* found = find(lv_obj_get_child(root, i))) return found;
+        return nullptr;
+    };
+    auto* l = find(app.screen()); check(l != nullptr, "header pill missing");
     lv_area_t area; lv_obj_get_coords(l, &area);
     click(app, (area.x1 + area.x2) / 2, (area.y1 + area.y2) / 2);
 }
@@ -149,8 +191,10 @@ int main(int argc, char** argv) {
             capture(app, output / "01-patch.bmp");
             click(app, 225, 252); check(app.page() == peepo::Page::Parameters, "tap did not open parameters");
             capture(app, output / "02-parameters.bmp");
-            drag(app, 150, 218, 325, 218);
-            check(peepo::find_module(app.graph(), 3)->parameters[0].value > 70, "slider did not update authoritative value");
+            check(exact_label(app.screen(), "TONE") && exact_label(app.screen(), "LEVEL") && bar_value(app, "DRIVE") == "32 %", "Drive's bars are not all on its page");
+            slide(app, "DRIVE", 0.5);
+            check(peepo::find_module(app.graph(), 3)->parameters[0].value > 70, "dragging a bar did not update the authoritative value");
+            check(bar_value(app, "DRIVE") == peepo::format_value(peepo::find_module(app.graph(), 3)->parameters[0]), "the bar does not show the new value");
             click(app, 70, 456); check(app.page() == peepo::Page::Patch, "back failed");
             click(app, 155, 228);
             check(app.graph().connections.size() == 8 && !app.pending(), "cable selection changed graph");
@@ -166,27 +210,27 @@ int main(int argc, char** argv) {
             drag(app, 128, 228, 184, 228);
             check(app.graph().connections.size() == 8, "reconnect cable failed");
             click(app, 398, 244);
-            click(app, 588, 108); // All: retain coverage of the generic parameter editor.
-            click(app, 468, 359);
-            check(peepo::find_module(app.graph(), 4)->parameters[3].value == 1, "freeze switch failed");
+            // All six of Clouds' controls on one page: no pages to turn.
+            for (const char* name : {"POSITION", "SIZE", "MIX", "FREEZE", "DENSITY", "PITCH"}) check(exact_label(app.screen(), name) != nullptr, "a Clouds control is not on its page");
+            check(bar_value(app, "FREEZE") == "OFF", "a switch does not say it is off");
+            tap_bar(app, "FREEZE");
+            check(peepo::find_module(app.graph(), 4)->parameters[3].value == 1 && bar_value(app, "FREEZE") == "ON", "tapping the freeze switch failed");
             capture(app, output / "07-clouds.bmp");
-            click(app, 496, 108);
-            capture(app, output / "19-parameter-page-two.bmp");
-            drag(app, 150, 218, 325, 218);
-            check(peepo::find_module(app.graph(), 4)->parameters[4].value > 70, "second parameter page changed wrong value");
-            drag(app, 575, 218, 740, 218);
+            slide(app, "DENSITY", 0.5);
+            check(peepo::find_module(app.graph(), 4)->parameters[4].value > 70, "dragging Density changed the wrong value");
+            slide(app, "PITCH", 0.4);
             const auto pitch = peepo::find_module(app.graph(), 4)->parameters[5].value;
-            check(pitch > 12 && pitch == std::round(pitch), "integer slider did not quantize pitch");
-            click(app, 296, 108);
-            check(peepo::find_module(app.graph(), 4)->parameters[3].value == 1, "page switch lost freeze value");
+            check(pitch > 12 && pitch == std::round(pitch), "integer bar did not quantize pitch");
+            // A tap on a sliding bar only picks it.
+            tap_bar(app, "MIX");
+            check(peepo::find_module(app.graph(), 4)->parameters[2].value == 40 && !app.pending(), "tapping a sliding bar changed its value");
+            check(peepo::find_module(app.graph(), 4)->parameters[3].value == 1, "other edits lost the freeze value");
             click(app, 70, 456);
             click(app, 562, 244);
-            click(app, 588, 108);
-            // A short list of modes is one button each: Tape is the second.
-            check(widget(app.screen(), &lv_dropdown_class) == nullptr && exact_label(app.screen(), "PING PONG"), "the Delay mode was not shown as buttons");
-            tap(app, "TAPE");
-            capture(app, output / "09-mode-menu.bmp");
-            check(peepo::find_module(app.graph(), 5)->parameters[3].value == 1, "mode selector failed");
+            // A mode steps to the next on each tap, and wraps.
+            check(bar_value(app, "MODE") == "CLEAN", "the Delay mode is not shown");
+            tap_bar(app, "MODE");
+            check(peepo::find_module(app.graph(), 5)->parameters[3].value == 1 && bar_value(app, "MODE") == "TAPE", "tapping the mode did not step it");
             capture(app, output / "08-delay.bmp");
             click(app, 70, 456);
             drag(app, 225, 244, 225, 124);
@@ -213,17 +257,20 @@ int main(int argc, char** argv) {
             click(app, 70, 456); click(app, 396, 244);
             check(app.page() == peepo::Page::Parameters, "module navigation while disconnected failed");
             const auto old_mix = peepo::find_module(app.graph(), 4)->parameters[2].value;
-            drag(app, 150, 354, 325, 354);
-            check(peepo::find_module(app.graph(), 4)->parameters[2].value == old_mix, "disconnected slider changed engine");
+            slide(app, "MIX", 0.5);
+            check(peepo::find_module(app.graph(), 4)->parameters[2].value == old_mix, "a bar dragged while disconnected changed the engine");
             click(app, 70, 456); click(app, 716, 36); click(app, 104, 238);
             check(engine.state() == peepo::EngineState::Ready, "reconnect control failed");
             click(app, 135, 312); click(app, 70, 456); click(app, 396, 244);
-            click(app, 75, 108); check(!peepo::find_module(app.graph(), 4)->bypassed, "rejected bypass accepted");
+            tap_header(app, "ON"); check(!peepo::find_module(app.graph(), 4)->bypassed, "rejected bypass accepted");
             check(app.message().find("rejection") != std::string::npos, "rejection feedback missing");
-            click(app, 75, 108); check(peepo::find_module(app.graph(), 4)->bypassed, "accepted bypass missing");
+            tap_header(app, "ON"); check(peepo::find_module(app.graph(), 4)->bypassed, "accepted bypass missing");
+            capture(app, output / "60-bypassed-module.bmp");
+            tap_header(app, "BYPASSED"); check(!peepo::find_module(app.graph(), 4)->bypassed, "the Bypassed pill did not switch the module on");
+            tap_header(app, "ON");
             click(app, 70, 456); click(app, 600, 36); click(app, 130, 364);
             capture(app, output / "05-session.bmp");
-            click(app, 70, 456); click(app, 396, 244); click(app, 182, 108);
+            click(app, 70, 456); click(app, 396, 244); tap_header(app, "ACTIONS"); click(app, 592, 252);
             check(app.graph().modules.size() == 5, "delete module failed");
             click(app, 600, 36); click(app, 700, 264);
             check(app.page() == peepo::Page::ConfirmReplace, "unsaved patch load was not guarded");
@@ -255,7 +302,7 @@ int main(int argc, char** argv) {
             click(app, 276, 36); // Tapping the patch name resets the viewport, not the graph.
             click(app, source.x + 48, source.y + 120);
             check(app.page() == peepo::Page::Parameters, "tapping the patch name did not restore original module location");
-            click(app, 705, 108); check(app.page() == peepo::Page::ModuleActions, "parameter Actions button failed");
+            tap_header(app, "ACTIONS"); check(app.page() == peepo::Page::ModuleActions, "parameter Actions button failed");
             click(app, 170, 180); check(app.page() == peepo::Page::Parameters, "context Parameters action failed");
             click(app, 70, 456);
             engine.reject_next();
@@ -369,63 +416,47 @@ int main(int argc, char** argv) {
             check(std::string(lv_textarea_get_text(widget(app.screen(), &lv_textarea_class))) == names.name,
                 "opening rename silently truncated a backend name");
             keyboard_key(app, LV_SYMBOL_KEYBOARD);
-            // Module-specific pages share authoritative values with the generic fallback.
+            // Every module uses the same page, built from its controls, so the
+            // values are the engine's whatever the order or the display name.
             click(app, 70, 456);
             engine.submit(peepo::LoadGraph{peepo::demo_graph()}); step(app, 256);
             click(app, 396, 244);
-            capture(app, output / "24-clouds-texture.bmp");
-            drag(app, 150, 354, 325, 354);
-            check(peepo::find_module(app.graph(), 4)->parameters[4].value > 70, "Clouds Texture density did not update");
-            drag(app, 575, 354, 740, 354);
-            check(peepo::find_module(app.graph(), 4)->parameters[5].value > 12, "Clouds Texture pitch did not update");
-            click(app, 476, 108); click(app, 468, 268);
-            check(peepo::find_module(app.graph(), 4)->parameters[3].value == 1, "Clouds Mix / hold freeze failed");
-            capture(app, output / "25-clouds-mix-hold.bmp");
-            drag(app, 150, 262, 325, 262);
-            check(peepo::find_module(app.graph(), 4)->parameters[2].value > 70, "Clouds Mix / hold mix failed");
-            click(app, 588, 108);
-            check(lv_obj_has_state(widget(app.screen(), &lv_switch_class), LV_STATE_CHECKED), "generic fallback lost custom Freeze value");
-            click(app, 584, 108); click(app, 476, 108);
-            check(lv_obj_has_state(widget(app.screen(), &lv_switch_class), LV_STATE_CHECKED), "custom layout lost generic Freeze value");
+            slide(app, "DENSITY", 0.5);
+            check(peepo::find_module(app.graph(), 4)->parameters[4].value > 70, "Clouds density did not update");
+            tap_bar(app, "FREEZE");
+            check(peepo::find_module(app.graph(), 4)->parameters[3].value == 1, "Clouds freeze failed");
+            slide(app, "MIX", 0.5);
+            check(peepo::find_module(app.graph(), 4)->parameters[2].value > 70, "Clouds mix failed");
             click(app, 70, 456); click(app, 564, 244);
-            check(widget(app.screen(), &lv_dropdown_class) == nullptr, "Delay did not select custom layout");
-            click(app, 400, 196);
-            check(peepo::find_module(app.graph(), 5)->parameters[3].value == 1, "Delay Tape button failed");
-            engine.reject_next(); click(app, 656, 196);
-            check(peepo::find_module(app.graph(), 5)->parameters[3].value == 1 && !app.pending(), "rejected custom mode left optimistic state");
-            click(app, 656, 196);
-            check(peepo::find_module(app.graph(), 5)->parameters[3].value == 2, "Delay Ping pong button failed");
-            drag(app, 150, 318, 325, 318);
-            check(peepo::find_module(app.graph(), 5)->parameters[0].value > 800, "custom logarithmic delay time failed");
-            drag(app, 575, 296, 740, 296);
-            check(peepo::find_module(app.graph(), 5)->parameters[1].value > 70, "compact Delay feedback failed");
-            drag(app, 575, 380, 740, 380);
-            check(peepo::find_module(app.graph(), 5)->parameters[2].value > 70, "compact Delay mix failed");
+            engine.reject_next(); tap_bar(app, "MODE");
+            check(peepo::find_module(app.graph(), 5)->parameters[3].value == 0 && !app.pending() && bar_value(app, "MODE") == "CLEAN", "a rejected mode left optimistic state");
+            tap_bar(app, "MODE"); tap_bar(app, "MODE");
+            check(peepo::find_module(app.graph(), 5)->parameters[3].value == 2, "Delay Ping pong failed");
+            tap_bar(app, "MODE");
+            check(peepo::find_module(app.graph(), 5)->parameters[3].value == 0, "the mode did not wrap to the first");
+            slide(app, "TIME", 0.6);
+            check(peepo::find_module(app.graph(), 5)->parameters[0].value > 800, "logarithmic delay time failed");
+            slide(app, "FEEDBACK", 0.5);
+            check(peepo::find_module(app.graph(), 5)->parameters[1].value > 70, "Delay feedback failed");
             capture(app, output / "26-delay-character.bmp");
-            click(app, 588, 108);
-            check(lv_color_to_u32(lv_obj_get_style_text_color(exact_label(app.screen(), "PING PONG"), LV_PART_MAIN)) != 0xffffffff &&
-                  lv_color_to_u32(lv_obj_get_style_text_color(exact_label(app.screen(), "TAPE"), LV_PART_MAIN)) == 0xffffffff, "generic Delay mode differs from custom mode");
             click(app, 70, 456);
 
             auto reordered = peepo::demo_graph();
             reordered.modules[3].name = "Texture voice";
             std::reverse(reordered.modules[3].parameters.begin(), reordered.modules[3].parameters.end());
             engine.submit(peepo::LoadGraph{reordered}); step(app, 256); click(app, 396, 244);
-            check(widget(app.screen(), &lv_switch_class) == nullptr, "display name or parameter order changed custom layout selection");
-            click(app, 476, 108); click(app, 468, 268);
+            tap_bar(app, "FREEZE");
             const auto* reordered_clouds = peepo::find_module(app.graph(), 4);
             const auto freeze = std::find_if(reordered_clouds->parameters.begin(), reordered_clouds->parameters.end(), [](const peepo::Parameter& p) { return p.symbol == "freeze"; });
-            check(freeze != reordered_clouds->parameters.end() && freeze->value == 1, "custom controls depended on parameter index");
+            check(freeze != reordered_clouds->parameters.end() && freeze->value == 1, "controls depended on parameter index");
             click(app, 70, 456);
 
-            // Changed metadata uses the generic view, even for a recognized URI.
+            // Extra metadata is just one more bar.
             auto extended = peepo::demo_graph();
             extended.dirty = true;
             extended.modules[3].parameters.push_back({"extra", "Extra", "%", peepo::ParameterKind::Continuous, 0, 100, 50});
             engine.submit(peepo::LoadGraph{extended}); step(app, 256); click(app, 396, 244);
-            check(widget(app.screen(), &lv_switch_class) != nullptr, "extended schema hid parameters behind custom layout");
-            click(app, 496, 108);
-            drag(app, 150, 354, 325, 354);
+            slide(app, "EXTRA", 0.5);
             check(peepo::find_module(app.graph(), 4)->parameters.back().value > 70, "extended schema extra parameter inaccessible");
             click(app, 70, 456);
 
@@ -469,10 +500,12 @@ int main(int argc, char** argv) {
 
             // Continuous controls reach the engine while the finger is still down.
             click(app, 232, 252); check(app.page() == peepo::Page::Parameters, "Drive parameters did not open");
-            pointer = {150, 218}; pressed = true; step(app, 64);
-            pointer = {325, 218}; step(app, 320);
-            check(peepo::find_module(engine.snapshot(), 3)->parameters[0].value > 70, "slider waited for release before reaching the engine");
-            pointer = {200, 218}; step(app, 320);
+            const auto knob = bar_point(app, "DRIVE");
+            pointer = knob; pressed = true; step(app, 64);
+            pointer = {knob.x + 20, knob.y}; step(app, 64);
+            pointer = {knob.x + 186, knob.y}; step(app, 320);
+            check(peepo::find_module(engine.snapshot(), 3)->parameters[0].value > 70, "a dragged bar waited for release before reaching the engine");
+            pointer = {knob.x + 10, knob.y}; step(app, 320);
             check(peepo::find_module(engine.snapshot(), 3)->parameters[0].value < 50, "newest gesture value did not replace the older one");
             pressed = false; step(app);
             check(!app.pending() && peepo::find_module(app.graph(), 3)->parameters[0].value < 50, "released slider left pending or stale state");
@@ -485,7 +518,13 @@ int main(int argc, char** argv) {
             const auto mist = app.graph().modules.back();
             check(mist.uri == "http://polyeffects.com/lv2/polyclouds#granular" && app.page() == peepo::Page::Patch, "reference module could not be added from the browser");
             click(app, mist.x + 48, mist.y + 120);
-            check(app.page() == peepo::Page::Parameters && widget(app.screen(), &lv_slider_class) != nullptr, "reference module has no usable generic editor");
+            check(app.page() == peepo::Page::Parameters, "reference module has no page");
+            // Twelve controls, all in view at once.
+            for (const char* name : {"POSITION", "SIZE", "PITCH", "IN GAIN", "DENSITY", "TEXTURE", "BLEND", "SPREAD", "FEEDBACK", "REVERB", "FREEZE", "REVERSE"}) {
+                auto* l = exact_label(app.screen(), name); check(l != nullptr, "a Mist Granular control is missing");
+                lv_area_t area; lv_obj_get_coords(lv_obj_get_parent(l), &area);
+                check(area.y1 >= 72 && area.y2 < 432, "twelve controls do not fit on one page");
+            }
             capture(app, output / "30-reference-parameters.bmp");
             click(app, 70, 456);
 
@@ -613,58 +652,72 @@ int main(int argc, char** argv) {
             auto press = [&](const char* control) { app.control({Type::Press, control}); step(app, 64); };
             auto release = [&](const char* control) { app.control({Type::Release, control}); step(app, 256); };
             auto value = [&](peepo::InstanceId id, std::size_t index) { return peepo::find_module(app.graph(), id)->parameters[index].value; };
+            // On the patch, encoder 1 picks a module in signal order; encoder 2 has nothing to turn.
             turn("enc1", 1);
-            check(app.message().find("not pinned") != std::string::npos && !app.pending(), "an unpinned encoder on the patch page did something");
-            // In the browser encoder 1 picks the group, encoder 2 the card, a push adds it.
+            check(app.message().find("push encoder 1 to open it") != std::string::npos && !app.pending(), "encoder 1 did not pick a module on the patch");
+            // In the browser encoder 2 picks the group, encoder 1 the card, a push adds it.
             click(app, 490, 36);
-            turn("enc1", 3); check(text_label(app.screen(), "TIME // ") != nullptr, "encoder 1 did not step to the third group");
-            turn("enc1", -4); check(text_label(app.screen(), "UTIL // ") != nullptr, "encoder 1 did not wrap to the last group");
-            turn("enc1", 1); turn("enc2", 1); press("enc2"); release("enc2");
-            check(app.page() == peepo::Page::Patch && app.graph().modules.size() == 6 && app.graph().modules.back().uri == "urn:peepo:demo:drive", "encoder 2 did not pick and add the first card");
-            // On a parameter page the encoders follow the tiles in order.
+            turn("enc2", 3); check(text_label(app.screen(), "TIME // ") != nullptr, "encoder 2 did not step to the third group");
+            turn("enc2", -4); check(text_label(app.screen(), "UTIL // ") != nullptr, "encoder 2 did not wrap to the last group");
+            turn("enc2", 1); turn("enc1", 1); press("enc1"); release("enc1");
+            check(app.page() == peepo::Page::Patch && app.graph().modules.size() == 6 && app.graph().modules.back().uri == "urn:peepo:demo:drive", "encoder 1 did not pick and add the first card");
+            // On a module page encoder 1 moves the highlight and encoder 2 turns what it is on.
             click(app, 232, 252); check(app.page() == peepo::Page::Parameters, "Drive parameters did not open");
-            check(text_label(app.screen(), "E1") && text_label(app.screen(), "E3"), "tiles do not show which encoder follows them");
             capture(app, output / "36-encoders-follow.bmp");
-            turn("enc1", 3);
-            check(std::abs(value(3, 0) - 38) < 1e-9, "encoder 1 did not move the first tile by three detents");
-            turn("enc3", -1);
-            check(std::abs(value(3, 2) - -3.72) < 1e-9, "encoder 3 did not move the third tile");
-            press("enc1"); turn("enc1", 1); release("enc1");
+            turn("enc2", 3);
+            check(std::abs(value(3, 0) - 38) < 1e-9 && bar_value(app, "DRIVE") == "38 %", "encoder 2 did not turn the highlighted bar by three detents");
+            turn("enc1", 2); turn("enc2", -1);
+            check(std::abs(value(3, 2) - -3.72) < 1e-9, "encoder 1 did not move the highlight to the third bar");
+            turn("enc1", 5); turn("enc2", -1);
+            check(std::abs(value(3, 2) - -4.44) < 1e-9, "the highlight did not stop at the last bar");
+            turn("enc1", -9);
+            press("enc2"); turn("enc2", 1); release("enc2");
             check(std::abs(value(3, 0) - 38.2) < 1e-9 && app.page() == peepo::Page::Parameters, "push and turn was not fine, or ended as a tap");
-            turn("enc4", 1);
-            check(app.message().find("no control on this page") != std::string::npos, "an encoder without a tile did not say so");
-            // Holding the push pins what the encoder turns, on every page.
-            press("enc2"); step(app, 800); release("enc2");
-            check(app.graph().assignments.size() == 1 && app.graph().assignments[0].control == "enc2" && app.graph().assignments[0].parameter == "tone", "hold did not pin the tile");
-            check(text_label(app.screen(), "E2 pinned"), "the pinned tile is not marked");
-            click(app, 70, 456);
+            // A single encoder does both: its push on a bar starts and stops turning it.
+            turn("enc1", 1);
             const auto tone = value(3, 1);
+            press("enc1"); release("enc1"); turn("enc1", 2);
+            check(value(3, 1) > tone, "pushing encoder 1 did not let it turn the value");
+            capture(app, output / "59-one-encoder.bmp");
+            const auto turned = value(3, 1);
+            press("enc1"); release("enc1"); turn("enc1", 1); turn("enc2", 1);
+            check(value(3, 1) == turned && value(3, 2) != -4.44, "pushing again did not go back to moving the highlight");
+            // Holding encoder 1 goes back.
+            press("enc1"); step(app, 800); release("enc1");
+            check(app.page() == peepo::Page::Patch, "holding encoder 1 did not go back");
+            // A push on the patch opens the module encoder 1 is on: the one last opened.
+            press("enc1"); release("enc1");
+            check(app.page() == peepo::Page::Parameters && exact_label(app.screen(), "TONE"), "encoder 1 did not open the highlighted module");
+            press("enc1"); step(app, 800); release("enc1");
+            // A pinned encoder (Settings > Controls) turns its target on every page; a tap shows it, a hold unpins it.
+            peepo::Assignment pin; pin.control = "enc2"; pin.module = 3; pin.parameter = "tone"; pin.minimum = 200; pin.maximum = 8000;
+            engine2.submit(peepo::Assign{pin}); step(app, 256);
+            const auto pinned_tone = value(3, 1);
             turn("enc2", 2);
-            check(value(3, 1) > tone && app.page() == peepo::Page::Patch, "pinned encoder did not work from the patch page");
+            check(value(3, 1) > pinned_tone && app.page() == peepo::Page::Patch, "pinned encoder did not work from the patch page");
             press("enc2"); release("enc2");
-            check(app.page() == peepo::Page::Parameters, "tapping a pinned encoder did not show its target");
+            check(app.page() == peepo::Page::Parameters && text_label(app.screen(), "E2") != nullptr, "tapping a pinned encoder did not show its target");
             press("enc2"); step(app, 800); release("enc2");
             check(app.graph().assignments.empty(), "holding a pinned encoder did not unpin it");
             click(app, 70, 456);
-            // Custom layouts follow too, and a tap moves to the next page of controls.
+            // A switch: encoder 1 moves onto it and its push flips it.
             click(app, 396, 244);
-            const auto before_turn = peepo::find_module(app.graph(), 4)->parameters;
-            turn("enc1", 1);
-            const auto after_first = peepo::find_module(app.graph(), 4)->parameters;
+            turn("enc1", 3); press("enc1"); release("enc1");
+            check(value(4, 3) == 1, "pushing encoder 1 on a switch did not flip it");
             press("enc1"); release("enc1");
-            turn("enc1", 1);
-            const auto after_second = peepo::find_module(app.graph(), 4)->parameters;
-            std::size_t first_changed = 99, second_changed = 99;
-            for (std::size_t i = 0; i < before_turn.size(); ++i) {
-                if (after_first[i].value != before_turn[i].value) first_changed = i;
-                if (after_second[i].value != after_first[i].value) second_changed = i;
-            }
-            check(first_changed != 99 && second_changed != 99 && first_changed != second_changed, "tap did not move the encoders to the next page of Clouds");
+            check(value(4, 3) == 0, "pushing again did not flip it back");
+            // Elsewhere encoder 1 steps through the buttons and pushes the one highlighted.
+            click(app, 70, 456); click(app, 707, 36);
+            check(app.page() == peepo::Page::Settings, "Settings did not open");
+            press("enc1"); step(app, 800); release("enc1");
+            check(app.page() == peepo::Page::Patch, "holding encoder 1 did not leave Settings");
+            turn("enc2", 3); press("enc2"); release("enc2");
+            check(app.page() == peepo::Page::Settings, "encoder 2 did not step to and push Settings on the patch");
             click(app, 70, 456);
             // Stomps are assigned on the Controls page: stomp 1 toggles Clouds freeze.
             click(app, 707, 36); tap(app, "CONTROLS");
-            check(app.page() == peepo::Page::Controls && text_label(app.screen(), "Follows the parameter page"), "Controls page did not open");
-            click(app, 618, 304); check(app.page() == peepo::Page::AssignPicker, "Assign did not open the picker");
+            check(app.page() == peepo::Page::Controls && text_label(app.screen(), "Moves through the page"), "Controls page did not open");
+            click(app, 618, 204); check(app.page() == peepo::Page::AssignPicker, "Assign did not open the picker");
             click(app, 592, 160); check(text_label(app.screen(), "BYPASS") != nullptr, "picking Clouds did not list its controls");
             click(app, 208, 296);
             check(app.page() == peepo::Page::Controls && app.graph().assignments.size() == 1 && app.graph().assignments[0].parameter == "freeze", "stomp 1 not assigned to freeze");
@@ -673,7 +726,7 @@ int main(int argc, char** argv) {
             press("stomp1"); release("stomp1");
             check(value(4, 3) == 0, "stomp toggle did not switch freeze off");
             // Momentary: held on, released off.
-            click(app, 726, 304); check(app.page() == peepo::Page::AssignmentDetail, "Edit did not open the assignment");
+            click(app, 726, 204); check(app.page() == peepo::Page::AssignmentDetail, "Edit did not open the assignment");
             click(app, 456, 156);
             check(app.graph().assignments[0].mode == peepo::SwitchMode::Momentary, "momentary mode not stored");
             capture(app, output / "37-assignment-detail.bmp");
@@ -682,7 +735,7 @@ int main(int argc, char** argv) {
             release("stomp1");
             check(value(4, 3) == 0, "momentary release did not let go");
             // Stomp 2 bypasses Delay.
-            click(app, 70, 456); click(app, 618, 354); click(app, 208, 228); click(app, 208, 160);
+            click(app, 70, 456); click(app, 618, 254); click(app, 208, 228); click(app, 208, 160);
             check(app.graph().assignments.size() == 2 && app.graph().assignments[1].action == peepo::ControlAction::Bypass, "bypass assignment not made");
             press("stomp2"); release("stomp2");
             check(peepo::find_module(app.graph(), 5)->bypassed, "bypass stomp did nothing");
@@ -728,17 +781,17 @@ int main(int argc, char** argv) {
             click(app, tuner.x + 48, tuner.y + 72 + 48);
             check(text_label(app.screen(), "A4") && text_label(app.screen(), "In tune"), "tuner did not show live note and target");
             capture(app, output / "39-tuner-in-tune.bmp");
-            auto* slider = widget(app.screen(), &lv_slider_class);
+            auto* reference = bar(app, "A REFERENCE");
             live.frequency = 440 * std::pow(2.0, -23.0 / 1200); step(app);
-            check(text_label(app.screen(), "Flat - tighten string") && widget(app.screen(), &lv_slider_class) == slider, "flat pitch missing or rebuilt controls");
+            check(text_label(app.screen(), "Flat - tighten string") && bar(app, "A REFERENCE") == reference, "flat pitch missing or rebuilt controls");
             capture(app, output / "40-tuner-flat.bmp");
             live.frequency = 440 * std::pow(2.0, 19.0 / 1200); step(app);
             check(text_label(app.screen(), "Sharp - loosen string"), "sharp indication missing");
             capture(app, output / "41-tuner-sharp.bmp");
             live.frequency = 82.4069; step(app);
-            check(text_label(app.screen(), "E2"), "low guitar E octave incorrect");
+            check(exact_label(app.screen(), "E2"), "low guitar E octave incorrect");
             live.frequency = 0; step(app);
-            check(text_label(app.screen(), "Waiting for a note") && !text_label(app.screen(), "E2"), "silence retained previous note");
+            check(text_label(app.screen(), "Waiting for a note") && !exact_label(app.screen(), "E2"), "silence retained previous note");
             capture(app, output / "42-tuner-silence.bmp");
             live.frequency = 440; live.submit(peepo::SetParameter{tuner.id, "tuning", 442}); step(app);
             check(text_label(app.screen(), "Flat - tighten string"), "A reference did not affect tuning");
@@ -853,8 +906,8 @@ int main(int argc, char** argv) {
             check(text_label(app.screen(), "TIME // 2 MODULES") != nullptr, "the category outlived its group");
             check(!first_label(app.screen(), "AMP"), "another group's categories shown");
         }
-        // Named pages from the overlay's groups, whole numbers stepped with - and +,
-        // and a short list of modes as buttons.
+        // The overlay's groups as headings on the one page, then the rest under
+        // More; whole numbers step by one; a mode steps on each tap.
         {
             const std::string uri = "urn:peepo:test:grouped";
             auto grouped = peepo::ModuleDefinition{uri, "Grouped", "Modulation", "Test module with groups", 0xc4b5fd,
@@ -876,22 +929,24 @@ int main(int argc, char** argv) {
                 return std::find_if(m->parameters.begin(), m->parameters.end(), [&](const peepo::Parameter& p) { return p.symbol == symbol; })->value;
             };
             click(app, 184 + 48, 132 + 72 + 48);
-            check(app.page() == peepo::Page::Parameters && exact_label(app.screen(), "MOTION") && text_label(app.screen(), "1 / 3") &&
-                  exact_label(app.screen(), "RATE") && !exact_label(app.screen(), "DEPTH"), "the first group is not the first page");
-            check(widget(app.screen(), &lv_dropdown_class) == nullptr && exact_label(app.screen(), "RANDOM"), "three short modes not shown as buttons");
+            check(app.page() == peepo::Page::Parameters && exact_label(app.screen(), "MOTION") && exact_label(app.screen(), "AMOUNT") && exact_label(app.screen(), "MORE") &&
+                  exact_label(app.screen(), "RATE") && exact_label(app.screen(), "DEPTH") && exact_label(app.screen(), "SPARE"), "the groups are not headings on one page");
+            const auto top = [&](const char* name) { lv_area_t a; lv_obj_get_coords(bar(app, name), &a); return a.y1; };
+            check(top("RATE") < top("DEPTH") && top("DEPTH") < top("SPARE"), "the bars are not in group order");
+            check(bar_value(app, "SHAPE") == "SINE", "the mode is not shown");
             capture(app, output / "51-grouped-parameters.bmp");
-            tap(app, "+"); check(value("voices") == 3, "+ did not step the whole number up");
-            tap(app, "+"); check(value("voices") == 4 && disabled_button(exact_label(app.screen(), "+")), "+ not disabled at the top");
-            tap(app, "-"); check(value("voices") == 3, "- did not step down");
-            tap(app, "SQUARE"); check(value("shape") == 1, "a mode button did not choose its mode");
-            click(app, 496, 108);
-            check(exact_label(app.screen(), "AMOUNT") && exact_label(app.screen(), "DEPTH") && !exact_label(app.screen(), "RATE"), "the second group is not the second page");
-            click(app, 496, 108);
-            check(exact_label(app.screen(), "MORE") && exact_label(app.screen(), "SPARE"), "ungrouped controls not on a More page");
-            // A pushed encoder pages through the groups and wraps.
-            app.control({peepo::ControlEvent::Type::Press, "enc1"}); step(app, 64);
-            app.control({peepo::ControlEvent::Type::Release, "enc1"}); step(app, 256);
-            check(exact_label(app.screen(), "MOTION") != nullptr, "an encoder push did not wrap to the first group");
+            // Encoder 1 moves in the same order: Rate, Voices, Shape, Depth.
+            app.control({peepo::ControlEvent::Type::Turn, "enc1", 1}); step(app, 256);
+            app.control({peepo::ControlEvent::Type::Turn, "enc2", 1}); step(app, 256);
+            check(value("voices") == 3, "encoder 2 did not step the whole number up by one");
+            app.control({peepo::ControlEvent::Type::Turn, "enc2", 5}); step(app, 256);
+            check(value("voices") == 4, "the whole number went past its top");
+            tap_bar(app, "SHAPE"); check(value("shape") == 1 && bar_value(app, "SHAPE") == "SQUARE", "a tap did not step the mode");
+            app.control({peepo::ControlEvent::Type::Turn, "enc2", -1}); step(app, 256);
+            check(value("shape") == 0, "encoder 2 did not turn the tapped mode back");
+            app.control({peepo::ControlEvent::Type::Turn, "enc1", 1}); step(app, 256);
+            app.control({peepo::ControlEvent::Type::Turn, "enc2", 10}); step(app, 256);
+            check(value("depth") > 0.5 && value("spare") == 0, "encoder 1 did not move on from Shape to Depth");
         }
         // The patch tempo and a module's file. The footer's BPM opens the Tempo
         // page; steps, the TAP pad, encoder 1 and a tap-tempo footswitch set it,
@@ -941,12 +996,12 @@ int main(int argc, char** argv) {
             // The model: none at first, then chosen from the files in nam/.
             click(app, 184 + 48, 132 + 72 + 48);
             check(app.page() == peepo::Page::Parameters && exact_label(app.screen(), "MODEL") && exact_label(app.screen(), "None chosen") && exact_label(app.screen(), "RATE"),
-                  "the file is not the first tile");
-            tap(app, "CHOOSE");
+                  "the file is not the first bar");
+            tap_bar(app, "MODEL");
             check(app.page() == peepo::Page::FilePicker && text_label(app.screen(), "No .nam files yet"), "an empty folder was not explained");
             click(app, 70, 456);
             for (const char* name : {"Clean.nam", "Crunch Lead.nam", "readme.txt"}) std::ofstream(base / "files" / "nam" / name) << "x";
-            tap(app, "CHOOSE");
+            tap_bar(app, "MODEL");
             check(app.page() == peepo::Page::FilePicker && exact_label(app.screen(), "Clean.nam") && !exact_label(app.screen(), "readme.txt") && text_label(app.screen(), "2 files"),
                   "the models were not listed");
             capture(app, output / "53-file-picker.bmp");
@@ -1060,9 +1115,10 @@ int main(int argc, char** argv) {
             click(app, 184 + 48, 132 + 72 + 48);
             check(app.page() == peepo::Page::Parameters && exact_label(app.screen(), "1/8") && text_label(app.screen(), "250 ms at 120 BPM"),
                   "a time in beats is not shown as its note and in milliseconds");
-            tap(app, "+"); check(std::abs(time() - 2.0 / 3) < 1e-9 && exact_label(app.screen(), "1/4 trip"), "+ did not step to the next note value");
-            app.control({peepo::ControlEvent::Type::Turn, "enc1", 2}); step(app, 256);
-            check(std::abs(time() - 1) < 1e-9 && exact_label(app.screen(), "1/4") && text_label(app.screen(), "500 ms"), "encoder 1 did not turn by note values");
+            app.control({peepo::ControlEvent::Type::Turn, "enc2", 1}); step(app, 256);
+            check(std::abs(time() - 2.0 / 3) < 1e-9 && exact_label(app.screen(), "1/4 trip"), "a detent did not step to the next note value");
+            app.control({peepo::ControlEvent::Type::Turn, "enc2", 2}); step(app, 256);
+            check(std::abs(time() - 1) < 1e-9 && exact_label(app.screen(), "1/4") && text_label(app.screen(), "500 ms"), "encoder 2 did not turn by note values");
             capture(app, output / "58-beat-time.bmp");
         }
         // Release the headless devices before the global runtime.

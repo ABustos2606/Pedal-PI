@@ -102,19 +102,16 @@ MIDI connections between modules remain deferred. A visual cable must always cor
 
 ## Module page
 
-Opened by tapping a square. It fills the screen with the module's parameters and a **back** button to the patch view.
+Opened by tapping a square. It fills the screen with the module's parameters and a **back** button to the patch view. Redone on 17 October 2026 in the direction of Beebo's module pages ([record](31-module-page-and-two-encoders.md)):
 
-Module-specific pages are supported in the shared LVGL application. Clouds opens **Texture** (position, size, density, pitch) and **Mix / hold** (mix, freeze); Delay opens **Character** mode buttons with timing, feedback and mix controls. Both retain software bypass and Actions, and **All** opens the generic parameter editor. All layouts use the same parameter symbols, range conversion and engine acknowledgment path.
+- **Every control is a bar** with its name, its value and a fill in the module's group colour, two columns of six: twelve controls on one screen, more scroll. There are no pages.
+- **Drag a bar sideways** to set it (relative: the bar's width is the whole range, so a touch never jumps the value). **Tap** a switch to flip it or a mode to step it.
+- Logarithmic parameters (frequency, time) move logarithmically; whole numbers in whole steps; a time in beats by note value from an encoder.
+- The overlay's groups are headings on the page; a module's file is its first bar.
+- The header holds the module's name, an **ON** / **BYPASSED** pill and **ACTIONS**.
+- Encoder 1 moves a white highlight between bars, encoder 2 turns the highlighted one (see below).
 
-Select a specialized layout by stable module URI and compatible parameter schema. Renaming a module must not change its layout. Unrecognized or changed schemas use the generic editor so parameters remain accessible. The initial custom layouts target simulator fixtures; real LV2 modules require verified metadata before a specialized view is registered. Tuner, oscillator and other dedicated layouts can be added when their module contracts exist.
-
-- Large, labelled controls with current value and unit, about 4–6 per page; more parameters continue on further pages.
-- Control type follows the LV2 parameter type: slider or arc for continuous values (drive, gain, volume, time), switch for on/off values (freeze, bypass), and a selector for lists of modes.
-- Logarithmic parameters (frequency, time) move logarithmically.
-- A bypass toggle and the module's name in the header.
-- A way to assign a parameter to a physical knob (see below).
-
-Every module uses this same page style, generated from plugin metadata and the project catalogue overlay. Custom pages are a possible later addition, not a requirement.
+Every module uses this same page, generated from plugin metadata and the project catalogue overlay. Only the Tuner adds something: its meter, above its bars. The earlier custom Clouds and Delay pages are gone.
 
 ### NAM and cabinet pages — proposed
 
@@ -156,7 +153,7 @@ The groups merge the catalogue's categories the way the Beebo firmware does:
 Adding a module:
 
 - The first tap on a card picks it (white border). Tapping it again, or pressing Add module, adds it.
-- With no pin on them, encoder 1 steps through the groups and the other encoders step through the cards. Pushing an encoder adds the picked card.
+- With no pin on them, encoder 1 steps through the cards and encoder 2 through the groups. Pushing an encoder adds the picked card.
 - The chosen group is remembered between visits, but the page always opens scrolled to the top with nothing picked.
 
 Only plugins that are installed and passed compatibility checks can be added. The others are dimmed, and their description is replaced by the reason they cannot be added.
@@ -181,13 +178,14 @@ These are starting values, not proven acceptance results. Test them on the 5-inc
 
 ## Physical controls
 
-The user owns four 20-pulse push encoders and will use three momentary SPST footswitches (14 October 2026). Beebo's hardware exposes two encoders and three switches with combined gestures; our control model is designed independently. The behaviour, mapping rules, assignment screen and a wiring proposal are recorded in [physical controls](18-physical-controls.md).
+Two push encoders and three momentary SPST footswitches (17 October 2026; four encoders before). Encoder 1 moves through the page, encoder 2 turns values; one encoder alone can do both. The behaviour, mapping rules, assignment screen and wiring are recorded in [physical controls](18-physical-controls.md) and [the two-encoder record](31-module-page-and-two-encoders.md).
 
-| Control type | Proposed behaviour | Design question |
+| Control type | Behaviour | Design question |
 | --- | --- | --- |
-| Encoder | Adjust selected or pinned parameter | Relative increments, acceleration, fine adjustment, and page behaviour |
+| Encoder 1 | Move the highlight: modules, bars, cards, buttons | Acceleration and fine adjustment |
+| Encoder 2 | Turn the highlighted value, or a pinned parameter | Relative increments, acceleration, fine adjustment |
 | Potentiometer | Set an absolute parameter value | Pickup/soft takeover to avoid jumps after patch changes |
-| Encoder push | Select, assign, or open a parameter page | Must not conflict with value adjustment |
+| Encoder push | Open, flip or step what is highlighted; hold encoder 1 for Back | Must not conflict with value adjustment |
 | Stomp switch | Musical action chosen in the patch | Toggle, momentary, tap, and hold behaviour |
 | Expression pedal | Optional continuous control | Hardware input and range calibration are not yet scoped |
 

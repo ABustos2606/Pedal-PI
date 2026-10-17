@@ -49,7 +49,7 @@ remain recognized and usable in saved patches, with the dedicated tuner screen.
 Connect **IN → Tuner** and tap the tuner. It shows a large note and octave,
 frequency, signed cents, and a moving flat/sharp indicator. The green target
 spans ±5 cents. Tighten a flat string; loosen a sharp string. **A reference**
-changes the default 440 Hz reference. **All** opens generic controls;
+changes the default 440 Hz reference. (17 October 2026: the A reference is now a bar under the meter, and **All** is gone);
 **Actions** provides the normal module actions.
 
 Silence, bypass, a disconnected/stalled engine and the audio-free simulator

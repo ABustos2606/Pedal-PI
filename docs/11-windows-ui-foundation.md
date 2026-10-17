@@ -33,7 +33,7 @@ The Debug build/PDBs and JSON configurations are present and checked. The C/C++ 
 
 ## Explore the UI
 
-- Tap Drive for generic parameters, Clouds for Texture / Mix-hold tabs, or Delay for Character mode buttons and echo controls. **All** opens the generic view for custom modules; **Custom** returns. Drag sliders or use switches/selectors; values update after engine acknowledgment. Generic **< / >** pages show four controls at a time.
+- (Superseded 17 October 2026 by [the bar page](31-module-page-and-two-encoders.md); the images below show it.) Tap Drive for generic parameters, Clouds for Texture / Mix-hold tabs, or Delay for Character mode buttons and echo controls. **All** opens the generic view for custom modules; **Custom** returns. Drag sliders or use switches/selectors; values update after engine acknowledgment. Generic **< / >** pages show four controls at a time.
 - Open **Patches → Parallel demo** to try Drive splitting into Clouds and Delay, with both branches returning to OUT. Confirm replacement if the current graph has unsaved edits. Each branch can be edited, disconnected and reconnected with ordinary cables.
 - The bottom-right footer shows global **BPM** and **CPU** on every page. In this simulator, 120 BPM and 12% CPU SIM are fixed display fixtures, not measured performance or a running tempo clock. CPU shows `--` outside Ready. Real engine adapters can provide optional live readings; unavailable or invalid readings show `--`.
 - Drag a module body to move it on a 24-pixel grid. IN and OUT are fixed.
@@ -46,7 +46,7 @@ The Debug build/PDBs and JSON configurations are present and checked. The C/C++ 
 - **Patches** keeps patches on disk (since 14 October 2026), in `%LOCALAPPDATA%/Peepo/simulator-patches` for the simulation or a folder given with `--patches`. **Save** writes a new revision of the playing patch, **Save as** a separate copy under a new name; each row offers **Load**, **Startup** and **Delete**. Loading over unsaved edits, deleting, and loading a patch with an unavailable module ask first. The simulation writes the engine's bundle layout without plugin state. See [patch storage](17-patch-storage.md).
 - Without a patch folder, **Save snapshot / Load** keeps one in-memory session snapshot, as before: it goes through the engine, clears the dirty marker on success and survives new patches and reconnect until the process closes.
 - Use **Settings** to reconnect, disconnect, simulate an error or reject the next engine edit. Returning to ready preserves the graph and passes through Connecting. While the engine is away the header says STARTING, RECONNECTING, OFFLINE or ENGINE ERROR, a banner on the patch gives the reason, and **+ Add** is disabled; against a real engine, Settings shows the connection and the patch folder instead. **Missing module** loads a repair fixture with retained settings/cables and an orange placeholder; inspect, move or delete it. Its parameters, bypass, duplication and new cables are disabled; orange cables are inactive.
-- Keys stand in for the four encoders and three footswitches: Q/A, W/S, E/D, R/F turn encoders 1–4, keys 1–4 push them, Z, X and C are the stomps. On a parameter page the encoders follow the tiles (marked E1–E4); push and turn is fine, a tap moves to the next page, and holding pins an encoder to its control. **Settings → Controls** assigns stomps and pinned encoders. See [physical controls](18-physical-controls.md).
+- (Superseded 17 October 2026: two encoders, Q/A and W/S, keys 1 and 2; see [module page and two encoders](31-module-page-and-two-encoders.md).) Keys stand in for the four encoders and three footswitches: Q/A, W/S, E/D, R/F turn encoders 1–4, keys 1–4 push them, Z, X and C are the stomps. On a parameter page the encoders follow the tiles (marked E1–E4); push and turn is fine, a tap moves to the next page, and holding pins an encoder to its control. **Settings → Controls** assigns stomps and pinned encoders. See [physical controls](18-physical-controls.md).
 - Tab traverses controls and Enter activates buttons. Arrow keys adjust focused sliders. Physical printable keys enter names, and Enter accepts the name; mouse/touch-style navigation remains the primary development workflow.
 
 ## Code boundaries
@@ -109,9 +109,7 @@ These checks verify desktop interaction and drawing. They provide no evidence fo
 
 ![Clouds demo parameter view](images/ui-clouds.png)
 
-![Clouds Texture page](images/ui-clouds-texture.png)
 
-![Clouds Mix / hold page](images/ui-clouds-mix-hold.png)
 
 ![Delay Character page](images/ui-delay-character.png)
 

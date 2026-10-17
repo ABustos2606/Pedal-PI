@@ -77,7 +77,7 @@ std::string metric_text(std::optional<double> reading, bool cpu) {
     if (cpu) value << '%';
     return value.str();
 }
-enum class ModuleLayout { Generic, Clouds, Delay, Tuner };
+enum class ModuleLayout { Generic, Tuner };
 ModuleLayout module_layout(const Module& m) {
     // Match by stable URI and parameter schema, never by the editable name.
     // An unexpected/extended schema must keep every control in the generic view.
@@ -88,8 +88,6 @@ ModuleLayout module_layout(const Module& m) {
         if (it == m.parameters.end() || it->kind != expected.kind || it->choices != expected.choices || !validate_parameter(*it).empty())
             return ModuleLayout::Generic;
     }
-    if (m.uri == "urn:peepo:demo:clouds") return ModuleLayout::Clouds;
-    if (m.uri == "urn:peepo:demo:delay") return ModuleLayout::Delay;
     if (tuner_uri(m.uri) && std::any_of(m.parameters.begin(), m.parameters.end(), [](const Parameter& p) { return p.symbol == "tuning"; })) return ModuleLayout::Tuner;
     return ModuleLayout::Generic;
 }
@@ -122,34 +120,60 @@ std::uint32_t module_ink(const Module& m) {
 const Parameter& parameter(const Module& m, const std::string& symbol) {
     return *std::find_if(m.parameters.begin(), m.parameters.end(), [&](const Parameter& p) { return p.symbol == symbol; });
 }
-// The generic editor in pages of up to four controls: the overlay's named
-// groups first, then whatever they leave out, four to a page ("More" when
-// the module has groups at all).
-// A module that reads a file shows it in the first tile of the first page.
-struct ParameterPage { std::string name; std::vector<const Parameter*> parameters; bool file = false; };
-std::vector<ParameterPage> parameter_pages_of(const Module& m) {
-    std::vector<ParameterPage> pages;
+// A module's darker group colour, which a parameter bar fills with.
+std::uint32_t module_fill(const Module& m) {
+    const auto* d = definition(m.uri);
+    if (!module_available(m) || !d || m.fixed) return 0x333333;
+    return module_groups()[module_group(d->category)].fill;
+}
+// The module page in order: the overlay's named groups first, each under its
+// name, then whatever they leave out ("More" when the module has groups at all).
+struct ParameterSection { std::string name; std::vector<const Parameter*> parameters; };
+std::vector<ParameterSection> parameter_sections(const Module& m) {
+    std::vector<ParameterSection> sections;
     std::vector<std::string> placed;
-    const auto* known = definition(m.uri);
-    const bool file = known && !known->file.property.empty();
-    const auto full = [&](const ParameterPage& page) { return page.parameters.size() + (page.file ? 1 : 0) >= 4; };
-    if (const auto* d = known)
+    if (const auto* d = definition(m.uri))
         for (const auto& g : d->groups) {
-            ParameterPage page{g.name, {}};
+            ParameterSection section{g.name, {}};
             for (const auto& s : g.symbols)
                 for (const auto& p : m.parameters)
-                    if (p.symbol == s && std::find(placed.begin(), placed.end(), s) == placed.end()) { placed.push_back(s); page.parameters.push_back(&p); }
-            page.file = file && pages.empty();
-            if (!page.parameters.empty()) pages.push_back(std::move(page));
+                    if (p.symbol == s && std::find(placed.begin(), placed.end(), s) == placed.end()) { placed.push_back(s); section.parameters.push_back(&p); }
+            if (!section.parameters.empty()) sections.push_back(std::move(section));
         }
-    const bool named = !pages.empty();
-    for (const auto& p : m.parameters) {
-        if (std::find(placed.begin(), placed.end(), p.symbol) != placed.end()) continue;
-        if (pages.empty() || full(pages.back()) || (named && pages.back().name != "More")) pages.push_back({named ? "More" : "", {}, file && pages.empty()});
-        pages.back().parameters.push_back(&p);
-    }
-    if (pages.empty()) pages.push_back({{}, {}, file});
-    return pages;
+    ParameterSection rest{sections.empty() ? "" : "More", {}};
+    for (const auto& p : m.parameters)
+        if (std::find(placed.begin(), placed.end(), p.symbol) == placed.end()) rest.parameters.push_back(&p);
+    if (!rest.parameters.empty()) sections.push_back(std::move(rest));
+    return sections;
+}
+// Parameter bars: two columns of six in view, as on Beebo's module pages.
+constexpr int bar_width = 372, bar_height = 48;
+// How far a bar is filled, and what it says.
+double bar_level(const Parameter& p) {
+    if (p.kind == ParameterKind::Toggle) return p.value >= 0.5 ? 1 : 0;
+    if (p.kind == ParameterKind::Enumeration) return p.choices.empty() ? 0 : std::clamp((std::round(p.value) + 1) / static_cast<double>(p.choices.size()), 0.0, 1.0);
+    return normalized_value(p);
+}
+std::string bar_text(const Parameter& p) {
+    return p.kind == ParameterKind::Toggle || p.kind == ParameterKind::Enumeration ? upper(format_value(p)) : format_value(p);
+}
+// A bar's children: the fill, the name, the value.
+void paint_bar(lv_obj_t* bar, const Parameter& p) {
+    lv_obj_set_width(lv_obj_get_child(bar, 0), static_cast<int>(std::round(bar_level(p) * bar_width)));
+    const auto shown = bar_text(p);
+    auto* value = lv_obj_get_child(bar, 2);
+    if (shown != lv_label_get_text(value)) lv_label_set_text(value, shown.c_str());
+}
+// The encoder highlight: white, or the module's colour while encoder 1 turns the value.
+void highlight(lv_obj_t* bar, bool focused, bool adjusting, std::uint32_t ink) {
+    lv_obj_set_style_border_width(bar, focused ? (adjusting ? 3 : 2) : 1, 0);
+    lv_obj_set_style_border_color(bar, color(!focused ? border : adjusting ? ink : text), 0);
+}
+// The next choice of a mode, wrapping; the other state of a switch.
+double stepped_choice(const Parameter& p) {
+    if (p.kind == ParameterKind::Toggle) return p.value >= 0.5 ? 0 : 1;
+    const auto count = static_cast<double>(std::max<std::size_t>(1, p.choices.size()));
+    return std::fmod(std::round(p.value) + 1, count);
 }
 // Peepo's Footswitch module: a stomp as a control signal. Its Stomp control
 // (0 for the first) says which stomp it hears; the interface sets Pressed.
@@ -170,12 +194,6 @@ std::vector<int> stomps_on(const Graph& g, const Module& m) {
         for (const auto& p : m.parameters) if (p.symbol == "stomp") add(static_cast<int>(p.value) + 1);
     std::sort(numbers.begin(), numbers.end());
     return numbers;
-}
-std::size_t page_of(const Module& m, const std::string& symbol) {
-    const auto pages = parameter_pages_of(m);
-    for (std::size_t i = 0; i < pages.size(); ++i)
-        for (const auto* p : pages[i].parameters) if (p->symbol == symbol) return i;
-    return 0;
 }
 }
 Application::Application(Engine& engine, PatchStore* store) : engine_(engine), graph_(engine.snapshot()), store_(store && store->usable() ? store : nullptr) {
@@ -275,7 +293,7 @@ void Application::tick(unsigned ms) {
             last_state_ = e.state;
         }
         if (e.accepted && e.request && kind == PendingKind::Replace) {
-            pan_x_ = pan_y_ = 0; selected_cable_.reset(); parameter_page_ = 0; navigate(Page::Patch);
+            pan_x_ = pan_y_ = 0; selected_cable_.reset(); patch_focus_ = 0; navigate(Page::Patch);
         } else if (e.accepted && e.request && kind == PendingKind::Rename) navigate(Page::Patches);
         if (selected_cable_ && std::find(graph_.connections.begin(), graph_.connections.end(), *selected_cable_) == graph_.connections.end())
             selected_cable_.reset();
@@ -318,7 +336,7 @@ void Application::tick(unsigned ms) {
     update_metrics();
     if ((network_age_ += ms) >= 2000) { network_age_ = 0; update_network(); }
     if (system_ && (system_age_ += ms) >= 2000) { system_age_ = 0; update_system(); }
-    const auto* shown = page_ == Page::Parameters && !generic_parameters_ ? find_module(graph_, selected_) : nullptr;
+    const auto* shown = page_ == Page::Parameters ? find_module(graph_, selected_) : nullptr;
     engine_.watch_tuner(shown && module_layout(*shown) == ModuleLayout::Tuner ? std::optional<InstanceId>{shown->id} : std::nullopt);
     update_tuner();
 }
@@ -392,18 +410,6 @@ lv_obj_t* pill(lv_obj_t* b) {
 lv_obj_t* slim(lv_obj_t* b) {
     lv_obj_set_y(b, 6); lv_obj_set_height(b, 36);
     return b;
-}
-// Whether a list of modes fits as buttons across a parameter tile.
-bool segments_fit(const Parameter& p) {
-    const int count = static_cast<int>(p.choices.size());
-    if (count < 2 || count > 4) return false;
-    const int width = (328 - 8 * (count - 1)) / count;
-    return std::all_of(p.choices.begin(), p.choices.end(), [&](const std::string& c) {
-        const auto shown = upper(c);
-        lv_point_t size;
-        lv_text_get_size(&size, shown.c_str(), &peepo_bold_14, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-        return size.x <= width - 16;
-    });
 }
 // The emphasis a chosen option gets: its border and text in the given colour.
 void mark(lv_obj_t* b, std::uint32_t ink) {
@@ -549,26 +555,54 @@ void Application::handle(Binding& b, lv_event_t* e) {
         } else if (code == LV_EVENT_CLICKED && b.action == Action::Module && !m->fixed) {
             // A completed drag is followed by CLICKED; distinguish it using displacement.
             if (!long_pressed_ && std::abs(point.x - press_.x) + std::abs(point.y - press_.y) <= 8) {
-                selected_ = b.id; parameter_page_ = 0; generic_parameters_ = false; navigate(Page::Parameters);
+                open_module(b.id);
             }
         }
         return;
     }
     if (b.action == Action::Parameter) {
         const auto* m = find_module(graph_, b.id); if (!m) return;
-        auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == b.symbol; });
+        const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == b.symbol; });
         if (it == m->parameters.end()) return;
-        auto p = *it;
-        if (code == LV_EVENT_VALUE_CHANGED || code == LV_EVENT_RELEASED) {
-            if (p.kind == ParameterKind::Toggle) p.value = lv_obj_has_state(target, LV_STATE_CHECKED) ? 1 : 0;
-            else if (p.kind == ParameterKind::Enumeration) p.value = lv_dropdown_get_selected(target);
-            else p.value = value_from_normalized(p, lv_slider_get_value(target) / 1000.0);
-            if (b.value_label) lv_label_set_text(b.value_label, format_value(p).c_str());
-            const bool discrete = p.kind == ParameterKind::Toggle || p.kind == ParameterKind::Enumeration;
-            if (discrete) { if (code == LV_EVENT_VALUE_CHANGED) submit(SetParameter{b.id, b.symbol, p.value}); }
-            // Release sends the final position; a touch that moved nothing is not an edit.
-            else if (code == LV_EVENT_VALUE_CHANGED || stream_ || p.value != it->value) stream_parameter(b.id, b.symbol, p.value);
-        }
+        lv_point_t point{};
+        if (auto* indev = lv_indev_active()) lv_indev_get_point(indev, &point);
+        const bool slides = it->kind == ParameterKind::Continuous || it->kind == ParameterKind::Integer;
+        // Relative, as an encoder is: the value moves by how far the finger
+        // goes, the whole width for the whole range, so touching never jumps it.
+        const auto dragged = [&] {
+            auto p = *it;
+            p.value = value_from_normalized(p, std::clamp(drag_origin_ + static_cast<double>(point.x - press_.x) / bar_width, 0.0, 1.0));
+            if (p.kind == ParameterKind::Integer) p.value = std::round(p.value);
+            return p;
+        };
+        if (code == LV_EVENT_PRESSED) {
+            press_ = point; bar_moving_ = bar_dragged_ = false;
+            auto current = *it;
+            if (stream_ && stream_->id == b.id && stream_->symbol == b.symbol) current.value = stream_->latest;
+            drag_origin_ = normalized_value(current);
+            // The touched bar takes the encoder highlight.
+            for (std::size_t i = 0; i < bars_.size(); ++i)
+                if (bars_[i].widget == target && i != parameter_focus_) {
+                    if (parameter_focus_ < bars_.size()) highlight(bars_[parameter_focus_].widget, false, false, 0);
+                    parameter_focus_ = i; adjusting_ = false;
+                    highlight(target, true, false, module_ink(*m));
+                }
+        } else if (code == LV_EVENT_PRESSING && slides) {
+            const int dx = point.x - press_.x, dy = point.y - press_.y;
+            if (!bar_moving_ && std::abs(dx) > 8 && std::abs(dx) > std::abs(dy)) {
+                bar_moving_ = bar_dragged_ = true;
+                // A sideways drag is the value's: the list must not scroll under it.
+                if (parameter_list_) lv_obj_remove_flag(parameter_list_, LV_OBJ_FLAG_SCROLLABLE);
+            }
+            if (bar_moving_) { const auto p = dragged(); paint_bar(target, p); stream_parameter(b.id, b.symbol, p.value); }
+        } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
+            if (bar_moving_) {
+                // Release sends the final position.
+                if (code == LV_EVENT_RELEASED) { const auto p = dragged(); paint_bar(target, p); stream_parameter(b.id, b.symbol, p.value); }
+                if (parameter_list_) lv_obj_add_flag(parameter_list_, LV_OBJ_FLAG_SCROLLABLE);
+                bar_moving_ = false;
+            }
+        } else if (code == LV_EVENT_CLICKED && !bar_dragged_ && !slides) submit(SetParameter{b.id, b.symbol, stepped_choice(*it)});
         return;
     }
     if (b.action == Action::TempoSlider) {
@@ -618,7 +652,7 @@ void Application::handle(Binding& b, lv_event_t* e) {
     case Action::ClearCable: selected_cable_.reset(); rebuild_ = true; break;
     case Action::Home: pan_x_ = pan_y_ = 0; rebuild_ = true; break;
     case Action::OpenActions: selected_ = b.id; navigate(Page::ModuleActions); break;
-    case Action::Edit: selected_ = b.id; parameter_page_ = 0; generic_parameters_ = false; navigate(Page::Parameters); break;
+    case Action::Edit: open_module(b.id); break;
     case Action::Bypass: {
         const auto* m = find_module(graph_, b.id); if (m) submit(SetBypass{b.id, !m->bypassed}); break;
     }
@@ -631,8 +665,6 @@ void Application::handle(Binding& b, lv_event_t* e) {
         else message("Save a session snapshot first.");
         break;
     case Action::ParallelDemo: replace_patch(LoadGraph{parallel_demo_graph()}, Page::Patches); break;
-    case Action::ParameterLayout: generic_parameters_ = !generic_parameters_; parameter_page_ = 0; rebuild_ = true; break;
-    case Action::ParameterChoice: submit(SetParameter{b.id, b.symbol, static_cast<double>(b.number)}); break;
     case Action::TempoStep: set_tempo((tempo_sent_ ? *tempo_sent_ : graph_.tempo) + b.number); break;
     case Action::Tap: tap_tempo(); break;
     case Action::ChooseFile: selected_ = b.id; file_page_ = 0; navigate(Page::FilePicker); break;
@@ -641,19 +673,6 @@ void Application::handle(Binding& b, lv_event_t* e) {
         if (submit(SetFile{b.id, b.symbol})) message("Loading " + file_name(b.symbol) + ". The plugin reads it in the background.");
         navigate(Page::Parameters);
         break;
-    case Action::ParameterStep: {
-        // One whole step of an integer control, or one note value of a time
-        // in beats, from a value still on its way if there is one.
-        const auto* m = find_module(graph_, b.id); if (!m) break;
-        const auto it = std::find_if(m->parameters.begin(), m->parameters.end(), [&](const Parameter& p) { return p.symbol == b.symbol; });
-        if (it == m->parameters.end()) break;
-        const bool streaming = stream_ && stream_->id == b.id && stream_->symbol == b.symbol;
-        const auto current = streaming ? stream_->latest : it->value;
-        const auto next = it->unit == beats_unit ? step_note(current, b.number, it->minimum, it->maximum)
-                                                 : std::clamp(std::round(current) + b.number, it->minimum, it->maximum);
-        if (next != it->value || streaming) stream_parameter(b.id, b.symbol, next);
-        break;
-    }
     case Action::State:
         if (static_cast<EngineState>(b.number) == EngineState::Ready) engine_.connect();
         else if (static_cast<EngineState>(b.number) == EngineState::Disconnected) engine_.disconnect();
@@ -750,7 +769,6 @@ void Application::handle(Binding& b, lv_event_t* e) {
         else message("Wait for pending edits before replacing the patch.");
         break;
     case Action::CancelReplace: replacement_.reset(); navigate(confirm_origin_); break;
-    case Action::ParameterPage: parameter_page_ = static_cast<std::size_t>(b.number); rebuild_ = true; break;
     case Action::BrowserGroup:
         if (browser_group_ != b.symbol) { browser_group_ = b.symbol; browser_category_.clear(); browser_pick_.clear(); browser_scroll_ = 0; rebuild_ = true; }
         break;
@@ -887,10 +905,11 @@ void Application::rebuild() {
         lv_screen_load(screen_);
     } else {
         if (browser_list_) browser_scroll_ = lv_obj_get_scroll_y(browser_list_);
+        if (parameter_list_ && page_ == Page::Parameters) parameter_scroll_ = lv_obj_get_scroll_y(parameter_list_);
         lv_obj_clean(screen_);
     }
-    browser_list_ = browser_add_ = nullptr; browser_cards_.clear();
-    visible_.clear();
+    browser_list_ = browser_add_ = parameter_list_ = nullptr; browser_cards_.clear();
+    bars_.clear();
     bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); cv_inputs_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
     tempo_value_ = cpu_value_ = network_value_ = nullptr;
     tuner_note_ = tuner_detail_ = tuner_status_ = tuner_needle_ = nullptr;
@@ -907,7 +926,7 @@ void Application::rebuild() {
     case Page::Patch: break;
     case Page::Browser: section = "BROWSER"; title.clear(); break;
     case Page::Parameters: case Page::ModuleActions: {
-        section = page_ == Page::Parameters ? "PARAMETERS" : "ACTIONS";
+        section = page_ == Page::Parameters ? "MODULE" : "ACTIONS";
         const auto* m = find_module(graph_, selected_);
         title = m ? m->name : "Module";
         break;
@@ -943,7 +962,7 @@ void Application::rebuild() {
     auto* crumb = label(header, "PEEPO // " + section, 40, title.empty() ? 27 : 12, 0, faint, &peepo_mono_14);
     lv_obj_set_style_text_letter_space(crumb, 2, 0);
     if (!title.empty()) {
-        auto* heading = label(header, upper(title), 24, 32, patch ? 412 : page_ == Page::Settings ? 330 : page_ == Page::Patches ? 480 : 600, text, &peepo_bold_24);
+        auto* heading = label(header, upper(title), 24, 32, patch ? 412 : page_ == Page::Settings ? 330 : page_ == Page::Patches ? 480 : page_ == Page::Parameters ? 440 : 600, text, &peepo_bold_24);
         lv_label_set_long_mode(heading, LV_LABEL_LONG_DOT); lv_obj_set_height(heading, 30);
         if (patch) {
             // Tapping the patch name brings the canvas back to its start.
@@ -981,6 +1000,19 @@ void Application::rebuild() {
             link("Diagnostics", Action::Navigate, Page::Diagnostics);
             if (power_off_ || restart_) link("Power", Action::Navigate, Page::Power);
         }
+        lv_obj_align(pills, LV_ALIGN_RIGHT_MID, -24, 0);
+    } else if (const auto* m = page_ == Page::Parameters ? find_module(graph_, selected_) : nullptr; m && module_available(*m)) {
+        // On or bypassed, in the module's colour, and its other actions.
+        auto* pills = lv_obj_create(header); lv_obj_remove_style_all(pills);
+        lv_obj_set_size(pills, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+        lv_obj_set_flex_flow(pills, LV_FLEX_FLOW_ROW); lv_obj_set_style_pad_column(pills, 8, 0);
+        lv_obj_remove_flag(pills, LV_OBJ_FLAG_CLICKABLE);
+        auto* power = pill(button(pills, m->bypassed ? "Bypassed" : "On", 0, 0, 0, Action::Bypass, m->id));
+        lv_obj_set_width(power, LV_SIZE_CONTENT); lv_obj_set_style_pad_hor(power, 22, 0);
+        if (m->bypassed) lv_obj_set_style_text_color(lv_obj_get_child(power, 0), color(muted), 0);
+        else { lv_obj_set_style_bg_color(power, color(module_fill(*m)), 0); lv_obj_set_style_border_width(power, 0, 0); }
+        auto* actions = pill(button(pills, "Actions", 0, 0, 0, Action::OpenActions, m->id));
+        lv_obj_set_width(actions, LV_SIZE_CONTENT); lv_obj_set_style_pad_hor(actions, 18, 0);
         lv_obj_align(pills, LV_ALIGN_RIGHT_MID, -24, 0);
     } else if (page_ != Page::Halting) {
         auto* mode = label(header, engine_.capabilities().simulation ? "SIMULATED" : "ENGINE", 640, 28, 136, faint, &peepo_mono_14);
@@ -1020,11 +1052,7 @@ void Application::rebuild() {
     }
     // Nothing is left to go back to once the machine is going down.
     if (!patch && page_ != Page::Halting) {
-        // Back returns to where the page was opened from.
-        const auto back = page_ == Page::NamePatch ? Page::Patches :
-            page_ == Page::Controls || page_ == Page::Diagnostics || page_ == Page::Power ? Page::Settings :
-            page_ == Page::AssignPicker || page_ == Page::AssignmentDetail ? Page::Controls : page_ == Page::FilePicker ? Page::Parameters : Page::Patch;
-        slim(button(foot, "< Back", 14, 0, 112, Action::Navigate, 0, {}, static_cast<int>(back)));
+        slim(button(foot, "< Back", 14, 0, 112, Action::Navigate, 0, {}, static_cast<int>(back_page())));
     }
     const int message_x = patch || page_ == Page::Halting ? 24 : 142;
     footer_ = label(foot, message_, message_x, 7, patch && selected_cable_ ? 240 : 592 - message_x, faint, &peepo_mono_14);
@@ -1093,6 +1121,11 @@ void Application::patch_view(lv_obj_t* parent) {
         lv_obj_set_style_border_opa(card, static_cast<lv_opa_t>(m.bypassed ? LV_OPA_40 : LV_OPA_COVER), 0);
         lv_obj_set_style_bg_color(card, color(m.bypassed ? background : surface), 0);
         lv_obj_set_style_radius(card, 10, 0);
+        // Encoder 1's highlight.
+        if (m.id == patch_focus_) {
+            lv_obj_set_style_outline_width(card, 2, 0); lv_obj_set_style_outline_color(card, color(text), 0);
+            lv_obj_set_style_outline_pad(card, 4, 0);
+        }
         // Unseen on black, but it widens where touches reach the jacks that
         // stick out past the edge: LVGL looks that far beyond the square.
         lv_obj_set_style_shadow_width(card, 14, 0); lv_obj_set_style_shadow_opa(card, LV_OPA_20, 0);
@@ -1390,70 +1423,63 @@ void Application::parameters(lv_obj_t* parent) {
         auto* uri = label(parent, m->uri, 24, 244, 752, muted, &lv_font_montserrat_14);
         lv_label_set_long_mode(uri, LV_LABEL_LONG_DOT); return;
     }
-    const auto layout = module_layout(*m);
-    if (!generic_parameters_ && layout == ModuleLayout::Clouds) { clouds_parameters(parent, *m); return; }
-    if (!generic_parameters_ && layout == ModuleLayout::Delay) { delay_parameters(parent, *m); return; }
-    if (!generic_parameters_ && layout == ModuleLayout::Tuner) { tuner_parameters(parent, *m); return; }
-    auto* bypass = button(parent, m->bypassed ? "Enable" : "Bypass", 24, 12, 104, Action::Bypass, m->id);
-    (void)bypass;
-    button(parent, "Delete", 140, 12, 104, Action::Remove, m->id);
-    const auto pages = parameter_pages_of(*m);
-    const auto page_count = pages.size();
-    parameter_page_ = std::min(parameter_page_, page_count - 1);
-    const auto& shown = pages[parameter_page_];
-    if (page_count > 1) {
-        auto* prev = button(parent, "<", 272, 12, 48, Action::ParameterPage, 0, {}, static_cast<int>(parameter_page_ ? parameter_page_ - 1 : 0));
-        if (!parameter_page_) lv_obj_add_state(prev, LV_STATE_DISABLED);
-        // A named group shows its name above the page count.
-        const auto count = std::to_string(parameter_page_ + 1) + " / " + std::to_string(page_count);
-        if (!shown.name.empty()) {
-            auto* name = label(parent, upper(shown.name), 328, 14, 136, module_ink(*m), &peepo_bold_14);
-            lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, 18);
-            lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
+    // Every control on one page, as bars in two columns; a long module scrolls.
+    // A tuner shows its meter above them.
+    const bool tuner = module_layout(*m) == ModuleLayout::Tuner;
+    const int top = tuner ? 220 : 0;
+    if (tuner) tuner_meter(parent);
+    auto* list = lv_obj_create(parent); lv_obj_remove_style_all(list);
+    lv_obj_set_pos(list, 0, top); lv_obj_set_size(list, 800, 360 - top);
+    lv_obj_set_style_pad_hor(list, 20, 0); lv_obj_set_style_pad_top(list, tuner ? 4 : 16, 0); lv_obj_set_style_pad_bottom(list, 16, 0);
+    lv_obj_set_flex_flow(list, LV_FLEX_FLOW_ROW_WRAP);
+    lv_obj_set_style_pad_column(list, 16, 0); lv_obj_set_style_pad_row(list, 8, 0);
+    lv_obj_set_scroll_dir(list, LV_DIR_VER); lv_obj_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_ACTIVE);
+    lv_obj_remove_flag(list, LV_OBJ_FLAG_CLICKABLE);
+    // A bypassed module's controls still work, but read as not playing.
+    if (m->bypassed) lv_obj_set_style_opa(list, LV_OPA_50, 0);
+    parameter_list_ = list;
+    const auto ink = module_ink(*m);
+    if (const auto* d = definition(m->uri); d && !d->file.property.empty()) file_bar(list, *m);
+    for (const auto& section : parameter_sections(*m)) {
+        if (!section.name.empty()) {
+            auto* heading = label(list, upper(section.name), 0, 0, 760, ink, &peepo_mono_14);
+            lv_obj_set_style_text_letter_space(heading, 2, 0);
         }
-        auto* numbers = label(parent, count, 328, shown.name.empty() ? 27 : 36, 136, muted, &lv_font_montserrat_14);
-        lv_obj_set_style_text_align(numbers, LV_TEXT_ALIGN_CENTER, 0);
-        auto* next = button(parent, ">", 472, 12, 48, Action::ParameterPage, 0, {}, static_cast<int>(std::min(parameter_page_ + 1, page_count - 1)));
-        if (parameter_page_ + 1 >= page_count) lv_obj_add_state(next, LV_STATE_DISABLED);
-        if (layout == ModuleLayout::Generic) label(parent, "Software\nbypass", 536, 18, 100, muted, &lv_font_montserrat_14);
-    } else label(parent, engine_.capabilities().simulation ? "Simulated controls" : "Live controls", 272, 27, 0, muted, &lv_font_montserrat_14);
-    if (layout != ModuleLayout::Generic) button(parent, "Custom", 536, 12, 96, Action::ParameterLayout);
-    button(parent, "Actions", 640, 12, 136, Action::OpenActions, m->id);
-    const std::size_t first = shown.file ? 1 : 0;
-    if (shown.file) file_tile(parent, *m, 24, 76);
-    for (std::size_t i = 0; i < shown.parameters.size(); ++i) {
-        const auto slot = i + first;
-        const int x = 24 + static_cast<int>(slot % 2) * 384, y = 76 + static_cast<int>(slot / 2) * 136;
-        parameter_tile(parent, *m, *shown.parameters[i], x, y);
+        for (const auto* p : section.parameters) parameter_bar(list, *m, *p);
     }
+    if (bars_.empty()) { label(list, "This module has no controls.", 0, 0, 760, muted); return; }
+    if (!focus_symbol_.empty()) {
+        for (std::size_t i = 0; i < bars_.size(); ++i) if (bars_[i].symbol == focus_symbol_) parameter_focus_ = i;
+        focus_symbol_.clear();
+    }
+    if (parameter_focus_ >= bars_.size()) { parameter_focus_ = bars_.size() - 1; adjusting_ = false; }
+    highlight(bars_[parameter_focus_].widget, true, adjusting_, ink);
+    lv_obj_update_layout(list);
+    lv_obj_scroll_to_y(list, parameter_scroll_, LV_ANIM_OFF);
 }
-void Application::tuner_parameters(lv_obj_t* parent, const Module& m) {
-    auto* meter = panel(parent, 24, 12, 752, 242);
+void Application::tuner_meter(lv_obj_t* parent) {
+    auto* meter = panel(parent, 24, 12, 752, 200);
     tuner_note_ = label(meter, "--", 0, 8, 752, text, &peepo_bold_48);
     lv_obj_set_style_text_align(tuner_note_, LV_TEXT_ALIGN_CENTER, 0);
     tuner_detail_ = label(meter, "-- Hz", 0, 64, 752, muted);
     lv_obj_set_style_text_align(tuner_detail_, LV_TEXT_ALIGN_CENTER, 0);
-    tuner_status_ = label(meter, "Play one string", 0, 98, 752, muted);
+    tuner_status_ = label(meter, "Play one string", 0, 88, 752, muted);
     lv_obj_set_style_text_align(tuner_status_, LV_TEXT_ALIGN_CENTER, 0);
     // +/- 5 cents is the green target; the scale spans a whole semitone.
-    auto* target = panel(meter, 346, 142, 60, 58, 0x14331f);
+    auto* target = panel(meter, 346, 118, 60, 50, 0x14331f);
     lv_obj_set_style_border_width(target, 0, 0);
     for (int i = 0; i <= 10; ++i) {
-        auto* mark = panel(meter, 76 + i * 60 - 1, i == 5 ? 146 : 158, 2, i == 5 ? 48 : 24, i == 5 ? accent : muted);
+        auto* mark = panel(meter, 76 + i * 60 - 1, i == 5 ? 119 : 131, 2, i == 5 ? 48 : 24, i == 5 ? accent : muted);
         lv_obj_set_style_border_width(mark, 0, 0);
     }
-    label(meter, "-50  FLAT", 42, 208, 150, muted, &lv_font_montserrat_14);
-    auto* centre = label(meter, "0", 346, 208, 60, accent, &lv_font_montserrat_14);
+    label(meter, "-50  FLAT", 42, 174, 150, muted, &lv_font_montserrat_14);
+    auto* centre = label(meter, "0", 346, 174, 60, accent, &lv_font_montserrat_14);
     lv_obj_set_style_text_align(centre, LV_TEXT_ALIGN_CENTER, 0);
-    auto* sharp = label(meter, "SHARP  +50", 560, 208, 150, muted, &lv_font_montserrat_14);
+    auto* sharp = label(meter, "SHARP  +50", 560, 174, 150, muted, &lv_font_montserrat_14);
     lv_obj_set_style_text_align(sharp, LV_TEXT_ALIGN_RIGHT, 0);
-    tuner_needle_ = panel(meter, 372, 142, 8, 58, accent);
+    tuner_needle_ = panel(meter, 372, 118, 8, 50, accent);
     lv_obj_set_style_border_width(tuner_needle_, 0, 0);
     lv_obj_remove_flag(tuner_needle_, LV_OBJ_FLAG_CLICKABLE);
-    parameter_tile(parent, m, parameter(m, "tuning"), 24, 268, 72);
-    button(parent, "All", 408, 280, 80, Action::ParameterLayout);
-    button(parent, m.bypassed ? "Enable" : "Bypass", 500, 280, 112, Action::Bypass, m.id);
-    button(parent, "Actions", 640, 280, 136, Action::OpenActions, m.id);
     update_tuner();
 }
 void Application::update_tuner() {
@@ -1481,103 +1507,134 @@ void Application::update_tuner() {
     if (detail != lv_label_get_text(tuner_detail_)) lv_label_set_text(tuner_detail_, detail.c_str());
     if (status != lv_label_get_text(tuner_status_)) lv_label_set_text(tuner_status_, status.c_str());
 }
-void Application::parameter_tile(lv_obj_t* parent, const Module& m, const Parameter& p, int x, int y, int height, std::uint32_t ink) {
-    if (!ink) ink = module_ink(m);
-    auto* tile = panel(parent, x, y, 368, height);
-    auto* name = label(tile, upper(p.name), 20, 16, 160, muted, &peepo_bold_14);
-    lv_obj_set_style_text_letter_space(name, 1, 0);
-    lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, 18);
-    // Unpinned encoders follow the tiles in the order they are drawn; pinned
-    // controls are named on their target wherever it appears.
-    const auto follower = "enc" + std::to_string(visible_.size() + 1);
-    visible_.push_back({m.id, p.symbol});
-    std::string badges;
+void Application::parameter_bar(lv_obj_t* parent, const Module& m, const Parameter& p) {
+    auto* bar = panel(parent, 0, 0, bar_width, bar_height);
+    lv_obj_set_style_radius(bar, 10, 0); lv_obj_set_style_clip_corner(bar, true, 0);
+    lv_obj_add_flag(bar, LV_OBJ_FLAG_PRESS_LOCK);
+    auto* fill = panel(bar, 0, 0, 0, bar_height, module_fill(m));
+    lv_obj_set_style_radius(fill, 0, 0); lv_obj_set_style_border_width(fill, 0, 0);
+    lv_obj_remove_flag(fill, LV_OBJ_FLAG_CLICKABLE);
+    // Under the name: the same time in milliseconds at the module's own tempo,
+    // and the controls pinned to it.
+    std::string caption;
+    if (const auto* d = definition(m.uri); p.unit == beats_unit && d && !d->tempo_symbol.empty())
+        for (const auto& t : m.parameters)
+            if (t.symbol == d->tempo_symbol && t.value > 0) {
+                std::ostringstream ms;
+                ms << std::fixed << std::setprecision(0) << 60000 / t.value * p.value << " ms at " << t.value << " BPM";
+                caption = ms.str();
+            }
     for (const auto& a : graph_.assignments)
         if (a.module == m.id && a.action == ControlAction::Parameter && a.parameter == p.symbol && assignment_target(graph_, a))
-            badges += (badges.empty() ? "" : " ") + std::string(is_encoder(a.control) ? "E" : "S") + a.control.substr(is_encoder(a.control) ? 3 : 5);
-    if (!badges.empty()) badges += " pinned";
-    else if (visible_.size() <= layout_.encoders && !pinned(follower)) badges = "E" + follower.substr(3);
-    // Compact tiles have no room beside their slider.
-    if (!badges.empty() && height >= 100) {
-        auto* badge = label(tile, badges, 196, height - 24, 156, badges.ends_with("pinned") ? accent : faint, &peepo_mono_14);
-        lv_obj_set_style_text_align(badge, LV_TEXT_ALIGN_RIGHT, 0);
-    }
-    auto* value = label(tile, format_value(p), 180, 10, 168, text, &peepo_bold_24);
+            caption += (caption.empty() ? "" : "  ") + std::string(is_encoder(a.control) ? "E" : "S") + a.control.substr(is_encoder(a.control) ? 3 : 5);
+    auto* name = label(bar, upper(p.name), 16, caption.empty() ? 15 : 6, 200, text, &peepo_bold_14);
+    lv_obj_set_style_text_letter_space(name, 1, 0);
+    lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, 18);
+    auto* value = label(bar, "", 196, 13, 160, text, &peepo_bold_18);
     lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_t* control = nullptr;
-    if (p.kind == ParameterKind::Toggle) {
-        control = lv_switch_create(tile); lv_obj_set_pos(control, 20, 54); lv_obj_set_size(control, 80, 44);
-        lv_obj_set_style_bg_color(control, color(border), LV_PART_MAIN);
-        lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_MAIN);
-        lv_obj_set_style_radius(control, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-        lv_obj_set_style_bg_color(control, color(text), LV_PART_KNOB);
-        lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_KNOB);
-        lv_obj_set_style_radius(control, LV_RADIUS_CIRCLE, LV_PART_KNOB);
-        lv_obj_set_style_pad_all(control, -4, LV_PART_KNOB);
-        if (p.value >= 0.5) lv_obj_add_state(control, LV_STATE_CHECKED);
-        const auto checked_indicator = static_cast<lv_style_selector_t>(LV_PART_INDICATOR) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED);
-        lv_obj_set_style_bg_color(control, color(ink), checked_indicator);
-        lv_obj_set_style_bg_opa(control, LV_OPA_COVER, checked_indicator);
-        lv_obj_set_style_radius(control, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
-    } else if (p.kind == ParameterKind::Enumeration && segments_fit(p) && height >= 100) {
-        // A short list of modes: one button each, the chosen one marked, so a
-        // mode is one tap rather than a menu to open.
-        const int count = static_cast<int>(p.choices.size()), gap = 8, width = (328 - gap * (count - 1)) / count;
-        for (int i = 0; i < count; ++i) {
-            auto* choice = button(tile, p.choices[static_cast<std::size_t>(i)], 20 + i * (width + gap), 50, width, Action::ParameterChoice, m.id, p.symbol, i);
-            lv_obj_set_height(choice, 44);
-            if (auto* l = lv_obj_get_child(choice, 0)) lv_obj_set_style_text_letter_space(l, 0, 0);
-            if (static_cast<int>(p.value) == i) mark(choice, ink);
-        }
+    lv_label_set_long_mode(value, LV_LABEL_LONG_DOT); lv_obj_set_height(value, 22);
+    if (!caption.empty()) label(bar, caption, 16, 25, 200, muted, &peepo_mono_14);
+    paint_bar(bar, p);
+    bind(bar, Action::Parameter, m.id, p.symbol);
+    bars_.push_back({m.id, p.symbol, bar});
+}
+void Application::file_bar(lv_obj_t* parent, const Module& m) {
+    const auto& file = definition(m.uri)->file;
+    auto* bar = panel(parent, 0, 0, bar_width, bar_height);
+    lv_obj_set_style_radius(bar, 10, 0);
+    // Children as on a parameter bar: an empty fill, the name, the value.
+    lv_obj_remove_flag(panel(bar, 0, 0, 0, bar_height), LV_OBJ_FLAG_CLICKABLE);
+    auto* name = label(bar, upper(file.label), 16, 15, 120, text, &peepo_bold_14);
+    lv_obj_set_style_text_letter_space(name, 1, 0);
+    // The file's name only: where it lives says nothing on a small screen.
+    auto* chosen = label(bar, m.file.empty() ? "None chosen" : file_name(m.file), 136, 13, 220, m.file.empty() ? faint : text, &peepo_bold_18);
+    lv_obj_set_style_text_align(chosen, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_label_set_long_mode(chosen, LV_LABEL_LONG_DOT); lv_obj_set_height(chosen, 22);
+    if (files_ && engine_.state() == EngineState::Ready) bind(bar, Action::ChooseFile, m.id);
+    else { lv_obj_remove_flag(bar, LV_OBJ_FLAG_CLICKABLE); lv_obj_set_style_opa(bar, LV_OPA_40, 0); }
+    bars_.push_back({m.id, {}, bar, true});
+}
+void Application::focus_parameter(std::size_t index) {
+    if (bars_.empty()) return;
+    index = std::min(index, bars_.size() - 1);
+    const auto* m = find_module(graph_, bars_[index].id);
+    if (!m) return;
+    if (parameter_focus_ < bars_.size()) highlight(bars_[parameter_focus_].widget, false, false, 0);
+    parameter_focus_ = index; adjusting_ = false;
+    highlight(bars_[index].widget, true, false, module_ink(*m));
+    lv_obj_scroll_to_view(bars_[index].widget, LV_ANIM_OFF);
+    if (bars_[index].file) { message(definition(m->uri)->file.label + ": push to choose a file."); return; }
+    const auto& p = parameter(*m, bars_[index].symbol);
+    message(p.name + " " + format_value(p));
+}
+void Application::activate_parameter() {
+    if (parameter_focus_ >= bars_.size()) return;
+    const auto& bar = bars_[parameter_focus_];
+    const auto* m = find_module(graph_, bar.id);
+    if (!m) return;
+    if (bar.file) {
+        if (files_ && engine_.state() == EngineState::Ready) { selected_ = m->id; file_page_ = 0; navigate(Page::FilePicker); }
+        else message("Files are not available here.");
         return;
-    } else if (p.kind == ParameterKind::Enumeration) {
-        control = lv_dropdown_create(tile); lv_obj_set_pos(control, 20, 54); lv_obj_set_size(control, 328, 48);
-        std::string options; for (const auto& choice : p.choices) { if (!options.empty()) options += '\n'; options += choice; }
-        lv_dropdown_set_options(control, options.c_str()); lv_dropdown_set_selected(control, static_cast<unsigned>(p.value));
-        lv_obj_set_style_text_font(control, &lv_font_montserrat_18, 0);
-        lv_obj_set_style_text_color(control, color(text), 0); lv_obj_set_style_bg_color(control, color(pressed_fill), 0);
-        lv_obj_set_style_bg_opa(control, LV_OPA_COVER, 0); lv_obj_set_style_pad_all(control, 12, 0);
-        lv_obj_set_style_radius(control, 8, 0); lv_obj_set_style_border_width(control, 1, 0); lv_obj_set_style_border_color(control, color(rim), 0);
-        auto* list = lv_dropdown_get_list(control);
-        lv_obj_set_style_bg_color(list, color(surface), 0); lv_obj_set_style_text_color(list, color(text), 0);
-        lv_obj_set_style_text_font(list, &lv_font_montserrat_18, 0); lv_obj_set_style_text_line_space(list, 18, 0);
-        lv_obj_set_style_radius(list, 8, 0); lv_obj_set_style_border_width(list, 1, 0); lv_obj_set_style_border_color(list, color(rim), 0);
-        lv_obj_set_style_pad_all(list, 12, 0);
-        const auto chosen = static_cast<lv_style_selector_t>(LV_PART_SELECTED) | static_cast<lv_style_selector_t>(LV_STATE_CHECKED);
-        lv_obj_set_style_bg_color(list, color(ink), chosen); lv_obj_set_style_text_color(list, color(background), chosen);
-        lv_obj_set_style_bg_color(list, color(pressed_fill), static_cast<lv_style_selector_t>(LV_PART_SELECTED) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
-    } else {
-        // Whole numbers also step one at a time, which a slider alone makes
-        // fiddly; a time in beats steps from one note value to the next.
-        const bool beats = p.unit == beats_unit;
-        const bool steps = (p.kind == ParameterKind::Integer || beats) && height >= 100;
-        control = lv_slider_create(tile); lv_obj_set_pos(control, steps ? 96 : 30, height < 110 ? 48 : 70); lv_obj_set_size(control, steps ? 176 : 308, 12);
-        if (steps) {
-            for (const int direction : {-1, 1}) {
-                auto* step = button(tile, direction < 0 ? "-" : "+", direction < 0 ? 20 : 300, 52, 48, Action::ParameterStep, m.id, p.symbol, direction);
-                lv_obj_set_height(step, 44);
-                const bool end = beats ? step_note(p.value, direction, p.minimum, p.maximum) == p.value
-                                       : (direction < 0 && p.value <= p.minimum) || (direction > 0 && p.value >= p.maximum);
-                if (end) lv_obj_add_state(step, LV_STATE_DISABLED);
-            }
-        }
-        // The same time in milliseconds, at the module's own tempo.
-        if (const auto* d = definition(m.uri); beats && height >= 100 && d && !d->tempo_symbol.empty())
-            for (const auto& t : m.parameters)
-                if (t.symbol == d->tempo_symbol && t.value > 0) {
-                    std::ostringstream ms;
-                    ms << std::fixed << std::setprecision(0) << 60000 / t.value * p.value << " ms at " << t.value << " BPM";
-                    label(tile, ms.str(), 20, height - 22, 176, faint, &peepo_mono_14);
-                }
-        lv_slider_set_range(control, 0, 1000); lv_slider_set_value(control, static_cast<int>(normalized_value(p) * 1000), LV_ANIM_OFF);
-        lv_obj_set_style_bg_color(control, color(border), LV_PART_MAIN); lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_MAIN);
-        lv_obj_set_style_bg_color(control, color(ink), LV_PART_INDICATOR); lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_INDICATOR);
-        lv_obj_set_style_bg_color(control, color(text), LV_PART_KNOB); lv_obj_set_style_pad_all(control, 10, LV_PART_KNOB);
-        lv_obj_set_style_bg_opa(control, LV_OPA_COVER, LV_PART_KNOB); lv_obj_set_style_radius(control, LV_RADIUS_CIRCLE, LV_PART_KNOB);
-        lv_obj_set_ext_click_area(control, 20);
     }
-    if (auto* group = lv_group_get_default()) lv_group_add_obj(group, control);
-    bind(control, Action::Parameter, m.id, p.symbol, 0, value);
+    const auto& p = parameter(*m, bar.symbol);
+    if (p.kind == ParameterKind::Toggle || p.kind == ParameterKind::Enumeration) { submit(SetParameter{m->id, p.symbol, stepped_choice(p)}); return; }
+    // With one encoder, its push switches between choosing a bar and turning it.
+    adjusting_ = !adjusting_;
+    highlight(bar.widget, true, adjusting_, module_ink(*m));
+    message(adjusting_ ? "Encoder 1 turns " + p.name + "; push it again to move on." : "Encoder 1 picks a control again.");
+}
+void Application::open_module(InstanceId id) {
+    // The same module again keeps its place; another starts at the top.
+    if (id != selected_) { parameter_focus_ = 0; parameter_scroll_ = 0; }
+    selected_ = id; patch_focus_ = id; adjusting_ = false;
+    message("Drag a bar to set it. E1 picks a bar, E2 turns it.");
+    navigate(Page::Parameters);
+}
+Page Application::back_page() const {
+    // Back returns to where the page was opened from.
+    switch (page_) {
+    case Page::NamePatch: return Page::Patches;
+    case Page::Controls: case Page::Diagnostics: case Page::Power: return Page::Settings;
+    case Page::AssignPicker: case Page::AssignmentDetail: return Page::Controls;
+    case Page::FilePicker: return Page::Parameters;
+    default: return Page::Patch;
+    }
+}
+void Application::turn_parameter(InstanceId id, const std::string& symbol, const Gesture& g, const Assignment* pin) {
+    const auto* m = find_module(graph_, id);
+    const Parameter* p = nullptr;
+    if (m) for (const auto& candidate : m->parameters) if (candidate.symbol == symbol) p = &candidate;
+    if (!p) return;
+    // Continue from a value still on its way to the engine, not the last acknowledged one.
+    const bool streaming = stream_ && stream_->id == id && stream_->symbol == symbol;
+    const auto current = streaming ? stream_->latest : p->value;
+    // A time in beats turns from one note value to the next; fine turning is free.
+    const auto next = p->unit == beats_unit && !g.fine
+        ? step_note(current, pin && pin->inverted ? -g.steps : g.steps, pin ? pin->minimum : p->minimum, pin ? pin->maximum : p->maximum)
+        : turned_value(*p, current, g.steps, g.fine, g.interval_ms, pin);
+    auto shown = *p; shown.value = next;
+    message(control_label(g.control) + (g.fine ? " (fine): " : ": ") + m->name + " / " + p->name + " " + format_value(shown) + (next == current ? " (limit)" : ""));
+    if (next == current) return;
+    // The bar follows at once; the engine's answer confirms it.
+    for (const auto& bar : bars_) if (bar.id == id && bar.symbol == symbol) paint_bar(bar.widget, shown);
+    if (p->kind == ParameterKind::Continuous || p->kind == ParameterKind::Integer) stream_parameter(id, symbol, next);
+    else submit(SetParameter{id, symbol, next});
+}
+void Application::focus_module(int steps) {
+    // In signal order: left to right, then top to bottom.
+    std::vector<const Module*> order;
+    for (const auto& m : graph_.modules) if (!m.fixed) order.push_back(&m);
+    if (order.empty()) { message("No modules yet. Add one with + Add."); return; }
+    std::stable_sort(order.begin(), order.end(), [](const Module* a, const Module* b) { return a->x != b->x ? a->x < b->x : a->y < b->y; });
+    const auto last = static_cast<int>(order.size()) - 1;
+    const auto it = std::find_if(order.begin(), order.end(), [&](const Module* m) { return m->id == patch_focus_; });
+    const int at = it == order.end() ? (steps > 0 ? -1 : last + 1) : static_cast<int>(it - order.begin());
+    const auto* m = order[static_cast<std::size_t>(std::clamp(at + steps, 0, last))];
+    patch_focus_ = m->id;
+    reveal(m->x, m->y);
+    message(m->name + ": push encoder 1 to open it.");
+    rebuild_ = true;
 }
 void Application::set_tempo(double bpm) {
     // Whole beats per minute: what a module's BPM control needs, and what the screen shows.
@@ -1625,18 +1682,6 @@ void Application::tempo(lv_obj_t* parent) {
     lv_label_set_long_mode(who, LV_LABEL_LONG_DOT); lv_obj_set_height(who, 60);
     label(parent, "Saved with the patch. Encoder 1 turns it; a footswitch can tap it.", 408, 292, 368, faint, &lv_font_montserrat_14);
 }
-void Application::file_tile(lv_obj_t* parent, const Module& m, int x, int y) {
-    const auto& file = definition(m.uri)->file;
-    auto* tile = panel(parent, x, y, 368, 120);
-    auto* caption = label(tile, upper(file.label), 20, 16, 200, muted, &peepo_bold_14);
-    lv_obj_set_style_text_letter_space(caption, 1, 0);
-    // The file's name only: where it lives says nothing on a small screen.
-    auto* name = label(tile, m.file.empty() ? "None chosen" : file_name(m.file), 20, 44, 328, m.file.empty() ? faint : text, &peepo_bold_20);
-    lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, 26);
-    auto* choose = button(tile, m.file.empty() ? "Choose" : "Change", 208, 70, 140, Action::ChooseFile, m.id);
-    lv_obj_set_height(choose, 40);
-    if (!files_ || engine_.state() != EngineState::Ready) lv_obj_add_state(choose, LV_STATE_DISABLED);
-}
 void Application::file_picker(lv_obj_t* parent) {
     const auto* m = find_module(graph_, selected_);
     const auto* d = m ? definition(m->uri) : nullptr;
@@ -1673,49 +1718,6 @@ void Application::file_picker(lv_obj_t* parent) {
         }
         if (found[i].engine_path == m->file) mark(choice, ink);
     }
-}
-void Application::clouds_parameters(lv_obj_t* parent, const Module& m) {
-    const auto ink = module_ink(m);
-    parameter_page_ = std::min<std::size_t>(parameter_page_, 1);
-    button(parent, m.bypassed ? "Enable" : "Bypass", 24, 12, 104, Action::Bypass, m.id);
-    button(parent, "Delete", 140, 12, 104, Action::Remove, m.id);
-    auto* texture = button(parent, "Texture", 264, 12, 128, Action::ParameterPage, 0, {}, 0);
-    auto* performance = button(parent, "Mix / hold", 408, 12, 136, Action::ParameterPage, 0, {}, 1);
-    lv_obj_set_style_border_color(parameter_page_ ? performance : texture, color(ink), 0);
-    lv_obj_set_style_border_width(parameter_page_ ? performance : texture, 2, 0);
-    button(parent, "All", 552, 12, 72, Action::ParameterLayout);
-    button(parent, "Actions", 640, 12, 136, Action::OpenActions, m.id);
-    if (!parameter_page_) {
-        const char* symbols[] = {"position", "size", "density", "pitch"};
-        for (int i = 0; i < 4; ++i)
-            parameter_tile(parent, m, parameter(m, symbols[i]), 24 + (i % 2) * 384, 76 + (i / 2) * 136, 120, ink);
-    } else {
-        label(parent, "Blend the texture. Hold it with Freeze.", 24, 80, 752, ink, &peepo_bold_20);
-        parameter_tile(parent, m, parameter(m, "mix"), 24, 120, 120, ink);
-        parameter_tile(parent, m, parameter(m, "freeze"), 408, 120, 120, ink);
-        label(parent, "Freeze is a toggle; Mix keeps its own value.\nThese are simulator controls, with no audio processing yet.", 24, 268, 752, muted);
-    }
-}
-void Application::delay_parameters(lv_obj_t* parent, const Module& m) {
-    const auto ink = module_ink(m);
-    button(parent, m.bypassed ? "Enable" : "Bypass", 24, 12, 104, Action::Bypass, m.id);
-    button(parent, "Delete", 140, 12, 104, Action::Remove, m.id);
-    label(parent, "Echo timing and character", 264, 27, 276, muted, &lv_font_montserrat_14);
-    button(parent, "All", 552, 12, 72, Action::ParameterLayout);
-    button(parent, "Actions", 640, 12, 136, Action::OpenActions, m.id);
-    const auto& mode = parameter(m, "mode");
-    label(parent, "CHARACTER", 24, 76, 300, ink, &lv_font_montserrat_14);
-    for (std::size_t i = 0; i < mode.choices.size(); ++i) {
-        auto* choice = button(parent, mode.choices[i], 24 + static_cast<int>(i) * 256, 100, 240, Action::ParameterChoice, m.id, mode.symbol, static_cast<int>(i));
-        if (mode.value == static_cast<double>(i)) {
-            lv_obj_set_style_border_color(choice, color(ink), 0); lv_obj_set_style_border_width(choice, 2, 0);
-            lv_obj_set_style_text_color(lv_obj_get_child(choice, 0), color(ink), 0);
-        }
-    }
-    parameter_tile(parent, m, parameter(m, "time"), 24, 176, 156, ink);
-    label(parent, "Short echoes to long repeats", 44, 288, 328, muted, &lv_font_montserrat_14);
-    parameter_tile(parent, m, parameter(m, "feedback"), 408, 176, 72, ink);
-    parameter_tile(parent, m, parameter(m, "mix"), 408, 260, 72, ink);
 }
 void Application::confirm_action(lv_obj_t* parent) {
     auto* heading = label(parent, confirmation_.heading, 24, 44, 752, accent, &peepo_bold_24);
@@ -1896,7 +1898,7 @@ void Application::settings(lv_obj_t* parent) {
     button(parent, "Engine error", 376, 142, 180, Action::State, 0, {}, static_cast<int>(EngineState::Error));
     button(parent, "Reject next edit", 24, 216, 220, Action::Reject);
     button(parent, "Missing module", 264, 216, 220, Action::MissingFixture);
-    label(parent, "Keys: Q/A W/S E/D R/F turn encoders 1-4, keys 1-4 push them, Z X C are the stomps.", 24, 276, 752, muted, &lv_font_montserrat_14);
+    label(parent, "Keys: Q/A W/S turn encoders 1 and 2, keys 1 and 2 push them, Z X C are the stomps.", 24, 276, 752, muted, &lv_font_montserrat_14);
 }
 namespace {
 std::string decimal(double value, int places) {
@@ -1986,13 +1988,6 @@ const Assignment* Application::pinned(const std::string& control) const {
     const auto it = std::find_if(graph_.assignments.begin(), graph_.assignments.end(), [&](const Assignment& a) { return a.control == control; });
     return it == graph_.assignments.end() ? nullptr : &*it;
 }
-std::size_t Application::parameter_pages(const Module& m) const {
-    const auto layout = module_layout(m);
-    if (!generic_parameters_ && layout == ModuleLayout::Clouds) return 2;
-    if (!generic_parameters_ && layout == ModuleLayout::Delay) return 1;
-    if (!generic_parameters_ && layout == ModuleLayout::Tuner) return 1;
-    return parameter_pages_of(m).size();
-}
 void Application::gesture(const Gesture& g) {
     // Typing a name: the keys standing in for controls are text there.
     // Going down: nothing is changed any more.
@@ -2004,14 +1999,46 @@ void Application::gesture(const Gesture& g) {
 }
 void Application::encoder(const Gesture& g) {
     const auto name = control_label(g.control);
-    // A pinned encoder controls its target on every page; an unpinned one
-    // follows the parameter page in view, tile by tile.
-    const auto* pin = pinned(g.control);
-    // On the browser an unpinned encoder 1 picks the group, the others step
-    // through its cards; a push adds the picked one.
-    if (!pin && page_ == Page::Browser && (g.kind == Gesture::Kind::Turn || g.kind == Gesture::Kind::Tap)) {
-        if (g.kind == Gesture::Kind::Tap) { if (!browser_pick_.empty()) add_module(browser_pick_); return; }
-        if (g.control == "enc1") {
+    const bool turn = g.kind == Gesture::Kind::Turn, tap = g.kind == Gesture::Kind::Tap;
+    // A pinned encoder controls its target on every page: a tap shows it, a hold unpins it.
+    if (const auto* pin = pinned(g.control)) {
+        const auto* m = assignment_parameter(graph_, *pin) ? find_module(graph_, pin->module) : nullptr;
+        if (g.kind == Gesture::Kind::Hold) { submit(Unassign{g.control}); message(name + " unpinned: it moves through the page again."); }
+        else if (!m) message(name + " is pinned to a module that is gone. Settings > Controls repairs it.");
+        else if (turn) turn_parameter(m->id, pin->parameter, g, pin);
+        else if (tap) { focus_symbol_ = pin->parameter; open_module(m->id); }
+        return;
+    }
+    // Two encoders run everything. Encoder 1 moves through the page and
+    // pushes what it is on; encoder 2 turns the value it is on. Holding
+    // encoder 1 goes back. A single encoder does both: its push on a value
+    // switches between moving and turning.
+    const bool first = g.control == "enc1";
+    if (g.kind == Gesture::Kind::Hold) {
+        if (first && page_ != Page::Patch) navigate(back_page());
+        return;
+    }
+    switch (page_) {
+    case Page::Parameters:
+        if (bars_.empty()) return;
+        if (turn && first && !adjusting_) focus_parameter(static_cast<std::size_t>(std::max(0, static_cast<int>(parameter_focus_) + g.steps)));
+        else if (turn && bars_[parameter_focus_].file) message("Push to choose a file.");
+        else if (turn) turn_parameter(bars_[parameter_focus_].id, bars_[parameter_focus_].symbol, g, nullptr);
+        else if (tap) activate_parameter();
+        return;
+    case Page::Patch:
+        if (first) {
+            if (turn) focus_module(g.steps);
+            else if (tap && find_module(graph_, patch_focus_)) open_module(patch_focus_);
+            else if (tap) message("Turn encoder 1 to pick a module.");
+            return;
+        }
+        break;
+    case Page::Browser:
+        if (tap) { if (!browser_pick_.empty()) add_module(browser_pick_); return; }
+        if (!turn) return;
+        if (!first) {
+            // Encoder 2 picks the group.
             const auto count = static_cast<int>(browser_groups_.size());
             const auto at = static_cast<int>(std::find(browser_groups_.begin(), browser_groups_.end(), browser_group_) - browser_groups_.begin());
             browser_group_ = browser_groups_[static_cast<std::size_t>(((at + g.steps) % count + count) % count)];
@@ -2023,65 +2050,24 @@ void Application::encoder(const Gesture& g) {
             browser_pick(browser_order_[static_cast<std::size_t>(std::clamp(at + g.steps, 0, last))], true);
         }
         return;
-    }
-    // On the Tempo page an unpinned encoder 1 sets the tempo, a beat per minute a detent.
-    if (!pin && page_ == Page::Tempo && g.control == "enc1" && g.kind == Gesture::Kind::Turn) {
-        set_tempo((tempo_sent_ ? *tempo_sent_ : graph_.tempo) + g.steps);
+    case Page::Tempo:
+        // Either encoder sets the tempo, a beat per minute a detent; a push taps it.
+        if (turn) set_tempo((tempo_sent_ ? *tempo_sent_ : graph_.tempo) + g.steps);
+        else if (tap) tap_tempo();
         return;
+    default: break;
     }
-    InstanceId id = 0;
-    std::string symbol;
-    if (pin && assignment_parameter(graph_, *pin)) { id = pin->module; symbol = pin->parameter; }
-    else if (!pin && page_ == Page::Parameters) {
-        const auto index = static_cast<std::size_t>(std::stoul(g.control.substr(3))) - 1;
-        if (index < visible_.size()) { id = visible_[index].id; symbol = visible_[index].symbol; }
-    }
-    const auto* m = id ? find_module(graph_, id) : nullptr;
-    const Parameter* p = nullptr;
-    if (m) for (const auto& candidate : m->parameters) if (candidate.symbol == symbol) p = &candidate;
-    switch (g.kind) {
-    case Gesture::Kind::Turn: {
-        if (!p) {
-            message(pin ? name + " is pinned to a module that is gone. Settings > Controls repairs it." :
-                    page_ == Page::Parameters ? name + " has no control on this page." : name + " is not pinned. Open a module's parameters, or Settings > Controls.");
-            return;
-        }
-        // Continue from a value still on its way to the engine, not the last acknowledged one.
-        const bool streaming = stream_ && stream_->id == id && stream_->symbol == symbol;
-        const auto current = streaming ? stream_->latest : p->value;
-        // A time in beats turns from one note value to the next; fine turning is free.
-        const auto next = p->unit == beats_unit && !g.fine
-            ? step_note(current, pin && pin->inverted ? -g.steps : g.steps, pin ? pin->minimum : p->minimum, pin ? pin->maximum : p->maximum)
-            : turned_value(*p, current, g.steps, g.fine, g.interval_ms, pin);
-        auto shown = *p; shown.value = next;
-        message(name + (g.fine ? " (fine): " : ": ") + m->name + " / " + p->name + " " + format_value(shown) + (next == current ? " (limit)" : ""));
-        if (next == current) return;
-        if (p->kind == ParameterKind::Continuous || p->kind == ParameterKind::Integer) stream_parameter(id, symbol, next);
-        else submit(SetParameter{id, symbol, next});
-        return;
-    }
-    case Gesture::Kind::Tap:
-        if (pin && m) {
-            // Show what the pinned encoder controls.
-            selected_ = m->id; generic_parameters_ = false;
-            parameter_page_ = module_layout(*m) == ModuleLayout::Generic ? page_of(*m, symbol) : 0;
-            navigate(Page::Parameters);
-        } else if (page_ == Page::Parameters) {
-            if (const auto* shown = find_module(graph_, selected_)) { parameter_page_ = (parameter_page_ + 1) % parameter_pages(*shown); rebuild_ = true; }
-        } else message(name + " push: opens what it is pinned to, or the next page of parameters.");
-        return;
-    case Gesture::Kind::Hold:
-        if (pin) {
-            submit(Unassign{g.control});
-            message(name + " unpinned: it follows the parameter page again.");
-        } else if (p) {
-            Assignment a;
-            a.control = g.control; a.module = id; a.parameter = symbol; a.minimum = p->minimum; a.maximum = p->maximum;
-            submit(Assign{a});
-            message(name + " pinned to " + m->name + " / " + p->name + " on every page. Hold again to unpin.");
-        } else message("Open a module's parameters, then hold an encoder to pin the control it turns.");
-        return;
-    default: return;
+    // Everywhere else, and encoder 2 on the patch: step through the page's
+    // buttons, and push the one highlighted.
+    auto* group = lv_group_get_default();
+    if (!group) return;
+    if (turn) {
+        if (auto* old = lv_group_get_focused(group)) lv_obj_remove_state(old, LV_STATE_FOCUS_KEY);
+        for (int i = 0; i < std::abs(g.steps); ++i) (g.steps > 0 ? lv_group_focus_next : lv_group_focus_prev)(group);
+        if (auto* now = lv_group_get_focused(group)) { lv_obj_add_state(now, LV_STATE_FOCUS_KEY); lv_obj_scroll_to_view_recursive(now, LV_ANIM_OFF); }
+    } else if (tap) {
+        auto* focused = lv_group_get_focused(group);
+        if (focused && !lv_obj_has_state(focused, LV_STATE_DISABLED)) lv_obj_send_event(focused, LV_EVENT_CLICKED, nullptr);
     }
 }
 void Application::stomp(const Gesture& g) {
@@ -2205,7 +2191,8 @@ std::string Application::assignment_text(const std::string& control) const {
     }
     if (store_) if (const auto global = store_->global_controls(); global.contains(control))
         return global.at(control) == "next-patch" ? "Next patch (every patch)" : global.at(control) == "tap-tempo" ? "Tap tempo (every patch)" : "Previous patch (every patch)";
-    return is_encoder(control) ? "Follows the parameter page" : "Not assigned";
+    if (control == "enc1") return "Moves through the page; hold to go back";
+    return is_encoder(control) ? "Turns the highlighted control" : "Not assigned";
 }
 void Application::controls(lv_obj_t* parent) {
     const auto ids = layout_.ids();

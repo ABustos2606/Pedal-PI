@@ -1,10 +1,12 @@
 # Physical controls
 
+**Changed 17 October 2026:** two encoders instead of four, with a new encoder model; see [module page and two encoders](31-module-page-and-two-encoders.md). The sections below are updated; the stomps are unchanged.
+
 **Implemented:** 14 October 2026, on the Windows PC, without the hardware. **Scope:** P7.2 (simulated controls), P7.4 (mapping rules), P7.5 (assignment screen and storage), the patch-independent part of P7.6, and a wiring and transport proposal for P7.1. **Verified with:** unit tests, real LVGL pointer checks, the simulator, and against the patched Ingen under WSL, where assignments are saved and reloaded. **Not covered:** the encoders and switches themselves, the GPIO driver (P7.3), tap tempo and the resilience checks of P7.7.
 
 ## The hardware
 
-The user owns **four 20-pulse rotary encoders with push switches** and can get **momentary SPST footswitches**. Beebo uses two encoders and three stomps; the proposal here is four encoders and three stomps (D11, now the agreed starting point).
+The user owns **four 20-pulse rotary encoders with push switches** and can get **momentary SPST footswitches**. Beebo uses two encoders and three stomps. Peepo first planned four encoders and three stomps (D11); since 17 October 2026 it uses **two encoders and three stomps**.
 
 **Momentary SPST footswitches are the right choice.** A momentary switch tells the instrument only "pressed" and "released"; what that means is decided in software, per patch:
 
@@ -14,19 +16,19 @@ The user owns **four 20-pulse rotary encoders with push switches** and can get *
 
 A **latching** switch would be wrong here. Its physical position would disagree with the patch as soon as the patch changes, or the same effect is switched on the screen; it can also do nothing useful for momentary, tap or hold actions. Prefer "soft-touch" momentary types if quiet operation on stage matters. Both kinds work electrically.
 
-Four encoders suit this interface: a generic parameter page shows four controls, and the encoders follow them one-to-one.
+Two encoders suit the module page, which shows a dozen controls at once: one moves between them, the other turns the one highlighted.
 
 ## Wiring proposal (P7.1 — proposed, to verify on the Pi)
 
-Everything connects directly to the Pi 5's header, with no extra board: the screen uses HDMI and USB, so the GPIO header is free. Each encoder needs three GPIOs (A, B, push) and each stomp one, **15 GPIOs** in total, all switching to ground with the Pi's internal pull-ups.
+Everything connects directly to the Pi 5's header, with no extra board: the screen uses HDMI and USB, so the GPIO header is free. Each encoder needs three GPIOs (A, B, push) and each stomp one, **9 GPIOs** in total, all switching to ground with the Pi's internal pull-ups.
 
 | Control | A | B | Push / switch |
 | --- | --- | --- | --- |
 | Encoder 1 | GPIO 5 | GPIO 6 | GPIO 12 |
 | Encoder 2 | GPIO 13 | GPIO 16 | GPIO 17 |
-| Encoder 3 | GPIO 22 | GPIO 23 | GPIO 24 |
-| Encoder 4 | GPIO 25 | GPIO 26 | GPIO 27 |
 | Stomp 1–3 | GPIO 4, GPIO 7, GPIO 8 | | |
+
+GPIO 22–27, which the third and fourth encoders had, are free.
 
 - **Pins left free.** I²C (GPIO 2/3, which have fixed pull-ups), the UART (14/15) and I²S (18–21) stay free, in case an audio HAT or a serial console is wanted. Stomps 2 and 3 use SPI0's chip selects, which nothing here needs.
 - **Encoders.** The common pin and one push-switch leg go to ground.
@@ -43,12 +45,15 @@ The kernel decodes the quadrature (and so ignores contact bounce on A/B). Each e
 
 Every source — the simulator's keys today, the GPIO adapter later — produces the same raw events: **Turn** (detents, clockwise positive), **Press** and **Release**. `ControlRecognizer` turns them into gestures; the interface applies them. Nothing else depends on where the events come from.
 
-**Encoders**
+**Encoders** (17 October 2026)
 
-- **Turn** adjusts a value. By default an encoder **follows the parameter page in view**: encoder 1 the first tile, encoder 2 the second, and so on, on generic and custom pages alike. Each tile is marked E1–E4. On other pages an unpinned encoder does nothing, and says so.
+- **Encoder 1 moves.** On a module page it moves a white highlight from bar to bar; on the patch it highlights a module, left to right; in the browser it steps through the cards; elsewhere it steps through the page's buttons.
+- **Its push acts** on what is highlighted: opens a module, flips a switch, steps a mode, opens the file list, presses a button, adds a card.
+- **Holding encoder 1** (0.7 s without turning) goes **Back**.
+- **Encoder 2 turns** the highlighted value on a module page, steps through the groups in the browser and the header buttons on the patch. Its push flips a switch or steps a mode.
 - **Push and turn** is fine adjustment.
-- **Tap** (push, release without turning) moves to the next page of parameters. A pinned encoder's tap opens the page of what it controls.
-- **Hold** (0.7 s without turning) **pins** the encoder to the control it is turning: it then controls that parameter on every page, until held again to unpin. The tile shows "E2 pinned".
+- **One encoder alone** works too: pushing encoder 1 on a value makes it turn that value (the highlight takes the module's colour); another push goes back to moving.
+- **Pinned** in Settings → Controls, an encoder turns its target on every page instead. Its tap opens that target's page with the control highlighted; its hold unpins it. The bar shows "E2" under its name.
 
 **Stomps** act on the press itself, never waiting for a gesture to end:
 
@@ -91,14 +96,14 @@ Switch actions go to the engine at once; only encoder turns are coalesced (one v
 
 ## Assignments (P7.5)
 
-**Settings → Controls** lists the four encoders and three stomps. Each row shows its assignment, an orphan in orange, or "Follows the parameter page" / "Not assigned". Using a control highlights its row, which is how to find which physical knob is which.
+**Settings → Controls** lists the two encoders and three stomps. Each row shows its assignment, an orphan in orange, or what the encoder does unpinned / "Not assigned". Using a control highlights its row, which is how to find which physical knob is which.
 
 - **Assign** picks a module, then a parameter. Stomps also offer **Bypass**, and **Next patch** / **Previous patch**. A bypass joins the modules the stomp already switches; a parameter replaces whatever the stomp did. **Clear** empties it.
 - **Edit** sets Invert, Toggle or Momentary, the From and To ends of the range, or clears it.
 
 ![Controls page](images/ui-controls.png)
 ![Stomp assignment](images/ui-assignment-detail.png)
-![Encoders following a parameter page](images/ui-encoders-follow.png)
+![The encoder highlight on a module page](images/ui-encoders-follow.png)
 
 **Storage.**
 
@@ -112,8 +117,8 @@ Switch actions go to the engine at once; only encoder turns are coalesced (one v
 
 | Keys | Control |
 | --- | --- |
-| Q / A, W / S, E / D, R / F | Turn encoders 1–4 clockwise / anticlockwise (holding a key repeats, which shows acceleration) |
-| 1, 2, 3, 4 | Push encoders 1–4 |
+| Q / A, W / S | Turn encoders 1 and 2 clockwise / anticlockwise (holding a key repeats, which shows acceleration) |
+| 1, 2 | Push encoders 1 and 2 |
 | Z, X, C | Stomps 1–3 |
 
 The keys work in the Windows build against the simulation or a real engine. They still reach LVGL, where they are text on the name page; the interface ignores them as controls there.
@@ -124,8 +129,7 @@ The keys work in the Windows build against the simulation or a real engine. They
 - `peepo_ingen_tests`: assignments as engine graph properties, seen by a second client, kept across an interface restart, cleared by a new patch, saved, loaded and removed with their module.
 - `peepo_ingen_live` against the real engine: an inverted encoder pinned to Mist Granular's first control is saved and comes back from disk.
 - `peepo_ui_check`, through the same entry point the hardware will use:
-  - encoders following Drive's tiles, then fine steps, pinning, the pinned encoder working from the patch page, tap to show and unpin;
-  - following on Clouds' custom pages, with a tap moving to the next page;
+  - (17 October 2026) encoder 1 moving the highlight over Drive's bars and encoder 2 turning them, fine steps, one-encoder turning, hold for Back, a pinned encoder working from the patch page, tap to show and hold to unpin; encoder 1's push flipping Clouds' Freeze; encoder 2 reaching Settings from the patch;
   - the Controls page assigning stomp 1 to Clouds freeze in toggle and then momentary mode, and stomp 2 to Delay's bypass;
   - an unassigned stomp, controls ignored while typing a name, a removed module taking its assignment along, and a next-patch footswitch stepping through stored patches and wrapping.
   - (16 October 2026) holding Drive and pressing stomp 1 assigns its bypass without playing; Clouds joins the same stomp; the patch numbers both; with Clouds bypassed each press swaps the two; Controls names both; pressing again on Drive's actions takes it off. A Foot switch module set to stomp 2 is pressed and released with it, ignores stomp 3, and when latching flips on each press.

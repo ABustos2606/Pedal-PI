@@ -52,10 +52,10 @@ private:
     enum class Action { Navigate, Add, Module, Port, SelectCable, DeleteCable, ClearCable, Pan, Home,
                         OpenActions, Edit, Duplicate, Parameter, Bypass, Remove, SaveSession, LoadSession, State, Reject,
                         NameEntry, NameInput, Keyboard, CommitName, Confirm, CancelReplace, ParameterPage, BrowserGroup, BrowserPick, MissingFixture,
-                        ParameterLayout, ParameterChoice, ParallelDemo, CvChoice, CvPage,
+                        ParallelDemo, CvChoice, CvPage,
                         SavePatch, LoadStored, DeleteStored, StartupStored, PatchPage, ConfirmAction, CancelAction,
                         AssignControl, EditControl, ClearControl, PickModule, PickTarget, PickerPage, InvertControl, SwitchModeChoice, RangeEnd, PowerOff,
-                        Restart, BrowserCategory, Revert, ParameterStep, ChooseFile, PickFile, FilePage, TempoStep, TempoSlider, Tap };
+                        Restart, BrowserCategory, Revert, ChooseFile, PickFile, FilePage, TempoStep, TempoSlider, Tap };
     struct Binding {
         Application* app;
         Action action;
@@ -76,15 +76,26 @@ private:
     void browser_pick(const std::string& uri, bool reveal);
     void add_module(const std::string& uri);
     void parameters(lv_obj_t*);
-    void parameter_tile(lv_obj_t*, const Module&, const Parameter&, int x, int y, int height = 120, std::uint32_t ink = 0);
-    void file_tile(lv_obj_t*, const Module&, int x, int y);
+    // One parameter as a bar: its name, its value, and a fill as far as the
+    // value goes. Drag it sideways to change it, tap it to flip or step it.
+    void parameter_bar(lv_obj_t*, const Module&, const Parameter&);
+    void file_bar(lv_obj_t*, const Module&);
+    // Move the encoder highlight on the module page, keeping it in view.
+    void focus_parameter(std::size_t);
+    // Turn the highlighted (or a pinned) parameter by encoder detents.
+    void turn_parameter(InstanceId, const std::string& symbol, const Gesture&, const Assignment* pin);
+    // A push on the highlighted bar: flip a switch, step a mode, choose a file,
+    // or start and stop turning its value with the select encoder.
+    void activate_parameter();
+    // Where Back leads from the page in view.
+    Page back_page() const;
+    // Open a module's page; the same module keeps its highlight and scroll.
+    void open_module(InstanceId);
     void file_picker(lv_obj_t*);
     void tempo(lv_obj_t*);
     void tap_tempo();
     void set_tempo(double bpm);
-    void clouds_parameters(lv_obj_t*, const Module&);
-    void delay_parameters(lv_obj_t*, const Module&);
-    void tuner_parameters(lv_obj_t*, const Module&);
+    void tuner_meter(lv_obj_t*);
     void update_tuner();
     void patches(lv_obj_t*);
     void settings(lv_obj_t*);
@@ -121,7 +132,8 @@ private:
     bool orphaned(const std::string& control) const;
     void step_patch(int direction);
     const Assignment* pinned(const std::string& control) const;
-    std::size_t parameter_pages(const Module&) const;
+    // Encoder 1 on the patch: the module highlighted, in signal order.
+    void focus_module(int steps);
     void controls(lv_obj_t*);
     void assign_picker(lv_obj_t*);
     void assignment_detail(lv_obj_t*);
@@ -183,16 +195,28 @@ private:
     // Settings shows the network, read again every couple of seconds.
     lv_obj_t* network_value_ = nullptr;
     unsigned network_age_ = 0;
-    // Physical controls: gestures, and what the encoders follow on a parameter page.
+    // Physical controls: gestures, and the bars the encoders move through on a module page.
     ControlLayout layout_;
     ControlRecognizer recognizer_;
-    struct Visible { InstanceId id; std::string symbol; };
-    std::vector<Visible> visible_;
+    struct Bar { InstanceId id; std::string symbol; lv_obj_t* widget; bool file = false; };
+    std::vector<Bar> bars_;
+    // The highlighted bar, and whether encoder 1 turns its value rather than moving on.
+    std::size_t parameter_focus_ = 0;
+    bool adjusting_ = false;
+    // A parameter to highlight once the module page is built, as when a pinned encoder shows its target.
+    std::string focus_symbol_;
+    // The module page's list and where it was scrolled, kept across rebuilds.
+    lv_obj_t* parameter_list_ = nullptr;
+    int parameter_scroll_ = 0;
+    // A bar being dragged: the normalized value it started from, and whether it moved.
+    double drag_origin_ = 0;
+    bool bar_moving_ = false, bar_dragged_ = false;
+    // The module highlighted on the patch by encoder 1.
+    InstanceId patch_focus_ = 0;
     // The control last used, highlighted on the Controls page; the one being assigned or edited.
     std::string active_control_, editing_control_;
     InstanceId picking_module_ = 0;
     std::size_t picker_page_ = 0;
-    std::size_t parameter_page_ = 0;
     // The module browser: the group filter (empty for all), the picked module,
     // and where the cards were scrolled.
     std::string browser_group_, browser_pick_;
@@ -203,7 +227,6 @@ private:
     std::map<std::string, lv_obj_t*> browser_cards_;
     // What the encoders step through: groups shown, and usable modules in card order.
     std::vector<std::string> browser_groups_, browser_order_;
-    bool generic_parameters_ = false;
     bool renaming_ = false;
     std::string draft_name_;
     std::optional<Command> replacement_;

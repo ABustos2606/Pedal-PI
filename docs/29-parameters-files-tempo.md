@@ -4,6 +4,8 @@
 
 ## Parameter pages (P9.4)
 
+**Superseded 17 October 2026:** groups are now headings on a single page of bars, modes step on a tap, whole numbers and beats step with encoder 2, and the file is the first bar ([module page and two encoders](31-module-page-and-two-encoders.md)). The images here show the new page.
+
 The catalogue overlay can now arrange a module's controls in **named groups** of up to four, one per page. The page shows the group's name above the page count, in the module's colour; controls no group names follow on pages called More. A group may name the general Output. A rule matching several plugins (all the Clouds modes) leaves out what one of them lacks; a rule for one plugin must name only its shown controls.
 
 ![Grouped parameters](images/ui-grouped-parameters.png)
@@ -26,7 +28,6 @@ Value editors:
 - **A list of two to four modes** whose names fit is a row of buttons, the chosen one marked in the module's colour: one tap instead of opening a menu. Longer lists keep the drop-down.
 - **Whole numbers** have **-** and **+** beside a shorter slider, each a step, disabled at the ends.
 
-![Mode buttons](images/ui-mode-buttons.png)
 
 ## Model and IR files (P8.3)
 

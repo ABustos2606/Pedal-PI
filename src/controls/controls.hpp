@@ -14,7 +14,7 @@
 namespace peepo {
 // The instrument's surface: push encoders enc1..encN, stomp switches stomp1..stompN.
 struct ControlLayout {
-    unsigned encoders = 4, stomps = 3;
+    unsigned encoders = 2, stomps = 3;
     std::vector<std::string> ids() const;
 };
 std::string control_label(const std::string& id);
