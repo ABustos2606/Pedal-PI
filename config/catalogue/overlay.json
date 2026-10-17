@@ -154,7 +154,12 @@
     {"uri": "http://polyeffects.com/lv2/basic_modular#tempo_ratio", "description": "Ratio between tempos, like 3/4 of the input tempo."},
     {"uri": "http://polyeffects.com/lv2/cv_to_cc", "description": "Converts a control signal to MIDI CC."},
     {"uri": "http://polyeffects.com/lv2/cv_to_note", "description": "Converts volt per octave pitch to MIDI notes. Velocity is optional."},
-    {"uri": "http://polyeffects.com/lv2/euclidean", "description": "A euclidean sequencer with 4 tracks. Connect a trigger to go to the next step."},
+    {"uri": "http://polyeffects.com/lv2/euclidean", "description": "A euclidean sequencer with 4 tracks. Connect a trigger to go to the next step.", "parameters": [
+      {"symbol": "is_enabled1", "kind": "toggle"}, {"symbol": "steps1"}, {"symbol": "beats1"}, {"symbol": "shift1"},
+      {"symbol": "is_enabled2", "kind": "toggle"}, {"symbol": "steps2"}, {"symbol": "beats2"}, {"symbol": "shift2"},
+      {"symbol": "is_enabled3", "kind": "toggle"}, {"symbol": "steps3"}, {"symbol": "beats3"}, {"symbol": "shift3"},
+      {"symbol": "is_enabled4", "kind": "toggle"}, {"symbol": "steps4"}, {"symbol": "beats4"}, {"symbol": "shift4"}
+    ]},
     {"uri": "http://polyeffects.com/lv2/note_sequencer", "description": "16 step note sequencer that takes in a trigger for next or previous."},
     {"uri": "http://polyeffects.com/lv2/note_sequencer_bpm", "description": "16 step note sequencer with internal clock."},
     {"uri": "http://polyeffects.com/lv2/polyconvo#CabMono", "description": "Mono cab sim. Loads a cabinet impulse response."},

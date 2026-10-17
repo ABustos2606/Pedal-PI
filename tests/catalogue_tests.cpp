@@ -237,6 +237,11 @@ void fixture(const std::string& folder) {
         else if (d.uri.starts_with("http://polyeffects.com/lv2/polyconvo#") || d.uri.starts_with("http://gareus.org/oss/lv2/convoLV2#"))
             check(d.file.folder == "ir/reverb", "a convolution reverb does not list ir/reverb");
         if (d.uri == "http://github.com/mikeoliphant/neural-amp-modeler-lv2") check(d.file.folder == "nam" && d.availability == Availability::Available, "NAM does not list nam");
+        if (d.uri == "http://polyeffects.com/lv2/euclidean") {
+            check(d.parameters.size() == 16 && d.parameters[0].symbol == "is_enabled1" && d.parameters[0].kind == ParameterKind::Toggle &&
+                  d.parameters[1].symbol == "steps1" && d.parameters[2].symbol == "beats1" && d.parameters[3].symbol == "shift1" &&
+                  d.parameters[12].symbol == "is_enabled4" && d.parameters[12].kind == ParameterKind::Toggle, "Euclidean loops not ordered or switches not marked");
+        }
     }
     for (const auto& d : offered)
         if (d.uri.find("polyclouds#") != std::string::npos)

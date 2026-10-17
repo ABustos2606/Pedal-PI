@@ -6,6 +6,7 @@
 #include "storage/file_store.hpp"
 #include "storage/patch_store.hpp"
 #include "lvgl.h"
+#include <array>
 #include <deque>
 #include <functional>
 #include <map>
@@ -97,6 +98,8 @@ private:
     void set_tempo(double bpm);
     void tuner_meter(lv_obj_t*);
     void update_tuner();
+    void euclidean_view(lv_obj_t*, const Module&);
+    void update_euclidean();
     void patches(lv_obj_t*);
     void settings(lv_obj_t*);
     void diagnostics(lv_obj_t*);
@@ -234,6 +237,12 @@ private:
     lv_obj_t *screen_ = nullptr, *canvas_ = nullptr, *footer_ = nullptr;
     lv_obj_t *tempo_value_ = nullptr, *cpu_value_ = nullptr;
     lv_obj_t *tuner_note_ = nullptr, *tuner_detail_ = nullptr, *tuner_status_ = nullptr, *tuner_needle_ = nullptr;
+    lv_obj_t* euclidean_status_ = nullptr;
+    std::array<lv_obj_t*, euclidean_tracks> euclidean_rings_{};
+    std::array<lv_obj_t*, euclidean_tracks> euclidean_halos_{};
+    std::array<std::array<lv_obj_t*, euclidean_max_steps>, euclidean_tracks> euclidean_dots_{};
+    std::array<lv_obj_t*, euclidean_tracks> euclidean_step_labels_{};
+    std::array<std::array<lv_obj_t*, 3>, euclidean_tracks> euclidean_tiles_{};
     lv_indev_t* pointer_input_ = nullptr;
     lv_indev_t* keypad_input_ = nullptr;
     std::deque<Binding> bindings_;
@@ -242,10 +251,10 @@ private:
     std::vector<lv_obj_t*> dots_;
     std::optional<Connection> selected_cable_;
     // One drawn line per channel of a logical cable.
-    struct Cable { lv_obj_t* line; Connection connection; lv_point_precise_t points[4]; RoutingPlan routing; unsigned out_channel = 0, in_channel = 0; bool cv = false; };
+    struct Cable { lv_obj_t* line; Connection connection; std::array<lv_point_precise_t, 20> points{}; RoutingPlan routing; unsigned out_channel = 0, in_channel = 0; bool cv = false; };
     std::deque<Cable> cables_;
     lv_obj_t* preview_ = nullptr;
-    lv_point_precise_t preview_points_[2]{};
+    std::array<lv_point_precise_t, 20> preview_points_{};
     InstanceId cable_source_ = 0;
     std::string cable_port_;
     // A continuous gesture in progress: one request in flight, newest value wins.

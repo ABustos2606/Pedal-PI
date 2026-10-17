@@ -305,7 +305,7 @@ std::string validate_graph(const Graph& g) {
         if (m.fixed != endpoint || (m.fixed && m.bypassed)) return "Invalid fixed endpoint";
         if (m.uri == "urn:peepo:demo:input") ++inputs;
         if (m.uri == "urn:peepo:demo:output") ++outputs;
-        if (m.x < 0 || m.x > canvas_width - module_size || m.y < 0 || m.y > canvas_height - module_size) return "Module outside canvas";
+        if (m.x < 0 || m.x > canvas_width - module_width || m.y < 0 || m.y > canvas_height - module_height) return "Module outside canvas";
         std::unordered_set<std::string> symbols;
         for (const auto& p : module_ports(m)) {
             if (p.symbol.empty() || !symbols.insert(p.symbol).second || p.channels < 1 || p.channels > 2) return "Invalid port metadata";

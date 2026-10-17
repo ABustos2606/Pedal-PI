@@ -27,6 +27,8 @@ public:
     EngineTelemetry telemetry() const override { return session_.telemetry(); }
     void watch_tuner(std::optional<InstanceId> id) override { session_.watch_tuner(id); flush(); }
     std::optional<double> tuner_frequency(InstanceId id) const override { return session_.tuner_frequency(id); }
+    void watch_euclidean(std::optional<InstanceId> id) override { session_.watch_euclidean(id); flush(); }
+    EuclideanSteps euclidean_steps(InstanceId id) const override { return session_.euclidean_steps(id); }
 private:
     void attempt();
     void lost(std::string reason);

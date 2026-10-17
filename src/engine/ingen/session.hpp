@@ -44,6 +44,8 @@ public:
     }
     void watch_tuner(std::optional<InstanceId>);
     std::optional<double> tuner_frequency(InstanceId) const;
+    void watch_euclidean(std::optional<InstanceId>);
+    EuclideanSteps euclidean_steps(InstanceId) const;
 private:
     enum class Purpose { Edit, Sync, Endpoints, Refresh, Monitor };
     struct Local { std::string path, predicate; Value value; };
@@ -119,6 +121,10 @@ private:
     std::string tuner_port_;
     std::optional<double> tuner_frequency_;
     unsigned tuner_age_ = 0;
+    std::optional<InstanceId> euclidean_;
+    std::array<std::string, euclidean_tracks> euclidean_ports_{};
+    EuclideanSteps euclidean_steps_{};
+    unsigned euclidean_age_ = 0;
 
     // The engine's objects under ingen:/main, by path.
     std::map<std::string, Properties> objects_;

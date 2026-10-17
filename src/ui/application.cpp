@@ -17,8 +17,21 @@ namespace {
 // Black, with colour only where it means something: a module's group, a
 // state, the one action that matters on a page.
 constexpr std::uint32_t background = 0x000000, surface = 0x0f0f0f, border = 0x262626, rim = 0x3f3f3f, pressed_fill = 0x1c1c1c;
-constexpr std::uint32_t text = 0xffffff, muted = 0x9ca3af, faint = 0x737373, accent = 0x4ade80, warning = 0xfb923c, cable_ink = 0xd4d4d4;
+constexpr std::uint32_t text = 0xffffff, muted = 0x9ca3af, faint = 0x737373, accent = 0x4ade80, warning = 0xfb923c, cable_ink = 0x7dd3fc;
 lv_color_t color(std::uint32_t c) { return lv_color_hex(c); }
+void sample_cable(lv_obj_t* line, std::array<lv_point_precise_t, 20>& points, double ax, double ay, double bx, double by, bool cv) {
+    const double k = std::max(40.0, std::abs(cv ? by - ay : bx - ax) * 0.5);
+    const double c1x = cv ? ax : ax + k, c1y = cv ? ay - k : ay;
+    const double c2x = cv ? bx : bx - k, c2y = cv ? by + k : by;
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        const double t = static_cast<double>(i) / static_cast<double>(points.size() - 1);
+        const double u = 1.0 - t;
+        const double x = u * u * u * ax + 3.0 * u * u * t * c1x + 3.0 * u * t * t * c2x + t * t * t * bx;
+        const double y = u * u * u * ay + 3.0 * u * u * t * c1y + 3.0 * u * t * t * c2y + t * t * t * by;
+        points[i] = {static_cast<lv_value_precise_t>(std::round(x)), static_cast<lv_value_precise_t>(std::round(y))};
+    }
+    lv_line_set_points(line, points.data(), static_cast<std::uint32_t>(points.size()));
+}
 std::string upper(std::string value) {
     for (auto& c : value) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
     return value;
@@ -77,7 +90,26 @@ std::string metric_text(std::optional<double> reading, bool cpu) {
     if (cpu) value << '%';
     return value.str();
 }
-enum class ModuleLayout { Generic, Tuner };
+enum class ModuleLayout { Generic, Tuner, Euclidean };
+struct EuclideanTrackStyle { std::uint32_t bright, fill, ring_dim; int radius; };
+constexpr std::array<EuclideanTrackStyle, euclidean_tracks> euclidean_styles = {{
+    {0x38bdf8, 0x143a52, 0x1c3d52, 124},
+    {0x4ade80, 0x143d28, 0x1a3d28, 96},
+    {0xe8d44d, 0x423c14, 0x3d3818, 68},
+    {0xf472d0, 0x421838, 0x3d1c35, 40},
+}};
+bool has_euclidean_controls(const Module& m) {
+    for (int i = 1; i <= 4; ++i) {
+        const auto n = std::to_string(i);
+        for (const auto* prefix : {"steps", "beats", "shift", "is_enabled"})
+            if (std::none_of(m.parameters.begin(), m.parameters.end(), [&](const Parameter& p) { return p.symbol == std::string(prefix) + n; }))
+                return false;
+    }
+    return true;
+}
+bool is_euclidean_toggle(const Parameter& p) {
+    return p.kind == ParameterKind::Toggle || (p.symbol.starts_with("is_enabled") && p.minimum == 0 && p.maximum == 1);
+}
 ModuleLayout module_layout(const Module& m) {
     // Match by stable URI and parameter schema, never by the editable name.
     // An unexpected/extended schema must keep every control in the generic view.
@@ -89,6 +121,7 @@ ModuleLayout module_layout(const Module& m) {
             return ModuleLayout::Generic;
     }
     if (tuner_uri(m.uri) && std::any_of(m.parameters.begin(), m.parameters.end(), [](const Parameter& p) { return p.symbol == "tuning"; })) return ModuleLayout::Tuner;
+    if (euclidean_uri(m.uri) && has_euclidean_controls(m)) return ModuleLayout::Euclidean;
     return ModuleLayout::Generic;
 }
 // Vertical placement of one connector on its edge of the square. Every audio
@@ -109,13 +142,18 @@ std::optional<Jack> jack(const Module& m, const std::string& symbol, Direction d
         count += static_cast<int>(p.channels);
     }
     if (index < 0) return {};
-    return Jack{(2 * index + 1) * module_size / (2 * count), std::min(44, module_size / count)};
+    return Jack{(2 * index + 1) * module_height / (2 * count), std::min(44, module_height / count)};
 }
 // A module's colour: its group's, or the warning colour when it is missing.
 std::uint32_t module_ink(const Module& m) {
     const auto* d = definition(m.uri);
     if (!module_available(m) || !d) return warning;
     return m.fixed ? muted : module_groups()[module_group(d->category)].bright;
+}
+std::uint32_t bar_ink(const Module& m, const std::string& symbol) {
+    if (euclidean_uri(m.uri) && !symbol.empty() && symbol.back() >= '1' && symbol.back() <= '4')
+        return euclidean_styles[static_cast<std::size_t>(symbol.back() - '1')].bright;
+    return module_ink(m);
 }
 const Parameter& parameter(const Module& m, const std::string& symbol) {
     return *std::find_if(m.parameters.begin(), m.parameters.end(), [&](const Parameter& p) { return p.symbol == symbol; });
@@ -148,18 +186,23 @@ std::vector<ParameterSection> parameter_sections(const Module& m) {
 }
 // Parameter bars: two columns of six in view, as on Beebo's module pages.
 constexpr int bar_width = 372, bar_height = 48;
+int bar_span(lv_obj_t* bar) {
+    const int w = lv_obj_get_width(bar);
+    return w > 0 ? w : bar_width;
+}
 // How far a bar is filled, and what it says.
 double bar_level(const Parameter& p) {
-    if (p.kind == ParameterKind::Toggle) return p.value >= 0.5 ? 1 : 0;
+    if (is_euclidean_toggle(p)) return p.value >= 0.5 ? 1 : 0;
     if (p.kind == ParameterKind::Enumeration) return p.choices.empty() ? 0 : std::clamp((std::round(p.value) + 1) / static_cast<double>(p.choices.size()), 0.0, 1.0);
     return normalized_value(p);
 }
 std::string bar_text(const Parameter& p) {
-    return p.kind == ParameterKind::Toggle || p.kind == ParameterKind::Enumeration ? upper(format_value(p)) : format_value(p);
+    if (is_euclidean_toggle(p)) return p.value >= 0.5 ? "ON" : "OFF";
+    return p.kind == ParameterKind::Enumeration ? upper(format_value(p)) : format_value(p);
 }
 // A bar's children: the fill, the name, the value.
 void paint_bar(lv_obj_t* bar, const Parameter& p) {
-    lv_obj_set_width(lv_obj_get_child(bar, 0), static_cast<int>(std::round(bar_level(p) * bar_width)));
+    lv_obj_set_width(lv_obj_get_child(bar, 0), static_cast<int>(std::round(bar_level(p) * bar_span(bar))));
     const auto shown = bar_text(p);
     auto* value = lv_obj_get_child(bar, 2);
     if (shown != lv_label_get_text(value)) lv_label_set_text(value, shown.c_str());
@@ -171,7 +214,7 @@ void highlight(lv_obj_t* bar, bool focused, bool adjusting, std::uint32_t ink) {
 }
 // The next choice of a mode, wrapping; the other state of a switch.
 double stepped_choice(const Parameter& p) {
-    if (p.kind == ParameterKind::Toggle) return p.value >= 0.5 ? 0 : 1;
+    if (is_euclidean_toggle(p)) return p.value >= 0.5 ? 0 : 1;
     const auto count = static_cast<double>(std::max<std::size_t>(1, p.choices.size()));
     return std::fmod(std::round(p.value) + 1, count);
 }
@@ -225,7 +268,7 @@ std::string Application::engine_banner() const {
     default: return "Engine error" + reason + ". Edits are paused.";
     }
 }
-Application::~Application() { engine_.watch_tuner(std::nullopt); if (screen_) lv_obj_delete(screen_); }
+Application::~Application() { engine_.watch_tuner(std::nullopt); engine_.watch_euclidean(std::nullopt); if (screen_) lv_obj_delete(screen_); }
 void Application::message(std::string value) {
     message_ = std::move(value);
     if (footer_) lv_label_set_text(footer_, message_.c_str());
@@ -337,8 +380,11 @@ void Application::tick(unsigned ms) {
     if ((network_age_ += ms) >= 2000) { network_age_ = 0; update_network(); }
     if (system_ && (system_age_ += ms) >= 2000) { system_age_ = 0; update_system(); }
     const auto* shown = page_ == Page::Parameters ? find_module(graph_, selected_) : nullptr;
-    engine_.watch_tuner(shown && module_layout(*shown) == ModuleLayout::Tuner ? std::optional<InstanceId>{shown->id} : std::nullopt);
+    const auto layout = shown ? module_layout(*shown) : ModuleLayout::Generic;
+    engine_.watch_tuner(shown && layout == ModuleLayout::Tuner ? std::optional<InstanceId>{shown->id} : std::nullopt);
+    engine_.watch_euclidean(shown && layout == ModuleLayout::Euclidean ? std::optional<InstanceId>{shown->id} : std::nullopt);
     update_tuner();
+    update_euclidean();
 }
 void Application::update_metrics() {
     if (!tempo_value_ || !cpu_value_) return;
@@ -447,7 +493,7 @@ void Application::handle(Binding& b, lv_event_t* e) {
         if (b.number < 0 || static_cast<std::size_t>(b.number) >= cables_.size()) return;
         const auto& cable = cables_[b.number];
         const double px = hit->point->x, py = hit->point->y - 72;
-        for (int i = 0; i < 3; ++i) {
+        for (std::size_t i = 0; i + 1 < cable.points.size(); ++i) {
             const double ax = cable.points[i].x, ay = cable.points[i].y;
             const double dx = cable.points[i + 1].x - ax, dy = cable.points[i + 1].y - ay;
             const double length = dx * dx + dy * dy;
@@ -492,9 +538,10 @@ void Application::handle(Binding& b, lv_event_t* e) {
                 message(cable_cv_ ? "Control cable from " + m->name + ". Drop it on the square connector under another module."
                                   : "Cable from " + m->name + " / " + b.symbol + ". Drop it on an input jack.");
                 preview_ = lv_line_create(canvas_); lv_obj_remove_flag(preview_, LV_OBJ_FLAG_CLICKABLE);
-                lv_obj_set_style_line_color(preview_, color(cable_cv_ ? control_ink : accent), 0); lv_obj_set_style_line_width(preview_, 3, 0);
-                if (cable_cv_) preview_points_[0] = {static_cast<lv_value_precise_t>(m->x + 48 - pan_x_), static_cast<lv_value_precise_t>(m->y - pan_y_)};
-                else preview_points_[0] = {static_cast<lv_value_precise_t>(m->x + 96 - pan_x_), static_cast<lv_value_precise_t>(m->y + (from ? from->centre : 48) - pan_y_)};
+                lv_obj_set_style_line_color(preview_, color(cable_cv_ ? control_ink : accent), 0);
+                lv_obj_set_style_line_width(preview_, 2, 0);
+                if (cable_cv_) preview_points_[0] = {static_cast<lv_value_precise_t>(m->x + module_width / 2 - pan_x_), static_cast<lv_value_precise_t>(m->y - pan_y_)};
+                else preview_points_[0] = {static_cast<lv_value_precise_t>(m->x + module_width - pan_x_), static_cast<lv_value_precise_t>(m->y + (from ? from->centre : module_height / 2) - pan_y_)};
                 indicate_targets(true);
             }
         } else if (code == LV_EVENT_LONG_PRESSED && b.action == Action::Module && !m->fixed && !dragging_) {
@@ -509,8 +556,7 @@ void Application::handle(Binding& b, lv_event_t* e) {
                     update_cables();
                 }
             } else if (cable_source_ && preview_) {
-                preview_points_[1] = {static_cast<lv_value_precise_t>(point.x), static_cast<lv_value_precise_t>(point.y - 72)};
-                lv_line_set_points(preview_, preview_points_, 2);
+                sample_cable(preview_, preview_points_, preview_points_[0].x, preview_points_[0].y, point.x, point.y - 72, cable_cv_);
             }
         } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
             if (cable_source_ && cable_cv_) {
@@ -520,7 +566,7 @@ void Application::handle(Binding& b, lv_event_t* e) {
                 if (point.x >= 0 && point.x < 800 && point.y >= 72 && point.y < 432)
                     for (const auto& item : graph_.modules)
                         if (item.id != cable_source_ && !cv_ports(item, Direction::Input).empty() &&
-                            std::abs(point.x + pan_x_ - item.x - 48) <= 24 && std::abs(point.y - 72 + pan_y_ - item.y - 96) <= 24) destination = item.id;
+                            std::abs(point.x + pan_x_ - item.x - module_width / 2) <= 24 && std::abs(point.y - 72 + pan_y_ - item.y - module_height) <= 24) destination = item.id;
                 if (destination && code == LV_EVENT_RELEASED) {
                     const auto outputs = cv_ports(*m, Direction::Output);
                     cv_from_ = cable_source_; cv_to_ = destination; cv_page_ = 0;
@@ -566,12 +612,13 @@ void Application::handle(Binding& b, lv_event_t* e) {
         if (it == m->parameters.end()) return;
         lv_point_t point{};
         if (auto* indev = lv_indev_active()) lv_indev_get_point(indev, &point);
-        const bool slides = it->kind == ParameterKind::Continuous || it->kind == ParameterKind::Integer;
+        const bool slides = (it->kind == ParameterKind::Continuous || it->kind == ParameterKind::Integer) && !is_euclidean_toggle(*it);
+        const int span = bar_span(target);
         // Relative, as an encoder is: the value moves by how far the finger
         // goes, the whole width for the whole range, so touching never jumps it.
         const auto dragged = [&] {
             auto p = *it;
-            p.value = value_from_normalized(p, std::clamp(drag_origin_ + static_cast<double>(point.x - press_.x) / bar_width, 0.0, 1.0));
+            p.value = value_from_normalized(p, std::clamp(drag_origin_ + static_cast<double>(point.x - press_.x) / span, 0.0, 1.0));
             if (p.kind == ParameterKind::Integer) p.value = std::round(p.value);
             return p;
         };
@@ -585,7 +632,7 @@ void Application::handle(Binding& b, lv_event_t* e) {
                 if (bars_[i].widget == target && i != parameter_focus_) {
                     if (parameter_focus_ < bars_.size()) highlight(bars_[parameter_focus_].widget, false, false, 0);
                     parameter_focus_ = i; adjusting_ = false;
-                    highlight(target, true, false, module_ink(*m));
+                    highlight(target, true, false, bar_ink(*m, b.symbol));
                 }
         } else if (code == LV_EVENT_PRESSING && slides) {
             const int dx = point.x - press_.x, dy = point.y - press_.y;
@@ -594,11 +641,11 @@ void Application::handle(Binding& b, lv_event_t* e) {
                 // A sideways drag is the value's: the list must not scroll under it.
                 if (parameter_list_) lv_obj_remove_flag(parameter_list_, LV_OBJ_FLAG_SCROLLABLE);
             }
-            if (bar_moving_) { const auto p = dragged(); paint_bar(target, p); stream_parameter(b.id, b.symbol, p.value); }
+            if (bar_moving_) { const auto p = dragged(); paint_bar(target, p); stream_parameter(b.id, b.symbol, p.value); update_euclidean(); }
         } else if (code == LV_EVENT_RELEASED || code == LV_EVENT_PRESS_LOST) {
             if (bar_moving_) {
                 // Release sends the final position.
-                if (code == LV_EVENT_RELEASED) { const auto p = dragged(); paint_bar(target, p); stream_parameter(b.id, b.symbol, p.value); }
+                if (code == LV_EVENT_RELEASED) { const auto p = dragged(); paint_bar(target, p); stream_parameter(b.id, b.symbol, p.value); update_euclidean(); }
                 if (parameter_list_) lv_obj_add_flag(parameter_list_, LV_OBJ_FLAG_SCROLLABLE);
                 bar_moving_ = false;
             }
@@ -913,6 +960,8 @@ void Application::rebuild() {
     bindings_.clear(); module_widgets_.clear(); input_jacks_.clear(); cv_inputs_.clear(); dots_.clear(); cables_.clear(); canvas_ = nullptr; footer_ = nullptr;
     tempo_value_ = cpu_value_ = network_value_ = nullptr;
     tuner_note_ = tuner_detail_ = tuner_status_ = tuner_needle_ = nullptr;
+    euclidean_status_ = nullptr;
+    euclidean_rings_ = {}; euclidean_halos_ = {}; euclidean_dots_ = {}; euclidean_step_labels_ = {}; euclidean_tiles_ = {};
     const bool patch = page_ == Page::Patch, ready = engine_.state() == EngineState::Ready;
     // Every page: a header naming where you are, the page, and a footer with
     // the way back, what is happening, and the readings.
@@ -1103,8 +1152,7 @@ void Application::patch_view(lv_obj_t* parent) {
         for (unsigned channel = 0; channel < std::max(out_channels, in_channels); ++channel) {
         auto* line = lv_line_create(parent);
         lv_obj_set_style_line_color(line, color(selected || !routing.error.empty() ? warning : cv ? control_ink : cable_ink), 0);
-        lv_obj_set_style_line_width(line, cv ? (selected ? 5 : 3) : (selected ? 6 : 4), 0);
-        lv_obj_set_style_line_rounded(line, true, 0);
+        lv_obj_set_style_line_width(line, selected ? 4 : 2, 0);
         lv_obj_add_flag(line, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_flag(line, LV_OBJ_FLAG_ADV_HITTEST);
         lv_obj_set_ext_click_area(line, 12);
@@ -1113,14 +1161,13 @@ void Application::patch_view(lv_obj_t* parent) {
         }
     }
     for (const auto& m : graph_.modules) {
-        const auto* d = definition(m.uri);
         const auto ink = module_ink(m);
         // A browser card in miniature: dark, outlined in the group colour, a white name.
-        auto* card = panel(parent, m.x - pan_x_, m.y - pan_y_, 96, 96);
+        auto* card = panel(parent, m.x - pan_x_, m.y - pan_y_, module_width, module_height);
         lv_obj_set_style_border_color(card, color(ink), 0); lv_obj_set_style_border_width(card, 2, 0);
         lv_obj_set_style_border_opa(card, static_cast<lv_opa_t>(m.bypassed ? LV_OPA_40 : LV_OPA_COVER), 0);
         lv_obj_set_style_bg_color(card, color(m.bypassed ? background : surface), 0);
-        lv_obj_set_style_radius(card, 10, 0);
+        lv_obj_set_style_radius(card, 6, 0);
         // Encoder 1's highlight.
         if (m.id == patch_focus_) {
             lv_obj_set_style_outline_width(card, 2, 0); lv_obj_set_style_outline_color(card, color(text), 0);
@@ -1130,22 +1177,23 @@ void Application::patch_view(lv_obj_t* parent) {
         // stick out past the edge: LVGL looks that far beyond the square.
         lv_obj_set_style_shadow_width(card, 14, 0); lv_obj_set_style_shadow_opa(card, LV_OPA_20, 0);
         lv_obj_set_style_shadow_color(card, color(background), 0);
-        const bool long_name = m.name.size() > 8;
-        auto* name = label(card, upper(m.name), 6, long_name ? 18 : 30, 84, m.bypassed ? faint : text, long_name ? &peepo_bold_14 : &peepo_bold_18);
-        lv_label_set_long_mode(name, LV_LABEL_LONG_DOT); lv_obj_set_height(name, long_name ? 52 : 24);
+        auto* name = label(card, upper(m.name), 0, 0, module_width - 8, m.bypassed ? faint : text, &peepo_bold_14);
+        lv_label_set_long_mode(name, LV_LABEL_LONG_WRAP);
         lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_update_layout(name);
+        if (lv_obj_get_height(name) > 36) {
+            lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
+            lv_obj_set_height(name, 36);
+        }
+        lv_obj_align(name, LV_ALIGN_CENTER, 0, 0);
         const auto& ports = module_ports(m);
-        const auto group = d && !m.fixed ? module_groups()[module_group(d->category)].name : "";
-        auto* sub = label(card, !module_available(m) ? "MISSING" : m.fixed ? "AUDIO" : m.bypassed ? "BYPASS" : group, 0, 72, 96,
-                          m.bypassed ? faint : ink, &peepo_mono_14);
-        lv_obj_set_style_text_align(sub, LV_TEXT_ALIGN_CENTER, 0);
         // The stomps that act on it, numbered in a white dot on its top right
         // corner, clear of the name and of the connectors.
         if (const auto stomps = stomps_on(graph_, m); !stomps.empty() && !m.fixed) {
             std::string digits;
             for (const auto n : stomps) digits += (digits.empty() ? "" : " ") + std::to_string(n);
             const int width = 20 + 14 * (static_cast<int>(stomps.size()) - 1);
-            auto* badge = panel(card, 102 - width, -12, width, 20, m.bypassed ? faint : text);
+            auto* badge = panel(card, module_width + 6 - width, -12, width, 20, m.bypassed ? faint : text);
             lv_obj_set_style_radius(badge, 10, 0); lv_obj_set_style_border_width(badge, 0, 0);
             lv_obj_remove_flag(badge, LV_OBJ_FLAG_CLICKABLE);
             auto* number = label(badge, digits, 0, 1, width, background, &peepo_mono_14);
@@ -1161,7 +1209,7 @@ void Application::patch_view(lv_obj_t* parent) {
             for (unsigned channel = 0; channel < port.channels; ++channel) {
             auto* hit = lv_obj_create(card); lv_obj_remove_style_all(hit);
             const auto place = *jack(m, port.symbol, port.direction, channel);
-            lv_obj_set_size(hit, 44, place.height); lv_obj_set_pos(hit, output ? 74 : -22, place.centre - place.height / 2);
+            lv_obj_set_size(hit, 44, place.height); lv_obj_set_pos(hit, output ? module_width - 22 : -22, place.centre - place.height / 2);
             lv_obj_remove_flag(hit, LV_OBJ_FLAG_SCROLLABLE);
             lv_obj_add_flag(hit, LV_OBJ_FLAG_PRESS_LOCK);
             auto* dot = panel(hit, 15, place.height / 2 - 7, 14, 14, background);
@@ -1178,7 +1226,7 @@ void Application::patch_view(lv_obj_t* parent) {
         for (const bool output : {false, true}) {
             if (cv_ports(m, output ? Direction::Output : Direction::Input).empty()) continue;
             auto* hit = lv_obj_create(card); lv_obj_remove_style_all(hit);
-            lv_obj_set_size(hit, 44, 44); lv_obj_set_pos(hit, 26, output ? -22 : 74);
+            lv_obj_set_size(hit, 44, 44); lv_obj_set_pos(hit, module_width / 2 - 22, output ? -22 : module_height - 22);
             lv_obj_remove_flag(hit, LV_OBJ_FLAG_SCROLLABLE);
             lv_obj_add_flag(hit, LV_OBJ_FLAG_PRESS_LOCK);
             auto* dot = panel(hit, 15, 15, 14, 14, background);
@@ -1222,7 +1270,7 @@ std::optional<std::pair<int, int>> Application::vacant_slot() const {
     for (int visible = 1; visible >= 0; --visible)
         for (int y = module_min_y; y <= module_max_y; y += 120)
             for (int x = module_min_x; x <= module_max_x; x += 144) {
-                if (visible && (x < pan_x_ + 24 || x + 96 > pan_x_ + 776 || y < pan_y_ + 12 || y + 96 > pan_y_ + 360)) continue;
+                if (visible && (x < pan_x_ + 24 || x + module_width > pan_x_ + 776 || y < pan_y_ + 12 || y + module_height > pan_y_ + 360)) continue;
                 const bool occupied = std::any_of(graph_.modules.begin(), graph_.modules.end(), [&](const Module& m) {
                     return std::abs(m.x - x) < 120 && std::abs(m.y - y) < 110;
                 });
@@ -1231,8 +1279,8 @@ std::optional<std::pair<int, int>> Application::vacant_slot() const {
     return {};
 }
 void Application::reveal(int x, int y) {
-    if (x < pan_x_ + 24 || x + 96 > pan_x_ + 776) pan_x_ = std::clamp(x - 24, 0, canvas_width - 800);
-    if (y < pan_y_ + 12 || y + 96 > pan_y_ + 360) pan_y_ = std::clamp(y - 12, 0, canvas_height - 360);
+    if (x < pan_x_ + 24 || x + module_width > pan_x_ + 776) pan_x_ = std::clamp(x - 24, 0, canvas_width - 800);
+    if (y < pan_y_ + 12 || y + module_height > pan_y_ + 360) pan_y_ = std::clamp(y - 12, 0, canvas_height - 360);
 }
 void Application::update_cables() {
     // LVGL positions are lazy; resolve the cards before reading coordinates.
@@ -1242,25 +1290,14 @@ void Application::update_cables() {
         if (a == module_widgets_.end() || b == module_widgets_.end()) continue;
         if (c.cv) {
             // Top of the source to the underside of the destination.
-            const auto sx = static_cast<lv_value_precise_t>(lv_obj_get_x(a->second) + 48), sy = static_cast<lv_value_precise_t>(lv_obj_get_y(a->second));
-            const auto tx = static_cast<lv_value_precise_t>(lv_obj_get_x(b->second) + 48), ty = static_cast<lv_value_precise_t>(lv_obj_get_y(b->second) + 96);
-            c.points[0] = {sx, sy}; c.points[1] = {sx, sy - 14}; c.points[2] = {tx, ty + 14}; c.points[3] = {tx, ty};
-            lv_line_set_points(c.line, c.points, 4);
+            sample_cable(c.line, c.points, lv_obj_get_x(a->second) + module_width / 2, lv_obj_get_y(a->second), lv_obj_get_x(b->second) + module_width / 2, lv_obj_get_y(b->second) + module_height, true);
             continue;
         }
         const auto* source = find_module(graph_, c.connection.from); const auto* sink = find_module(graph_, c.connection.to);
         const auto out = source ? jack(*source, c.connection.output, Direction::Output, c.out_channel) : std::nullopt;
         const auto in = sink ? jack(*sink, c.connection.input, Direction::Input, c.in_channel) : std::nullopt;
-        const int ax = lv_obj_get_x(a->second) + 96, ay = lv_obj_get_y(a->second) + (out ? out->centre : 48);
-        const int bx = lv_obj_get_x(b->second), by = lv_obj_get_y(b->second) + (in ? in->centre : 48);
-        // Keep the two channels of a pair from sharing a vertical run or crossing.
-        const int lane = !out || out->centre == module_size / 2 ? 0 : out->centre < module_size / 2 ? 6 : -6;
-        const int mid = (ax + bx) / 2 + (by > ay ? lane : by < ay ? -lane : 0);
-        c.points[0] = {static_cast<lv_value_precise_t>(ax), static_cast<lv_value_precise_t>(ay)};
-        c.points[1] = {static_cast<lv_value_precise_t>(mid), static_cast<lv_value_precise_t>(ay)};
-        c.points[2] = {static_cast<lv_value_precise_t>(mid), static_cast<lv_value_precise_t>(by)};
-        c.points[3] = {static_cast<lv_value_precise_t>(bx), static_cast<lv_value_precise_t>(by)};
-        lv_line_set_points(c.line, c.points, 4);
+        sample_cable(c.line, c.points, lv_obj_get_x(a->second) + module_width, lv_obj_get_y(a->second) + (out ? out->centre : module_height / 2),
+                     lv_obj_get_x(b->second), lv_obj_get_y(b->second) + (in ? in->centre : module_height / 2), false);
     }
 }
 void Application::browser(lv_obj_t* header, lv_obj_t* content, lv_obj_t* foot) {
@@ -1424,8 +1461,13 @@ void Application::parameters(lv_obj_t* parent) {
         lv_label_set_long_mode(uri, LV_LABEL_LONG_DOT); return;
     }
     // Every control on one page, as bars in two columns; a long module scrolls.
-    // A tuner shows its meter above them.
-    const bool tuner = module_layout(*m) == ModuleLayout::Tuner;
+    // A tuner shows its meter above them; Euclidean shows its four concentric rings beside its four track columns.
+    const auto layout = module_layout(*m);
+    if (layout == ModuleLayout::Euclidean) {
+        euclidean_view(parent, *m);
+        return;
+    }
+    const bool tuner = layout == ModuleLayout::Tuner;
     const int top = tuner ? 220 : 0;
     if (tuner) tuner_meter(parent);
     auto* list = lv_obj_create(parent); lv_obj_remove_style_all(list);
@@ -1453,7 +1495,7 @@ void Application::parameters(lv_obj_t* parent) {
         focus_symbol_.clear();
     }
     if (parameter_focus_ >= bars_.size()) { parameter_focus_ = bars_.size() - 1; adjusting_ = false; }
-    highlight(bars_[parameter_focus_].widget, true, adjusting_, ink);
+    highlight(bars_[parameter_focus_].widget, true, adjusting_, bar_ink(*m, bars_[parameter_focus_].symbol));
     lv_obj_update_layout(list);
     lv_obj_scroll_to_y(list, parameter_scroll_, LV_ANIM_OFF);
 }
@@ -1506,6 +1548,197 @@ void Application::update_tuner() {
     if (note != lv_label_get_text(tuner_note_)) lv_label_set_text(tuner_note_, note.c_str());
     if (detail != lv_label_get_text(tuner_detail_)) lv_label_set_text(tuner_detail_, detail.c_str());
     if (status != lv_label_get_text(tuner_status_)) lv_label_set_text(tuner_status_, status.c_str());
+}
+void Application::euclidean_view(lv_obj_t* parent, const Module& m) {
+    auto* viz = panel(parent, 20, 10, 340, 340);
+    if (m.bypassed) lv_obj_set_style_opa(viz, LV_OPA_50, 0);
+    auto* heading = label(viz, "RHYTHM", 16, 12, 120, faint, &peepo_mono_14);
+    lv_obj_set_style_text_letter_space(heading, 2, 0);
+    euclidean_status_ = label(viz, "", 136, 12, 188, muted, &peepo_mono_14);
+    lv_obj_set_style_text_align(euclidean_status_, LV_TEXT_ALIGN_RIGHT, 0);
+
+    // 12 o'clock downbeat tick mark and central hub inside the concentric rings.
+    auto* downbeat = panel(viz, 169, 32, 2, 8, muted);
+    lv_obj_set_style_border_width(downbeat, 0, 0);
+    lv_obj_remove_flag(downbeat, LV_OBJ_FLAG_CLICKABLE);
+    auto* hub = panel(viz, 170 - 12, 170 - 12, 24, 24, 0x141414);
+    lv_obj_set_style_radius(hub, LV_RADIUS_CIRCLE, 0);
+    lv_obj_remove_flag(hub, LV_OBJ_FLAG_CLICKABLE);
+    auto* center_dot = panel(viz, 170 - 2, 170 - 2, 4, 4, faint);
+    lv_obj_set_style_radius(center_dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(center_dot, 0, 0);
+    lv_obj_remove_flag(center_dot, LV_OBJ_FLAG_CLICKABLE);
+
+    for (std::size_t t = 0; t < euclidean_tracks; ++t) {
+        const auto& style = euclidean_styles[t];
+        auto* ring = panel(viz, 170 - style.radius, 170 - style.radius, style.radius * 2, style.radius * 2, surface);
+        lv_obj_set_style_bg_opa(ring, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_radius(ring, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_border_width(ring, 1, 0);
+        lv_obj_set_style_border_color(ring, color(style.ring_dim), 0);
+        lv_obj_remove_flag(ring, LV_OBJ_FLAG_CLICKABLE);
+        euclidean_rings_[t] = ring;
+
+        auto* halo = panel(viz, 0, 0, 22, 22, style.bright);
+        lv_obj_set_style_radius(halo, LV_RADIUS_CIRCLE, 0);
+        lv_obj_add_flag(halo, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_remove_flag(halo, LV_OBJ_FLAG_CLICKABLE);
+        euclidean_halos_[t] = halo;
+
+        for (int s = 0; s < euclidean_max_steps; ++s) {
+            auto* dot = panel(viz, 0, 0, 10, 10, surface);
+            lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
+            lv_obj_add_flag(dot, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_remove_flag(dot, LV_OBJ_FLAG_CLICKABLE);
+            euclidean_dots_[t][static_cast<std::size_t>(s)] = dot;
+        }
+
+        auto* step_lbl = label(viz, "", 14 + static_cast<int>(t) * 80, 314, 76, style.bright, &peepo_mono_14);
+        lv_obj_set_style_text_align(step_lbl, LV_TEXT_ALIGN_CENTER, 0);
+        euclidean_step_labels_[t] = step_lbl;
+    }
+
+    for (std::size_t t = 0; t < euclidean_tracks; ++t) {
+        const auto& style = euclidean_styles[t];
+        const auto n = std::to_string(t + 1);
+        auto* col = panel(parent, 372 + static_cast<int>(t) * 104, 10, 96, 340);
+        if (m.bypassed) lv_obj_set_style_opa(col, LV_OPA_50, 0);
+        auto make_tile = [&](const std::string& symbol, const std::string& title, int y, int h, bool is_header) {
+            const auto& p = parameter(m, symbol);
+            auto* bar = panel(col, 6, y, 84, h);
+            lv_obj_set_style_radius(bar, 10, 0); lv_obj_set_style_clip_corner(bar, true, 0);
+            lv_obj_set_style_border_post(bar, true, 0);
+            lv_obj_add_flag(bar, LV_OBJ_FLAG_PRESS_LOCK);
+            // Set explicit width before paint_bar reads it.
+            lv_obj_update_layout(bar);
+            auto* fill = panel(bar, 0, 0, 0, h, style.fill);
+            lv_obj_set_style_radius(fill, 0, 0); lv_obj_set_style_border_width(fill, 0, 0);
+            lv_obj_remove_flag(fill, LV_OBJ_FLAG_CLICKABLE);
+            auto* name = label(bar, title, 8, is_header ? 10 : 8, 68, is_header ? style.bright : muted, &peepo_bold_14);
+            lv_obj_set_style_text_letter_space(name, 1, 0);
+            auto* value = label(bar, "", 8, is_header ? 32 : 36, 68, text, is_header ? &peepo_bold_18 : &peepo_bold_24);
+            lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_RIGHT, 0);
+            std::string pin;
+            for (const auto& a : graph_.assignments)
+                if (a.module == m.id && a.action == ControlAction::Parameter && a.parameter == p.symbol && assignment_target(graph_, a))
+                    pin += (pin.empty() ? "" : " ") + std::string(is_encoder(a.control) ? "E" : "S") + a.control.substr(is_encoder(a.control) ? 3 : 5);
+            if (!pin.empty()) {
+                auto* badge = label(bar, pin, 8, is_header ? 10 : 8, 68, style.bright, &peepo_mono_14);
+                lv_obj_set_style_text_align(badge, LV_TEXT_ALIGN_RIGHT, 0);
+            }
+            paint_bar(bar, p);
+            bind(bar, Action::Parameter, m.id, p.symbol);
+            bars_.push_back({m.id, p.symbol, bar});
+            return bar;
+        };
+        make_tile("is_enabled" + n, "LOOP " + n, 6, 64, true);
+        euclidean_tiles_[t][0] = make_tile("steps" + n, "STEPS", 78, 80, false);
+        euclidean_tiles_[t][1] = make_tile("beats" + n, "BEATS", 166, 80, false);
+        euclidean_tiles_[t][2] = make_tile("shift" + n, "SHIFT", 254, 80, false);
+    }
+
+    if (!focus_symbol_.empty()) {
+        for (std::size_t i = 0; i < bars_.size(); ++i) if (bars_[i].symbol == focus_symbol_) parameter_focus_ = i;
+        focus_symbol_.clear();
+    }
+    if (parameter_focus_ >= bars_.size()) { parameter_focus_ = bars_.size() - 1; adjusting_ = false; }
+    highlight(bars_[parameter_focus_].widget, true, adjusting_, bar_ink(m, bars_[parameter_focus_].symbol));
+    update_euclidean();
+}
+void Application::update_euclidean() {
+    if (!euclidean_status_) return;
+    const auto* m = find_module(graph_, selected_);
+    if (!m) return;
+    const bool ready = engine_.state() == EngineState::Ready && !m->bypassed && !engine_.capabilities().simulation;
+    const auto live_steps = ready ? engine_.euclidean_steps(m->id) : EuclideanSteps{};
+    bool any_live = false;
+    for (const auto& s : live_steps) if (s.has_value()) any_live = true;
+    const std::string status = engine_.capabilities().simulation ? "SIMULATED" :
+        engine_.state() != EngineState::Ready ? "OFFLINE" :
+        m->bypassed ? "BYPASSED" :
+        any_live ? "LIVE" : "WAITING FOR TRIG";
+    const auto status_ink = color(any_live ? accent : (m->bypassed || engine_.state() != EngineState::Ready) ? warning : muted);
+    if (status != lv_label_get_text(euclidean_status_)) lv_label_set_text(euclidean_status_, status.c_str());
+    if (!lv_color_eq(lv_obj_get_style_text_color(euclidean_status_, LV_PART_MAIN), status_ink))
+        lv_obj_set_style_text_color(euclidean_status_, status_ink, 0);
+
+    auto current_val = [&](const std::string& symbol) -> int {
+        if (stream_ && stream_->id == m->id && stream_->symbol == symbol) return static_cast<int>(std::round(stream_->latest));
+        return static_cast<int>(std::round(parameter(*m, symbol).value));
+    };
+    constexpr double pi = 3.14159265358979323846;
+    for (std::size_t t = 0; t < euclidean_tracks; ++t) {
+        const auto n = std::to_string(t + 1);
+        const auto& style = euclidean_styles[t];
+        const bool enabled = current_val("is_enabled" + n) > 0;
+        const int steps = std::clamp(current_val("steps" + n), 0, euclidean_max_steps);
+        const int beats = std::clamp(current_val("beats" + n), 0, euclidean_max_steps);
+        const int shift = std::clamp(current_val("shift" + n), 0, euclidean_max_steps);
+        const auto pattern = euclidean_pattern(steps, beats, shift);
+        const auto active_step = (enabled && steps > 0 && live_steps[t] && *live_steps[t] >= 0)
+            ? std::optional<int>{*live_steps[t] % steps} : std::nullopt;
+
+        for (auto* tile : euclidean_tiles_[t])
+            if (tile) lv_obj_set_style_opa(tile, static_cast<lv_opa_t>(enabled ? LV_OPA_COVER : LV_OPA_50), 0);
+
+        if (auto* ring = euclidean_rings_[t]) {
+            lv_obj_set_style_border_color(ring, color(enabled && steps > 0 ? style.ring_dim : 0x1c1c1c), 0);
+            lv_obj_set_style_opa(ring, static_cast<lv_opa_t>(enabled ? LV_OPA_COVER : LV_OPA_40), 0);
+        }
+
+        auto* halo = euclidean_halos_[t];
+        if (halo) lv_obj_add_flag(halo, LV_OBJ_FLAG_HIDDEN);
+
+        for (int s = 0; s < euclidean_max_steps; ++s) {
+            auto* dot = euclidean_dots_[t][static_cast<std::size_t>(s)];
+            if (!dot) continue;
+            if (!enabled || s >= steps) {
+                lv_obj_add_flag(dot, LV_OBJ_FLAG_HIDDEN);
+                continue;
+            }
+            lv_obj_remove_flag(dot, LV_OBJ_FLAG_HIDDEN);
+            const double angle = -pi / 2.0 + (2.0 * pi * static_cast<double>(s)) / static_cast<double>(steps);
+            const int cx = 170 + static_cast<int>(std::round(static_cast<double>(style.radius) * std::cos(angle)));
+            const int cy = 170 + static_cast<int>(std::round(static_cast<double>(style.radius) * std::sin(angle)));
+            const bool beat = pattern[static_cast<std::size_t>(s)];
+            const bool active = active_step && *active_step == s;
+            const int size = active ? (beat ? (steps <= 16 ? 14 : 12) : (steps <= 16 ? 10 : 8))
+                                    : beat ? (steps <= 20 ? 12 : 10) : (steps <= 24 ? 6 : 4);
+            lv_obj_set_pos(dot, cx - size / 2, cy - size / 2);
+            lv_obj_set_size(dot, size, size);
+            if (active) {
+                lv_obj_set_style_bg_color(dot, color(style.bright), 0);
+                lv_obj_set_style_border_width(dot, beat ? 2 : 0, 0);
+                lv_obj_set_style_border_color(dot, color(text), 0);
+                if (halo) {
+                    const int h_size = beat ? (steps <= 16 ? 24 : 20) : (steps <= 16 ? 18 : 14);
+                    lv_obj_set_pos(halo, cx - h_size / 2, cy - h_size / 2);
+                    lv_obj_set_size(halo, h_size, h_size);
+                    lv_obj_set_style_bg_color(halo, color(style.bright), 0);
+                    lv_obj_set_style_bg_opa(halo, static_cast<lv_opa_t>(beat ? LV_OPA_30 : LV_OPA_20), 0);
+                    lv_obj_set_style_border_width(halo, beat ? 2 : 1, 0);
+                    lv_obj_set_style_border_color(halo, color(style.bright), 0);
+                    lv_obj_remove_flag(halo, LV_OBJ_FLAG_HIDDEN);
+                }
+            } else if (beat) {
+                lv_obj_set_style_bg_color(dot, color(surface), 0);
+                lv_obj_set_style_border_width(dot, 2, 0);
+                lv_obj_set_style_border_color(dot, color(style.bright), 0);
+            } else {
+                lv_obj_set_style_bg_color(dot, color(0x3f3f46), 0);
+                lv_obj_set_style_border_width(dot, 0, 0);
+            }
+        }
+
+        if (auto* step_lbl = euclidean_step_labels_[t]) {
+            std::string summary = "L" + n + " ";
+            if (!enabled) summary += "OFF";
+            else if (active_step) summary += std::to_string(*active_step + 1) + "/" + std::to_string(steps);
+            else summary += std::to_string(std::min(beats, steps)) + ":" + std::to_string(steps);
+            if (summary != lv_label_get_text(step_lbl)) lv_label_set_text(step_lbl, summary.c_str());
+            lv_obj_set_style_text_color(step_lbl, color(enabled ? style.bright : faint), 0);
+        }
+    }
 }
 void Application::parameter_bar(lv_obj_t* parent, const Module& m, const Parameter& p) {
     auto* bar = panel(parent, 0, 0, bar_width, bar_height);
@@ -1561,7 +1794,7 @@ void Application::focus_parameter(std::size_t index) {
     if (!m) return;
     if (parameter_focus_ < bars_.size()) highlight(bars_[parameter_focus_].widget, false, false, 0);
     parameter_focus_ = index; adjusting_ = false;
-    highlight(bars_[index].widget, true, false, module_ink(*m));
+    highlight(bars_[index].widget, true, false, bar_ink(*m, bars_[index].symbol));
     lv_obj_scroll_to_view(bars_[index].widget, LV_ANIM_OFF);
     if (bars_[index].file) { message(definition(m->uri)->file.label + ": push to choose a file."); return; }
     const auto& p = parameter(*m, bars_[index].symbol);
@@ -1578,10 +1811,10 @@ void Application::activate_parameter() {
         return;
     }
     const auto& p = parameter(*m, bar.symbol);
-    if (p.kind == ParameterKind::Toggle || p.kind == ParameterKind::Enumeration) { submit(SetParameter{m->id, p.symbol, stepped_choice(p)}); return; }
+    if (p.kind == ParameterKind::Toggle || p.kind == ParameterKind::Enumeration || is_euclidean_toggle(p)) { submit(SetParameter{m->id, p.symbol, stepped_choice(p)}); return; }
     // With one encoder, its push switches between choosing a bar and turning it.
     adjusting_ = !adjusting_;
-    highlight(bar.widget, true, adjusting_, module_ink(*m));
+    highlight(bar.widget, true, adjusting_, bar_ink(*m, bar.symbol));
     message(adjusting_ ? "Encoder 1 turns " + p.name + "; push it again to move on." : "Encoder 1 picks a control again.");
 }
 void Application::open_module(InstanceId id) {
@@ -1618,8 +1851,9 @@ void Application::turn_parameter(InstanceId id, const std::string& symbol, const
     if (next == current) return;
     // The bar follows at once; the engine's answer confirms it.
     for (const auto& bar : bars_) if (bar.id == id && bar.symbol == symbol) paint_bar(bar.widget, shown);
-    if (p->kind == ParameterKind::Continuous || p->kind == ParameterKind::Integer) stream_parameter(id, symbol, next);
+    if ((p->kind == ParameterKind::Continuous || p->kind == ParameterKind::Integer) && !is_euclidean_toggle(*p)) stream_parameter(id, symbol, next);
     else submit(SetParameter{id, symbol, next});
+    update_euclidean();
 }
 void Application::focus_module(int steps) {
     // In signal order: left to right, then top to bottom.

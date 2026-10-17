@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Peepo contributors
 #pragma once
+#include "core/euclidean.hpp"
 #include "core/model.hpp"
 #include <optional>
 #include <variant>
@@ -86,9 +87,11 @@ public:
     virtual const Graph& snapshot() const = 0;
     virtual EngineCapabilities capabilities() const = 0;
     virtual EngineTelemetry telemetry() const { return {}; }
-    // Live tuner output is telemetry, never an editable/saved parameter.
+    // Live tuner and sequencer outputs are telemetry, never editable/saved parameters.
     virtual void watch_tuner(std::optional<InstanceId>) {}
     virtual std::optional<double> tuner_frequency(InstanceId) const { return {}; }
+    virtual void watch_euclidean(std::optional<InstanceId>) {}
+    virtual EuclideanSteps euclidean_steps(InstanceId) const { return {}; }
     // Optional development controls; real adapters keep these unsupported.
     virtual bool simulate_state(EngineState) { return false; }
     virtual bool simulate_rejection() { return false; }

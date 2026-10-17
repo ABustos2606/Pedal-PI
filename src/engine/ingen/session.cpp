@@ -99,6 +99,7 @@ void Session::closed(std::string reason, bool retrying) {
     transactions_.clear(); sequences_.clear(); outgoing_.clear(); buffer_.clear(); expected_copies_.clear();
     depth_ = 0; cpu_.reset(); fault_.reset(); sent_modified_.reset();
     tuner_.reset(); tuner_port_.clear(); tuner_frequency_.reset();
+    euclidean_.reset(); euclidean_ports_ = {}; euclidean_steps_ = {}; euclidean_age_ = 0;
     emit(0, true, std::move(reason));
 }
 void Session::fail_edits(const std::string& message) {
@@ -180,14 +181,28 @@ void Session::merge(const std::string& path, const Properties& properties) {
     for (const auto& entry : properties)
         if (std::find(object.begin(), object.end(), entry) == object.end()) object.push_back(entry);
     // A Get returns the port's initial value in Ingen, not its DSP output.
-    // Only single-value output notifications carry current pitch.
+    // Only single-value output notifications carry current pitch or step.
+    bool monitored_output = path == tuner_port_;
     if (path == tuner_port_ && output_value) {
         if (const auto* value = find(properties, value_key)) {
             tuner_frequency_ = finite(value); tuner_age_ = 0;
         }
     }
+    for (std::size_t i = 0; i < euclidean_ports_.size(); ++i) {
+        if (!euclidean_ports_[i].empty() && path == euclidean_ports_[i]) {
+            monitored_output = true;
+            if (output_value) {
+                if (const auto value = finite(find(properties, value_key)); value && *value >= 0 && *value < euclidean_max_steps) {
+                    euclidean_steps_[i] = static_cast<int>(std::round(*value));
+                    euclidean_age_ = 0;
+                } else {
+                    euclidean_steps_[i].reset();
+                }
+            }
+        }
+    }
     // Output meters must not rebuild the graph or interrupt touch gestures.
-    if (!output_value && path != tuner_port_) mirror_changed_ = unreported_ = true;
+    if (!output_value && !monitored_output) mirror_changed_ = unreported_ = true;
 }
 void Session::watch_tuner(std::optional<InstanceId> id) {
     std::string port;
@@ -217,6 +232,47 @@ void Session::watch_tuner(std::optional<InstanceId> id) {
 }
 std::optional<double> Session::tuner_frequency(InstanceId id) const {
     return state_ == EngineState::Ready && tuner_ == id && tuner_age_ < 750 ? tuner_frequency_ : std::nullopt;
+}
+void Session::watch_euclidean(std::optional<InstanceId> id) {
+    std::array<std::string, euclidean_tracks> ports{};
+    if (id && state_ == EngineState::Ready) {
+        const auto* module = find_module(graph_, *id);
+        const auto path = paths_.find(*id);
+        if (module && !module->bypassed && euclidean_uri(module->uri) && path != paths_.end()) {
+            for (std::size_t i = 0; i < ports.size(); ++i) {
+                const auto candidate = child(path->second, "current_step_out_" + std::to_string(i + 1));
+                const auto found = objects_.find(candidate);
+                if (found != objects_.end() && has(found->second, type, iri(uri::lv2, "OutputPort")) &&
+                    has(found->second, type, iri(uri::lv2, "ControlPort"))) ports[i] = candidate;
+            }
+        }
+    }
+    if (ports == euclidean_ports_) return;
+    if (state_ == EngineState::Ready) {
+        Transaction* tx = nullptr;
+        for (const auto& port : euclidean_ports_)
+            if (!port.empty() && objects_.contains(port)) {
+                if (!tx) tx = &begin(0, Purpose::Monitor);
+                const auto seq = sequence();
+                send(*tx, set(seq, port, "ingen:broadcast", "false"), seq);
+            }
+    }
+    const bool any = std::any_of(ports.begin(), ports.end(), [](const std::string& p) { return !p.empty(); });
+    euclidean_ports_ = ports;
+    euclidean_ = any ? id : std::nullopt;
+    euclidean_steps_ = {};
+    euclidean_age_ = 0;
+    if (any) {
+        auto& tx = begin(0, Purpose::Monitor);
+        for (const auto& port : euclidean_ports_)
+            if (!port.empty()) {
+                const auto seq = sequence();
+                send(tx, set(seq, port, "ingen:broadcast", "true"), seq);
+            }
+    }
+}
+EuclideanSteps Session::euclidean_steps(InstanceId id) const {
+    return state_ == EngineState::Ready && euclidean_ == id && euclidean_age_ < 750 ? euclidean_steps_ : EuclideanSteps{};
 }
 void Session::erase(const std::string& path) {
     const auto prefix = path + "/";
@@ -331,7 +387,7 @@ void Session::finish(Transaction& done) {
         if (!ok && done.replaces) fault_ = std::string("Engine refused to describe its graph: ") + status_text(done.status);
         break;
     case Purpose::Monitor:
-        if (!ok) tuner_frequency_.reset();
+        if (!ok) { tuner_frequency_.reset(); euclidean_steps_ = {}; }
         break;
     }
 }
@@ -894,6 +950,9 @@ std::vector<EngineEvent> Session::advance(unsigned milliseconds) {
     if (!tuner_port_.empty() && state_ == EngineState::Ready) {
         tuner_age_ = std::min(10000u, tuner_age_ + milliseconds);
     }
+    if (euclidean_ && state_ == EngineState::Ready) {
+        euclidean_age_ = std::min(10000u, euclidean_age_ + milliseconds);
+    }
     std::vector<TransactionId> late;
     for (auto& [id, pending] : transactions_) if ((pending.age += milliseconds) >= options_.request_timeout_ms) late.push_back(id);
     bool resynchronize = false;
@@ -901,7 +960,7 @@ std::vector<EngineEvent> Session::advance(unsigned milliseconds) {
         auto node = transactions_.extract(id);
         for (const auto number : node.mapped().sequences) sequences_.erase(number);
         if (node.mapped().purpose == Purpose::Edit) { emit(node.mapped().request, false, "Engine did not answer in time"); resynchronize = true; }
-        else if (node.mapped().purpose == Purpose::Monitor) tuner_frequency_.reset();
+        else if (node.mapped().purpose == Purpose::Monitor) { tuner_frequency_.reset(); euclidean_steps_ = {}; }
         else fault_ = "Engine did not answer while synchronizing";
     }
     // What a late edit did is unknown; read the graph again instead of guessing.

@@ -196,18 +196,18 @@ int main(int argc, char** argv) {
             check(peepo::find_module(app.graph(), 3)->parameters[0].value > 70, "dragging a bar did not update the authoritative value");
             check(bar_value(app, "DRIVE") == peepo::format_value(peepo::find_module(app.graph(), 3)->parameters[0]), "the bar does not show the new value");
             click(app, 70, 456); check(app.page() == peepo::Page::Patch, "back failed");
-            click(app, 155, 228);
+            click(app, 150, 218);
             check(app.graph().connections.size() == 8 && !app.pending(), "cable selection changed graph");
             capture(app, output / "10-selected-cable.bmp");
             click(app, 344, 456);
             check(app.graph().connections.size() == 8, "deselect deleted cable");
-            click(app, 155, 228); click(app, 500, 456);
+            click(app, 150, 218); click(app, 500, 456);
             check(app.graph().connections.size() == 7, "explicit cable delete failed");
             check(app.graph().connections.front().from == 3, "cable hit test removed the wrong cable");
-            pointer = {128, 228}; pressed = true; step(app, 64);
+            pointer = {116, 218}; pressed = true; step(app, 64);
             capture(app, output / "14-cable-targets.bmp");
             pressed = false; step(app);
-            drag(app, 128, 228, 184, 228);
+            drag(app, 116, 218, 184, 218);
             check(app.graph().connections.size() == 8, "reconnect cable failed");
             click(app, 398, 244);
             // All six of Clouds' controls on one page: no pages to turn.
@@ -249,7 +249,7 @@ int main(int argc, char** argv) {
             check(app.page() == peepo::Page::Patch, "add did not return to patch");
             // Drop a cable from IN onto the added Reverb's input hit area.
             const auto* reverb = peepo::find_module(app.graph(), 6); check(reverb != nullptr, "new instance missing");
-            drag(app, 128, 228, reverb->x, reverb->y + 96);
+            drag(app, 116, 218, reverb->x, reverb->y + 86);
             check(app.graph().connections.size() == 9, "output to input drag failed");
             click(app, 707, 36); check(app.page() == peepo::Page::Settings, "settings navigation failed");
             capture(app, output / "04-settings.bmp");
@@ -286,9 +286,9 @@ int main(int argc, char** argv) {
             check(app.graph().dirty == before_pan.dirty && !app.pending(), "panning submitted an engine edit");
             capture(app, output / "11-panned-canvas.bmp");
             // Cable hit testing and module gestures use the same viewport transform.
-            click(app, 484, 228); check(app.graph().connections.size() == 9, "panned cable tap deleted cable");
+            click(app, 474, 218); check(app.graph().connections.size() == 9, "panned cable tap deleted cable");
             click(app, 500, 456); check(app.graph().connections.size() == 8, "panned cable delete missed target");
-            drag(app, 456, 228, 504, 228); check(app.graph().connections.size() == 9, "panned cable reconnection failed");
+            drag(app, 444, 218, 504, 218); check(app.graph().connections.size() == 9, "panned cable reconnection failed");
             drag(app, 408, 244, 456, 244);
             check(peepo::find_module(app.graph(), 5)->x == 576, "panned module movement lost world coordinates");
             hold(app, 236, 244); check(app.page() == peepo::Page::ModuleActions, "long press did not open actions");
@@ -300,16 +300,16 @@ int main(int argc, char** argv) {
                 copy.parameters[3].value == source.parameters[3].value, "UI duplicate did not preserve state");
             check(app.graph().connections.size() == 9, "UI duplicate copied cables");
             click(app, 276, 36); // Tapping the patch name resets the viewport, not the graph.
-            click(app, source.x + 48, source.y + 120);
+            click(app, source.x + 42, source.y + 100);
             check(app.page() == peepo::Page::Parameters, "tapping the patch name did not restore original module location");
             tap_header(app, "ACTIONS"); check(app.page() == peepo::Page::ModuleActions, "parameter Actions button failed");
             click(app, 170, 180); check(app.page() == peepo::Page::Parameters, "context Parameters action failed");
             click(app, 70, 456);
             engine.reject_next();
-            hold(app, source.x + 48, source.y + 120); click(app, 170, 252);
+            hold(app, source.x + 42, source.y + 100); click(app, 170, 252);
             check(app.graph().modules.size() == 7 && app.message().find("rejection") != std::string::npos,
                 "rejected context duplicate changed graph or lost feedback");
-            hold(app, copy.x + 48, copy.y + 120);
+            hold(app, copy.x + 42, copy.y + 100);
             check(app.page() == peepo::Page::ModuleActions, "duplicate module did not open context actions");
             click(app, 600, 180);
             check(peepo::find_module(app.graph(), copy.id)->bypassed != copy.bypassed, "context software bypass failed");
@@ -335,7 +335,7 @@ int main(int argc, char** argv) {
             add_module(app, "TEXTURE", "CLOUDS");
             check(app.graph().modules.size() == 16 && app.graph().modules.back().x > 672, "full viewport prevented adding beyond it");
             capture(app, output / "13-larger-canvas.bmp");
-            click(app, 72, 144);
+            click(app, 66, 112);
             check(app.page() == peepo::Page::Parameters, "new offscreen module was not revealed after add");
             click(app, 70, 456); click(app, 276, 36);
             engine.submit(peepo::LoadGraph{peepo::demo_graph()}); step(app, 256);
@@ -470,10 +470,10 @@ int main(int argc, char** argv) {
             check(app.page() == peepo::Page::Patch && app.graph().name == "Parallel texture" && app.graph().connections.size() == 10, "parallel starter did not load");
             capture(app, output / "27-parallel-patch.bmp");
             // Delete one side of the split; the other side and both merge cables survive.
-            click(app, 338, 198); click(app, 500, 456);
+            click(app, 342, 164); click(app, 500, 456);
             check(app.graph().connections.size() == 9, "parallel branch cable could not be removed");
             check(std::find(app.graph().connections.begin(), app.graph().connections.end(), peepo::Connection{3, 5}) != app.graph().connections.end(), "removing one branch removed the other");
-            drag(app, 288, 228, 408, 120);
+            drag(app, 276, 218, 408, 110);
             check(app.graph().connections.size() == 10 && peepo::validate_graph(app.graph()).empty(), "parallel branch could not be reconnected");
 
             // Reference metadata: a square with two input jacks and two output jacks.
@@ -485,16 +485,16 @@ int main(int argc, char** argv) {
             const auto has = [&](const peepo::Connection& c) {
                 return std::find(app.graph().connections.begin(), app.graph().connections.end(), c) != app.graph().connections.end();
             };
-            drag(app, 280, 228, 352, 408);
+            drag(app, 268, 218, 352, 378);
             check(has({3, 6, "out", "modulator"}), "cable dropped on the second input jack reached another port");
-            drag(app, 448, 408, 664, 228);
+            drag(app, 436, 378, 664, 218);
             check(has({6, 2, "aux", "in"}), "cable dragged from the second output jack left another port");
-            drag(app, 280, 228, 352, 360);
+            drag(app, 268, 218, 352, 350);
             check(has({3, 6, "out", "carrier"}) && app.graph().connections.size() == 11, "first input jack could not be patched separately");
             // Left output through one effect, right output through another.
-            click(app, 294, 276); click(app, 500, 456);
+            click(app, 310, 246); click(app, 500, 456);
             check(!has({3, 4, "out_r", "in_r"}), "right-lane cable could not be removed on its own");
-            drag(app, 280, 276, 352, 408);
+            drag(app, 268, 246, 352, 378);
             check(has({3, 4}) && has({3, 6, "out_r", "modulator"}), "left and right outputs could not feed different effects");
             capture(app, output / "28-multi-port.bmp");
 
@@ -517,7 +517,7 @@ int main(int argc, char** argv) {
             pick_and_add(app, "MIST GRANULAR");
             const auto mist = app.graph().modules.back();
             check(mist.uri == "http://polyeffects.com/lv2/polyclouds#granular" && app.page() == peepo::Page::Patch, "reference module could not be added from the browser");
-            click(app, mist.x + 48, mist.y + 120);
+            click(app, mist.x + 42, mist.y + 100);
             check(app.page() == peepo::Page::Parameters, "reference module has no page");
             // Twelve controls, all in view at once.
             for (const char* name : {"POSITION", "SIZE", "PITCH", "IN GAIN", "DENSITY", "TEXTURE", "BLEND", "SPREAD", "FEEDBACK", "REVERB", "FREEZE", "REVERSE"}) {
@@ -537,7 +537,7 @@ int main(int argc, char** argv) {
             modulated.modules.push_back({6, tides->uri, tides->name, 184, 240, false, false, tides->parameters, tides->ports});
             modulated.modules.push_back({7, granular->uri, granular->name, 352, 24, false, false, granular->parameters, granular->ports});
             engine.submit(peepo::LoadGraph{modulated}); step(app, 256); click(app, 276, 36);
-            drag(app, 232, 312, 400, 192);
+            drag(app, 226, 312, 394, 152);
             check(app.page() == peepo::Page::CvConnect && !app.pending(), "control cable drop did not ask for ports");
             capture(app, output / "31-control-ports.bmp");
             click(app, 200, 160);
@@ -545,9 +545,9 @@ int main(int argc, char** argv) {
             click(app, 200, 160);
             check(app.page() == peepo::Page::Patch && has({6, 7, "out1", "freeze"}), "control cable was not created between the chosen ports");
             capture(app, output / "32-control-cable.bmp");
-            drag(app, 232, 312, 80, 300);
+            drag(app, 226, 312, 80, 300);
             check(app.page() == peepo::Page::Patch && app.graph().connections.size() == 3, "control cable dropped on nothing changed the graph");
-            click(app, 316, 252);
+            click(app, 310, 232);
             check(app.message().find("freeze") != std::string::npos, "selected control cable was not named");
             click(app, 500, 456);
             check(!has({6, 7, "out1", "freeze"}), "control cable could not be deleted");
@@ -1120,6 +1120,70 @@ int main(int argc, char** argv) {
             app.control({peepo::ControlEvent::Type::Turn, "enc2", 2}); step(app, 256);
             check(std::abs(time() - 1) < 1e-9 && exact_label(app.screen(), "1/4") && text_label(app.screen(), "500 ms"), "encoder 2 did not turn by note values");
             capture(app, output / "58-beat-time.bmp");
+        }
+        // Drive the personalized Euclidean page with live step telemetry and 4-column track controls.
+        {
+            struct EuclideanEngine : peepo::Engine {
+                peepo::SimulatedEngine backing;
+                peepo::EuclideanSteps steps{{2, 3, 8, 2}};
+                std::optional<peepo::InstanceId> watched;
+                peepo::RequestId submit(peepo::Command c) override { return backing.submit(std::move(c)); }
+                void connect() override { backing.connect(); }
+                void disconnect() override { backing.disconnect(); }
+                std::vector<peepo::EngineEvent> advance(unsigned ms) override { return backing.advance(ms); }
+                peepo::EngineState state() const override { return backing.state(); }
+                const peepo::Graph& snapshot() const override { return backing.snapshot(); }
+                peepo::EngineCapabilities capabilities() const override { return {false, true, false, false, true}; }
+                void watch_euclidean(std::optional<peepo::InstanceId> id) override { watched = id; }
+                peepo::EuclideanSteps euclidean_steps(peepo::InstanceId id) const override { return watched == id ? steps : peepo::EuclideanSteps{}; }
+            } live;
+            const std::string uri = "http://polyeffects.com/lv2/euclidean";
+            peepo::register_definitions({{uri, "Euclidean", "CV", "Four Euclidean trigger sequencers", 0xe8d44d,
+                {{"trigger", peepo::Direction::Input, 1, peepo::PortType::Cv},
+                 {"reset", peepo::Direction::Input, 1, peepo::PortType::Cv},
+                 {"out_1", peepo::Direction::Output, 1, peepo::PortType::Cv},
+                 {"out_2", peepo::Direction::Output, 1, peepo::PortType::Cv},
+                 {"out_3", peepo::Direction::Output, 1, peepo::PortType::Cv},
+                 {"out_4", peepo::Direction::Output, 1, peepo::PortType::Cv}},
+                {{"is_enabled1", "Loop 1", "", peepo::ParameterKind::Toggle, 0, 1, 1},
+                 {"steps1", "Steps 1", "", peepo::ParameterKind::Integer, 1, 32, 8},
+                 {"beats1", "Beats 1", "", peepo::ParameterKind::Integer, 0, 32, 3},
+                 {"shift1", "Shift 1", "", peepo::ParameterKind::Integer, 0, 32, 0},
+                 {"is_enabled2", "Loop 2", "", peepo::ParameterKind::Toggle, 0, 1, 1},
+                 {"steps2", "Steps 2", "", peepo::ParameterKind::Integer, 1, 32, 12},
+                 {"beats2", "Beats 2", "", peepo::ParameterKind::Integer, 0, 32, 5},
+                 {"shift2", "Shift 2", "", peepo::ParameterKind::Integer, 0, 32, 1},
+                 {"is_enabled3", "Loop 3", "", peepo::ParameterKind::Toggle, 0, 1, 1},
+                 {"steps3", "Steps 3", "", peepo::ParameterKind::Integer, 1, 32, 16},
+                 {"beats3", "Beats 3", "", peepo::ParameterKind::Integer, 0, 32, 7},
+                 {"shift3", "Shift 3", "", peepo::ParameterKind::Integer, 0, 32, 2},
+                 {"is_enabled4", "Loop 4", "", peepo::ParameterKind::Toggle, 0, 1, 1},
+                 {"steps4", "Steps 4", "", peepo::ParameterKind::Integer, 1, 32, 6},
+                 {"beats4", "Beats 4", "", peepo::ParameterKind::Integer, 0, 32, 2},
+                 {"shift4", "Shift 4", "", peepo::ParameterKind::Integer, 0, 32, 0}}}});
+            live.submit(peepo::LoadGraph{peepo::empty_graph("Rhythm")}); live.advance(100);
+            live.submit(peepo::AddModule{uri, 184, 132}); live.advance(100);
+            peepo::Application app(live); step(app);
+            const auto euc = app.graph().modules.back();
+            click(app, euc.x + 16, euc.y + 72 + 28);
+            check(app.page() == peepo::Page::Parameters && live.watched == euc.id && exact_label(app.screen(), "RHYTHM") &&
+                  exact_label(app.screen(), "LIVE") && exact_label(app.screen(), "L1 3/8") && exact_label(app.screen(), "L2 4/12") &&
+                  exact_label(app.screen(), "L3 9/16") && exact_label(app.screen(), "L4 3/6"), "Euclidean did not show live steps and 4 rings");
+            capture(app, output / "59-euclidean-live.bmp");
+            auto* loop1 = bar(app, "LOOP 1");
+            live.steps = {{0, 1, 2, 3}}; step(app);
+            check(exact_label(app.screen(), "L1 1/8") && bar(app, "LOOP 1") == loop1, "Euclidean live step update rebuilt controls");
+            // Step Encoder 1 from Loop 1 to Steps 1 and turn Encoder 2 up by 2.
+            app.control({peepo::ControlEvent::Type::Turn, "enc1", 1}); step(app, 256);
+            app.control({peepo::ControlEvent::Type::Turn, "enc2", 2}); step(app, 256);
+            check(exact_label(app.screen(), "L1 1/10"), "turning Steps 1 did not update ring and readout to 10 steps");
+            // Toggle Loop 4 off by tapping its tile.
+            tap_bar(app, "LOOP 4");
+            check(exact_label(app.screen(), "L4 OFF"), "toggling Loop 4 off did not mark L4 OFF");
+            live.steps = {}; step(app);
+            check(exact_label(app.screen(), "WAITING FOR TRIG") && exact_label(app.screen(), "L1 3:10"), "idle Euclidean did not show beats:steps ratio");
+            click(app, 70, 456);
+            check(!live.watched, "leaving Euclidean did not stop monitoring");
         }
         // Release the headless devices before the global runtime.
         lv_indev_delete(indev);

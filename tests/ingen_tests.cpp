@@ -808,12 +808,56 @@ void tuner_monitor() {
     engine.watch_tuner(3); rig.settle(); engine.disconnect();
     check(!engine.tuner_frequency(3), "offline tuner retained a reading");
 }
+void euclidean_monitor() {
+    using namespace peepo;
+    using namespace peepo::ingen;
+    FakeEngine fake;
+    const std::string path = "ingen:/main/m3", plugin = "http://polyeffects.com/lv2/euclidean";
+    fake.plugins.insert(plugin);
+    fake.objects[path] = {{rdf_type, iri_value(full(uri::ingen, "Block"))}, {full(uri::lv2, "prototype"), iri_value(plugin)}};
+    for (int t = 1; t <= 4; ++t)
+        fake.objects[path + "/current_step_out_" + std::to_string(t)] = {{rdf_type, iri_value(full(uri::lv2, "OutputPort"))},
+            {rdf_type, iri_value(full(uri::lv2, "ControlPort"))}, {full(uri::ingen, "value"), number_value(0)}};
+    Rig rig(fake);
+    auto& engine = *rig.engine;
+    engine.connect(); rig.settle();
+    check(!engine.euclidean_steps(3)[0], "unwatched euclidean exposed a step");
+    engine.watch_euclidean(3);
+    check(rig.settle().empty() && !engine.euclidean_steps(3)[0], "euclidean monitor setup rebuilt the patch or used initial port value");
+    for (int t = 1; t <= 4; ++t) {
+        const auto* enabled = property(fake, path + "/current_step_out_" + std::to_string(t), full(uri::ingen, "broadcast"));
+        check(enabled && enabled->boolean, "euclidean step output was not subscribed");
+    }
+    rig.transport->deliver(fake.put(1, path + "/current_step_out_1", {{full(uri::ingen, "value"), number_value(2)}}));
+    rig.transport->deliver(fake.put(1, path + "/current_step_out_3", {{full(uri::ingen, "value"), number_value(5)}}));
+    check(rig.settle().empty() && engine.euclidean_steps(3)[0] == 2 && !engine.euclidean_steps(3)[1] && engine.euclidean_steps(3)[2] == 5 && !rig.graph().dirty,
+          "euclidean step update rebuilt/modified the patch");
+    // Get descriptions contain initialization values, not current DSP output.
+    rig.transport->deliver(fake.put(1, path + "/current_step_out_1", fake.objects.at(path + "/current_step_out_1")));
+    check(rig.settle().empty() && engine.euclidean_steps(3)[0] == 2, "port description overwrote live step");
+    fake.mute = 1;
+    engine.advance(800); rig.settle();
+    check(!engine.euclidean_steps(3)[0] && !engine.euclidean_steps(3)[2], "stalled engine retained a stale step");
+    fake.mute = 0;
+    engine.watch_euclidean(std::nullopt); rig.settle();
+    for (int t = 1; t <= 4; ++t) {
+        const auto* enabled = property(fake, path + "/current_step_out_" + std::to_string(t), full(uri::ingen, "broadcast"));
+        check(enabled && !enabled->boolean, "leaving euclidean kept monitoring enabled");
+    }
+    engine.watch_euclidean(3); rig.settle();
+    rig.transport->deliver(fake.put(1, path + "/current_step_out_2", {{full(uri::ingen, "value"), number_value(1)}}));
+    rig.settle();
+    check(engine.euclidean_steps(3)[1] == 1, "re-watched euclidean did not report step");
+    engine.disconnect();
+    check(!engine.euclidean_steps(3)[1], "offline euclidean retained a step");
+}
 int main() {
     try {
         turtle_and_protocol();
         adapter();
         relative_paths();
         tuner_monitor();
+        euclidean_monitor();
         std::cout << "Ingen protocol reading, command mapping, acknowledgment, second client, timeout, reconnect and restart passed.\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

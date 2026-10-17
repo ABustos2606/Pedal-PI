@@ -10,7 +10,7 @@ namespace peepo {
 using InstanceId = std::uint64_t;
 // Logical canvas extent; viewport movement never changes module positions.
 inline constexpr int canvas_width = 4096, canvas_height = 2048;
-inline constexpr int module_size = 96;
+inline constexpr int module_width = 84, module_height = 56, module_size = module_width;
 inline constexpr int module_min_x = 24, module_min_y = 24;
 // The patch tempo, in beats per minute, and its range.
 inline constexpr double default_tempo = 120, minimum_tempo = 30, maximum_tempo = 300;

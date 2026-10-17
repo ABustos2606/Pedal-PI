@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Peepo contributors
+#include "core/euclidean.hpp"
 #include "engine/simulated_engine.hpp"
 #include <cmath>
 #include <iostream>
@@ -205,6 +206,14 @@ int main() {
         check(engine.snapshot().assignments.size() == 1 && engine.snapshot().assignments[0].module == 4, "unassigning one module cleared the stomp");
         engine.submit(Assign{drive, true}); engine.submit(RemoveModule{4}); engine.advance(100);
         check(engine.snapshot().assignments.size() == 1 && engine.snapshot().assignments[0].module == 3, "removing a module took the stomp's other module along");
+        // Euclidean rhythm generator matches poly_euclidean.c's Bjorklund rotation.
+        check(euclidean_uri("http://polyeffects.com/lv2/euclidean") && !euclidean_uri("http://gareus.org/oss/lv2/tuna#mod"), "euclidean URI check");
+        check(euclidean_pattern(0, 3, 0).empty() && euclidean_pattern(8, 0, 0) == std::vector<bool>(8, false), "empty or silent euclidean pattern");
+        check(euclidean_pattern(4, 4, 0) == std::vector<bool>(4, true) && euclidean_pattern(4, 9, 0) == std::vector<bool>(4, true), "full euclidean pattern");
+        check(euclidean_pattern(8, 3, 0) == std::vector<bool>{true, false, true, false, false, true, false, false}, "tresillo 3:8 pattern");
+        check(euclidean_pattern(8, 3, 1) == std::vector<bool>{false, true, false, true, false, false, true, false}, "tresillo 3:8 shifted by 1");
+        check(euclidean_pattern(8, 3, 2) == std::vector<bool>{false, false, true, false, true, false, false, true}, "tresillo 3:8 shifted by 2");
+        check(euclidean_pattern(40, 1, 0).size() == euclidean_max_steps, "euclidean step count clamped to 32");
         std::cout << "Domain validation, typed ranges, delayed acknowledgment, rejection, reconnect and restore passed.\n";
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
