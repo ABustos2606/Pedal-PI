@@ -75,6 +75,11 @@ struct ModuleDefinition {
     FileParameter file;
     // The control that follows the patch tempo, in BPM, when it has one.
     std::string tempo_symbol;
+    // Bypassed through its own on/off control instead, with the block left
+    // running: for a plugin that does its own bypass, such as a delay whose
+    // echoes ring on or whose memory keeps recording, which the engine's
+    // bypass would stop.
+    bool port_bypass = false;
 };
 // The general Output: not a plugin port but the block's own level, which the
 // engine applies to its audio outputs (urn:peepo:ns#outputLevel, in dB).

@@ -187,6 +187,21 @@ void bundles() {
     const auto stomp_back = bundle_graph(with_stomp);
     check(bypass_assignments(stomp_back, "stomp1").size() == 2 && stomp_back.assignments[0].module == one.module && stomp_back.assignments[1].module == two.module &&
           validate_graph(stomp_back).empty(), "a shared stomp did not come back with both modules");
+    // A plugin that bypasses itself is saved with its own switch off and its block on.
+    {
+        ModuleDefinition own{"urn:test:self-bypassed", "Self", "Delay", "", 0x7bbaed, {{"in", Direction::Input}, {"out", Direction::Output}}, {}};
+        own.enable_symbol = "enabled";
+        own.port_bypass = true;
+        register_definitions({own});
+        auto selfish = demo;
+        selfish.modules.push_back({90, own.uri, "Self", 600, 24, false, true, {}, own.ports, {}});
+        const auto selfish_text = write_main_ttl(selfish);
+        const auto at = selfish_text.find("<m90>");
+        check(at != std::string::npos && selfish_text.find("ingen:enabled false", at) > selfish_text.find("<m90/enabled>", at) &&
+              selfish_text.find("<m90/enabled>\n\tingen:value \"0", at) != std::string::npos, "a self-bypassed module was saved with the engine's bypass");
+        Bundle with_self;
+        check(read_bundle(selfish_text, with_self).empty() && find_module(bundle_graph(with_self), 90)->bypassed, "a self-bypassed module came back on");
+    }
     // Files are listed from the store's folder, by name, with the extension asked for.
     const auto files_root = fs::temp_directory_path() / "peepo-file-store-tests";
     fs::remove_all(files_root);

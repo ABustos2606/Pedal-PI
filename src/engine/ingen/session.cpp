@@ -419,7 +419,8 @@ void Session::rebuild() {
         if (const auto* enabled = find(properties, enabled_key); enabled && enabled->kind == Value::Kind::Boolean) m.bypassed = !enabled->boolean;
         if (const auto* file = find(properties, file_key); file && file->kind == Value::Kind::String && file_path(file->text)) m.file = file->text;
         // A plugin's own on/off control stays on: off, it writes silence. Earlier
-        // versions bypassed by clearing it, so a cleared one still reads as bypassed.
+        // versions bypassed by clearing it, so a cleared one still reads as
+        // bypassed; a plugin that bypasses itself is bypassed that way now.
         if (known && !known->enable_symbol.empty())
             if (const auto own = objects_.find(child(path, known->enable_symbol)); own != objects_.end() && finite(find(own->second, value_key)).value_or(0) < 0.5) m.bypassed = true;
 
@@ -610,9 +611,12 @@ std::string Session::create_graph(const Graph& graph, Transaction& to) {
         const auto path = child(main_path, "m" + std::to_string(m.id));
         const auto number = sequence();
         const auto* known = definition(m.uri);
-        const bool own_switch = known && !known->enable_symbol.empty();
-        send(to, put(number, path, block(m.uri, m.name, m.x, m.y, m.bypassed)), number);
-        if (own_switch) set_local(child(path, known->enable_symbol), "ingen:value", value_key, float_literal(1), ingen::number(1));
+        const bool own_switch = known && !known->enable_symbol.empty(), by_port = own_switch && known->port_bypass;
+        send(to, put(number, path, block(m.uri, m.name, m.x, m.y, m.bypassed && !by_port)), number);
+        if (own_switch) {
+            const double on = by_port && m.bypassed ? 0 : 1;
+            set_local(child(path, known->enable_symbol), "ingen:value", value_key, float_literal(on), ingen::number(on));
+        }
         for (const auto& parameter : m.parameters)
             if (parameter.symbol == general_output_symbol) set_local(path, "peepo:outputLevel", output_level_key, float_literal(parameter.value), ingen::number(parameter.value));
             else set_local(child(path, parameter.symbol), "ingen:value", value_key, float_literal(parameter.value), ingen::number(parameter.value));
@@ -830,10 +834,17 @@ std::string Session::plan(const Command& command, Transaction& to) {
                 if (m->fixed) return "Endpoints cannot be bypassed";
                 if (!module_available(*m)) return "Module is unavailable";
                 // The engine's bypass passes each input to its output. A plugin's
-                // own switch would only mute it, so that stays on.
-                if (const auto* known = definition(m->uri); known && !known->enable_symbol.empty())
-                    set_local(child(found->second, known->enable_symbol), "ingen:value", value_key, float_literal(1), ingen::number(1));
-                set_local(found->second, "ingen:enabled", enabled_key, c.value ? "false" : "true", {Value::Kind::Boolean, 0, !c.value, {}});
+                // own switch would only mute it, so that stays on, unless the
+                // plugin bypasses itself: then the switch is the bypass, and the
+                // block keeps running.
+                const auto* known = definition(m->uri);
+                const bool by_port = known && !known->enable_symbol.empty() && known->port_bypass;
+                if (known && !known->enable_symbol.empty()) {
+                    const double on = by_port && c.value ? 0 : 1;
+                    set_local(child(found->second, known->enable_symbol), "ingen:value", value_key, float_literal(on), ingen::number(on));
+                }
+                const bool enabled = by_port || !c.value;
+                set_local(found->second, "ingen:enabled", enabled_key, enabled ? "true" : "false", {Value::Kind::Boolean, 0, enabled, {}});
             } else if constexpr (std::is_same_v<T, SetFile>) {
                 if (m->fixed || !module_available(*m)) return "Module is unavailable";
                 const auto* known = definition(m->uri);

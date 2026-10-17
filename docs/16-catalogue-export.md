@@ -25,6 +25,8 @@ The interface no longer needs a hand-written entry to use a real plugin. A Linux
 
 The catalogue now records such a control as the module's on/off switch. Adding the module sets it to 1, and it stays at 1. **Software bypass** uses the engine's own bypass, as for every other module, which passes each input to its output. (Clearing the switch instead only muted the module, which made bypass act as a kill switch.) A module whose switch is 0, from a patch saved before this change, reads as bypassed, and enabling it sets the switch back to 1. The switch is not shown as a parameter.
 
+**A plugin that bypasses itself.** The engine's bypass copies input to output and stops calling the plugin. A plugin that keeps working while bypassed (a delay whose echoes ring on, or whose memory keeps recording, such as Discipline) needs the opposite. An overlay rule with `"bypass": "port"` marks it: software bypass, stomp bypass and saved patches then set the plugin's own switch to 0, and the block stays enabled. The rule is refused for a plugin with no such switch. `"bypass": "engine"` restores the usual behaviour.
+
 ## How it works
 
 | Part | Role |

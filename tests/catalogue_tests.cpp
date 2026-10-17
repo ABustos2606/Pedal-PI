@@ -103,6 +103,19 @@ void overlay() {
     }
     check(category_color("Delay") == 0x7bbaed && category_color("Something new") == 0x93a4b5, "category colours changed");
 
+    // A plugin that bypasses itself is bypassed through its own switch, which it must have.
+    {
+        std::vector<ModuleDefinition> own{{"urn:test:self", "Self", "Delay", "", 0x7bbaed, {}, {}}, {"urn:test:plain", "Plain", "Delay", "", 0x7bbaed, {}, {}}};
+        own[0].enable_symbol = "enabled";
+        const auto bypass = [](const char* uri, const char* how) {
+            return std::string(R"({"format": "peepo-catalogue-overlay", "version": 1, "rules": [{"uri": ")") + uri + R"(", "bypass": ")" + how + R"("}]})";
+        };
+        check(apply_catalogue_overlay(bypass("urn:test:self", "port"), own).empty() && own[0].port_bypass && !own[1].port_bypass, "bypass through the port not applied");
+        check(apply_catalogue_overlay(bypass("urn:test:self", "engine"), own).empty() && !own[0].port_bypass, "bypass could not be given back to the engine");
+        check(!apply_catalogue_overlay(bypass("urn:test:plain", "port"), own).empty() && !apply_catalogue_overlay(bypass("urn:test:self", "both"), own).empty() && !own[0].port_bypass,
+              "an impossible bypass accepted");
+    }
+
     // Per-control rules: listed controls first, the rest in their own order.
     auto controls = document.modules;
     const std::string granular = "http://polyeffects.com/lv2/polyclouds#granular";

@@ -285,7 +285,7 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
         if (uri.empty() == match.empty()) return rule.where + ": needs exactly one of \"uri\" and \"match\"";
         const auto name = rule.text("name", false, 96), category = rule.text("category", false, 48), description = rule.text("description", false);
         const auto color = rule.text("color", false), reason = rule.text("reason", false), prefix = rule.text("strip_prefix", false, 48);
-        const auto output = rule.text("output", false, 256), tempo = rule.text("tempo", false, 256);
+        const auto output = rule.text("output", false, 256), tempo = rule.text("tempo", false, 256), bypass = rule.text("bypass", false, 16);
         const bool has_availability = item.get("availability") != nullptr;
         const bool has_hidden = item.get("hidden") != nullptr;
         const bool hidden = rule.flag("hidden");
@@ -294,6 +294,7 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
         if (!rule.issue.empty()) return rule.issue;
         if (!color.empty() && !parse_color(color, parsed)) return rule.where + ": \"color\" must look like #a6c8ec";
         if (category == "Endpoint") return rule.where + ": that category is reserved";
+        if (!bypass.empty() && bypass != "engine" && bypass != "port") return rule.where + ": \"bypass\" must be engine or port";
         // A rule may not hand out what the export withheld: only the engine's
         // own metadata can say a plugin is loadable.
         if (has_availability && availability == Availability::Available) return rule.where + ": an overlay can restrict availability, not grant it";
@@ -362,6 +363,7 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
             if (!output.empty()) d.output_symbol = output;
             if (file_entry) d.file = file;
             if (!tempo.empty()) d.tempo_symbol = tempo;
+            if (!bypass.empty()) d.port_bypass = bypass == "port";
         }
     }
     // Every module that makes sound has one Output: the plugin's own level
@@ -378,6 +380,7 @@ std::string apply_catalogue_overlay(std::string_view text, std::vector<ModuleDef
                 return d.uri + ": a port is named " + general_output_symbol + ", which the general Output needs";
             d.parameters.push_back(general_output_parameter());
         }
+        if (d.port_bypass && d.enable_symbol.empty()) return d.uri + ": it is bypassed through its own switch but has none";
         // A tempo control: a shown number whose range reaches into the tempo range.
         if (!d.tempo_symbol.empty()) {
             const auto it = std::find_if(d.parameters.begin(), d.parameters.end(), [&](const Parameter& p) { return p.symbol == d.tempo_symbol; });

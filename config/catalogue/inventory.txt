@@ -233,8 +233,10 @@ http://ssj71.github.io/infamousPlugins/plugs.html#powercut  # Beebo: turntable_s
 http://ssj71.github.io/infamousPlugins/plugs.html#stuck  # Beebo: freeze
 https://chrisarndt.de/plugins/ykchorus  # Beebo: chorus_j
 
-# Peepo: plugins/ of this repository
+# Peepo's own plugins
 urn:peepo:lv2:footswitch
+https://github.com/ABustos2606/discipline#discipline
+https://github.com/ABustos2606/discipline#return
 
 # Development: MDA effects (also packaged for MODEP) and the LV2 examples the tests use
 http://drobilla.net/plugins/mda/Ambience

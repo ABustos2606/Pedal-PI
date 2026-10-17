@@ -22,8 +22,9 @@ MDA = ["Ambience", "Bandisto", "BeatBox", "Combo", "DX10", "DeEss", "Degrade", "
        "Dynamics", "EPiano", "Image", "JX10", "Leslie", "Limiter", "Loudness", "MultiBand", "Overdrive", "Piano", "RePsycho",
        "RezFilter", "RingMod", "RoundPan", "Shepard", "Splitter", "Stereo", "SubSynth", "TalkBox", "TestTone", "ThruZero",
        "Tracker", "Transient", "VocInput", "Vocoder"]
-# Peepo's own plugins, built from plugins/ of this repository.
-PEEPO = ["urn:peepo:lv2:footswitch"]
+# Peepo's own plugins: plugins/ of this repository, and Discipline from its own.
+PEEPO = ["urn:peepo:lv2:footswitch",
+         "https://github.com/ABustos2606/discipline#discipline", "https://github.com/ABustos2606/discipline#return"]
 EXAMPLES = ["eg-amp", "eg-fifths", "eg-metro", "eg-midigate", "eg-params", "eg-scope#Mono", "eg-scope#Stereo"]
 
 
@@ -47,7 +48,7 @@ def main():
         for uri in groups[origin]:
             lines.append("%s%s" % (uri, ("  # Beebo: " + ", ".join(keys[uri])) if uri in keys else ""))
         lines.append("")
-    lines.append("# Peepo: plugins/ of this repository")
+    lines.append("# Peepo's own plugins")
     lines += PEEPO
     lines.append("")
     lines.append("# Development: MDA effects (also packaged for MODEP) and the LV2 examples the tests use")

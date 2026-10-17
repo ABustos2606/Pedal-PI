@@ -19,6 +19,8 @@ void check(bool result, const char* why) { if (!result) throw std::runtime_error
 const std::string amp = "http://lv2plug.in/plugins/eg-amp";
 // Like Poly's Clouds: silent until its own `enabled` control is set.
 const std::string switched = "urn:test:switched";
+// Bypasses itself through that control, like Discipline.
+const std::string self_bypassed = "urn:test:self-bypassed";
 // Reads a file and follows the tempo: it has an atom input for patch messages.
 const std::string filed = "urn:test:filed";
 const std::string rdf_type(uri::rdf_type);
@@ -44,7 +46,7 @@ struct FakeTransport final : Transport {
 struct FakeEngine {
     std::map<std::string, Properties> objects{{"ingen:/main", {}}};
     std::vector<std::pair<std::string, std::string>> arcs;
-    std::set<std::string> plugins{amp, switched, filed};
+    std::set<std::string> plugins{amp, switched, self_bypassed, filed};
     std::vector<FakeTransport*> clients;
     bool reachable = true, fail_saves = false;
     // Write paths relative to <ingen:/>, as the engine does when built with serd 0.30 (Debian 12).
@@ -114,7 +116,7 @@ struct FakeEngine {
             auto* control = port("control", 3, "InputPort", "InputPort");
             control->push_back({rdf_type, iri_value(full(uri::atom, "AtomPort"))});
         }
-        if (const auto* prototype = find(objects[path], full(uri::lv2, "prototype")); prototype && prototype->text == switched) {
+        if (const auto* prototype = find(objects[path], full(uri::lv2, "prototype")); prototype && (prototype->text == switched || prototype->text == self_bypassed)) {
             auto* enabled = port("enabled", 3, "ControlPort", "InputPort");
             enabled->insert(enabled->begin(), {full(uri::ingen, "value"), number_value(0)});
         }
@@ -491,6 +493,30 @@ void adapter() {
               "enabling did not switch the plugin back on");
         legacy.engine->disconnect(); rig.settle();
         check(rig.result(RemoveModule{id}).accepted, "switched module could not be removed");
+    }
+    // A plugin that bypasses itself: its own switch is the bypass, and the
+    // block keeps running, so its echoes can ring on.
+    {
+        ModuleDefinition own{self_bypassed, "Self", "Delay", "", 0x7bbaed, {{"in", Direction::Input}, {"out", Direction::Output}},
+                             {{"gain", "Gain", "dB", ParameterKind::Continuous, -90, 24, -6}}};
+        own.enable_symbol = "enabled";
+        own.port_bypass = true;
+        register_definitions({own});
+        check(rig.result(AddModule{self_bypassed, 600, 24}).accepted, "self-bypassing module refused");
+        const auto id = rig.graph().modules.back().id;
+        const auto block = "ingen:/main/m" + std::to_string(id), port = block + "/enabled";
+        check(property(fake, port, full(uri::ingen, "value"))->number == 1, "self-bypassing module was left off");
+        check(rig.result(SetBypass{id, true}).accepted && find_module(rig.graph(), id)->bypassed, "self bypass refused");
+        check(property(fake, port, full(uri::ingen, "value"))->number == 0, "self bypass did not clear the plugin's switch");
+        check(property(fake, block, full(uri::ingen, "enabled"))->boolean, "self bypass stopped the block");
+        Rig reader(fake);
+        reader.engine->connect(); reader.settle();
+        check(find_module(reader.graph(), id)->bypassed, "another client did not see the self bypass");
+        reader.engine->disconnect(); rig.settle();
+        check(rig.result(DuplicateModule{id, 600, 144}).accepted && rig.graph().modules.back().bypassed, "copy lost the self bypass");
+        check(rig.result(RemoveModule{rig.graph().modules.back().id}).accepted && rig.result(SetBypass{id, false}).accepted && !find_module(rig.graph(), id)->bypassed &&
+              property(fake, port, full(uri::ingen, "value"))->number == 1 && property(fake, block, full(uri::ingen, "enabled"))->boolean, "self bypass could not be switched off");
+        check(rig.result(RemoveModule{id}).accepted, "self-bypassing module could not be removed");
     }
 
     // A file and the tempo. The file reaches the plugin as a patch:Set on its
